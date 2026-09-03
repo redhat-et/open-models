@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ platform.name or "OCTO Open Models" }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>{{ platform.name or "OCTO Open Models" }}</h1>
+  <p>
+    Open models to offset your token spend &mdash;
+    <a href="{{ platform.dashboard_base or '#' }}">usage &amp; activity dashboard</a> &middot;
+    <a href="/api/models">catalog JSON</a> &middot;
+    <a href="/configs/opencode.json">opencode.json (download)</a>
+  </p>
+</header>
+<main>
+  {% for m in models %}
+  {% set host = hosts.get(m.host, {}) %}
+  <div class="card" id="card-{{ m.id }}">
+    <h2>{{ m.name }} <span class="badge {{ m.tier }}">{{ m.tier }}</span></h2>
+    <div class="host"><span class="dot {{ m.status }}" data-dot="{{ m.id }}"></span>{{ m.host }} &middot; {{ host.hardware or "" }}</div>
+    <div class="meta">
+      model id <code>{{ m.served_model }}</code> &middot;
+      context {{ "{:,}".format(m.context) }} &middot;
+      {{ m.quant or "n/a" }}{% if m.tool_call %} &middot; tools{% endif %}{% if m.reasoning %} &middot; reasoning{% endif %}
+    </div>
+    {% if m.status in ("running", "live") %}
+    <pre><button class="copy" onclick="copySnippet(this)">copy</button>curl {{ m.base_url }}/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model": "{{ m.served_model }}", "messages": [{"role":"user","content":"hello"}], "max_tokens": 64}'</pre>
+    {% if m.route %}<div class="meta">outside the cluster: <code>{{ m.route }}/v1</code></div>{% endif %}
+    {% else %}
+    <div class="notes">{{ m.notes or "Coming soon." }}</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</main>
+<footer>
+  opencode: download <a href="/configs/opencode.json">opencode.json</a> into <code>~/.config/opencode/</code> and restart opencode.
+  Open WebUI: add each endpoint under Admin Settings &rarr; External Connections (see <code>configs/open-webui.env</code>).
+</footer>
+<script>
+async function refreshStatus() {
+  try {
+    const res = await fetch("/api/status");
+    const data = await res.json();
+    for (const s of data) {
+      const el = document.querySelector(`[data-dot="${s.id}"]`);
+      if (el) {
+        el.className = `dot ${s.status}`;
+        el.title = s.detail || s.status;
+      }
+    }
+  } catch (e) { /* front end up but status not reachable yet */ }
+}
+function copySnippet(btn) {
+  const text = btn.parentElement.innerText.replace(/^copy\n?/, "");
+  navigator.clipboard.writeText(text);
+  btn.textContent = "copied";
+  setTimeout(() => (btn.textContent = "copy"), 1200);
+}
+refreshStatus();
+setInterval(refreshStatus, 30000);
+</script>
+</body>
+</html>

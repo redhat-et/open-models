@@ -1,0 +1,76 @@
+# Deploy the OCTO Open Models front end to the OpenShift cluster so it is a
+# team service instead of someone's laptop.
+#
+#   podman build -t open-models-web . 
+#   podman tag open-models-web quay.io/<your-org>/open-models-web:latest
+#   podman push quay.io/<your-org>/open-models-web:latest
+#   oc new-project open-models
+#   sed -i 's#quay.io/<your-org>#<your-quay-ns>#' web-openshift.yaml
+#   oc apply -f web-openshift.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-models-web
+  labels:
+    app: open-models-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: open-models-web
+  template:
+    metadata:
+      labels:
+        app: open-models-web
+    spec:
+      containers:
+        - name: web
+          image: quay.io/<your-org>/open-models-web:latest
+          ports:
+            - containerPort: 8000
+              name: http
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: open-models-web
+spec:
+  selector:
+    app: open-models-web
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: open-models-web
+spec:
+  to:
+    kind: Service
+    name: open-models-web
+  port:
+    targetPort: http
+  tls:
+    termination: edge

@@ -1,0 +1,3 @@
+section,index,prompt_summary,model_a_score,model_b_score,notes
+# Two reviewers fill scores 1-5 (blind to which model is which); tie-break by
+# latency from the guidellm run. Section + index map to prompts.yaml.

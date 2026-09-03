@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: open-models
+    folder: OCTO Open Models
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

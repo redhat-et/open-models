@@ -1,0 +1,36 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus-data/alert.rules.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Targets are GENERATED from catalog.yaml - do not edit by hand.
+  # Regenerate: scripts/venv-run.sh scripts/gen_prom_targets.py (or `make gen`)
+  - job_name: vllm
+    metrics_path: /metrics
+    file_sd_configs:
+      - files: ["/etc/prometheus-data/targets-http.json"]
+        refresh_interval: 60s
+
+  - job_name: vllm-https
+    metrics_path: /metrics
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    file_sd_configs:
+      - files: ["/etc/prometheus-data/targets-https.json"]
+        refresh_interval: 60s
+
+  # TODO once exporters are installed on each host:
+  # - job_name: node
+  #   static_configs:
+  #     - targets: ["10.6.164.118:9100", "192.168.1.166:9100"]
+  # - job_name: dcgm
+  #   static_configs:
+  #     - targets: ["192.168.1.166:9400"]

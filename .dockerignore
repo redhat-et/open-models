@@ -1,0 +1,6 @@
+.git
+**/__pycache__
+**/.pytest_cache
+web/.venv
+benchmarks/results
+monitoring

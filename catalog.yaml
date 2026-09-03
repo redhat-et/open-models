@@ -1,0 +1,94 @@
+# Single source of truth for the OCTO Open Models platform.
+# Every deploy file, user config, and the web front end read from here.
+# Regenerate user configs after editing: scripts/gen_configs.py
+
+platform:
+  name: OCTO Open Models
+  dashboard_base: http://localhost:3000/d/open-models/octo-open-models-usage-and-activity
+
+defaults:
+  health_path: /health
+  models_path: /v1/models
+  chat_path: /v1/chat/completions
+
+hosts:
+  spark2:
+    hardware: DGX Spark (GB10, 128GB unified)
+    notes: Smart (slow) tier - biggest context, highest quality.
+  rtx5090:
+    hardware: RTX 5090 (32GB GDDR7)
+    notes: Fast tier - NVFP4 quant, snappy, shorter context.
+  openshift:
+    hardware: OpenShift cluster, g6e GPU nodes (Ryan Cook's, spending plan covered)
+    notes: Best of both - Flash Next on the cluster, exposed via edge route.
+  spark1:
+    hardware: DGX Spark (GB10, 128GB unified)
+    notes: Future slot.
+  spark3:
+    hardware: DGX Spark (GB10, 128GB unified)
+    notes: Previously ran qwen3.8 - future slot.
+  spark4:
+    hardware: DGX Spark (GB10, 128GB unified)
+    notes: Future slot.
+  strix-halo:
+    hardware: AMD Strix Halo (Ryzen AI Max, 128GB unified)
+    notes: Grab it. Has qwen 3.8 on it already (verify). Future slot.
+
+models:
+  - id: ocp-flash-next
+    host: openshift
+    name: "Qwen 3.8 Flash Next NVFP4 (Best of Both)"
+    served_model: Inferact/Qwen3.8-Flash-Next-NVFP4
+    tier: balanced
+    base_url: https://qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com/v1
+    api_key: sk-local
+    context: 131072
+    max_output: 8192
+    tool_call: true
+    reasoning: true
+    quant: nvfp4
+    status: running
+
+  - id: rtx5090-fast
+    host: rtx5090
+    name: "Qwen 3.8 27B NVFP4 (Fast)"
+    served_model: Inferact/Qwen3.8-27B-NVFP4
+    tier: fast
+    base_url: http://192.168.1.166:8000/v1
+    api_key: sk-local
+    context: 32768
+    max_output: 8192
+    tool_call: true
+    reasoning: true
+    quant: nvfp4
+    status: running
+    notes: Fastest interactive option; 32k context keeps KV small on 32GB.
+
+  - id: spark2-smart
+    host: spark2
+    name: "Qwen 3.8 27B FP8 (Smart)"
+    served_model: Qwen/Qwen3.8-27B-FP8
+    tier: smart
+    base_url: http://octo-et-spark-2.khw.eng.rdu2.dc.redhat.com:8000/v1
+    scrape_url: http://10.6.164.118:8000/v1  # IP: internal name won't resolve in containers
+    api_key: sk-local
+    context: 262144
+    max_output: 8192
+    tool_call: true
+    reasoning: true
+    quant: fp8
+    status: running
+    notes: Smart but slow; the 256k-context workhorse.
+
+  - id: strix-halo
+    host: strix-halo
+    name: "Qwen3.8 27B (Strix Halo)"
+    served_model: Qwen/Qwen3.8-27B
+    tier: balanced
+    base_url: http://strix-halo:8080/v1
+    context: 131072
+    tool_call: true
+    reasoning: true
+    quant: tbd
+    status: planned
+    notes: Verify what is actually serving on this box once we grab it.

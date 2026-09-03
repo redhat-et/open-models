@@ -1,0 +1,38 @@
+# Quality eval: the "smart" half of model selection.
+# 30 fixed prompts, three sections. See docs/model-selection.md.
+
+code:
+  - "Write a Python function that parses an RFC 5424 syslog line into a dict, with tests."
+  - "Refactor this duplicated error handling into one decorator: [paste team snippet]"
+  - "Why does `SELECT * FROM t WHERE date = '2026-09'` use a full scan on Postgres and how do I fix it?"
+  - "Write a bash script to find the 10 largest directories under /var, skipping symlinks."
+  - "Explain and fix: 'tuple index out of range' in a str.format call inside an f-string."
+  - "Implement a token bucket rate limiter class (thread-safe, no deps)."
+  - "Convert this synchronous requests loop to async httpx with a semaphore of 8: [paste]"
+  - "Write a SQL migration to add a not-null column to a 100M-row table with zero downtime."
+  - "Debug: pod CrashLoopBackOff, exit code 137 on a Java service with 512Mi limit."
+  - "Write a unit test exposing an off-by-one in a binary search that uses (lo+hi)//2."
+
+reasoning:
+  - "Summarize the tradeoffs of running models on unified-memory hardware vs discrete VRAM in 5 bullets."
+  - "A team's token spend doubled after enabling auto-complete. Give 3 hypotheses and a test for each."
+  - "We have 4 Sparks (273GB/s) and one g6e node. Where does a 70B AWQ belong and why?"
+  - "Explain KV cache growth math for Llama-70B at 128k context, then how FP8 changes it."
+  - "Draft a one-paragraph incident summary: TTFT p95 went 1.2s to 8s after prefix caching was disabled."
+  - "Rank for a coding agent: Qwen3-30B-A3B, 27B-FP8, 8B dense. Justify on quality/latency/cost."
+  - "A user reports the model 'forgets' tool results. List 4 plausible causes at the serving layer."
+  - "Estimate: single 5090, 27B NVFP4, 32k context - how many concurrent users before >2s TTFT? Show assumptions."
+  - "Rewrite for exec: 'Open models reduce frontier spend' plus two supporting numbers we can measure."
+  - "Given queue depth spikes at 10am daily, propose a two-model routing policy."
+
+tool_call:
+  - "What is 23.5% of 812? Use the calculator tool."
+  - "List files in /tmp then read any .md file you find. Use tools, do not guess."
+  - "Search the web for 'DGX Spark GB10 memory bandwidth' and cite the spec."
+  - "Run `python3 -c \"print(2**64)\"` with the shell tool and report the result."
+  - "Get the current time via the time tool, then set a reminder for +45 minutes via the calendar tool."
+  - "Fetch http://localhost:8010/api/status with the http tool and summarize which models are up."
+  - "Convert 42 C to F using the units tool; if the tool fails, say 'tool failed'."
+  - "Use the db tool: SELECT count(*) FROM orders WHERE status='open'."
+  - "Resize image logo.png to 512px wide using the image tool, then report the output path."
+  - "Call the weather tool for Raleigh; retry once if it errors; report temp or 'unavailable'."

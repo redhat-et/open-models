@@ -1,0 +1,38 @@
+:root {
+  --bg: #0e1116;
+  --card: #161b22;
+  --border: #2d333b;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --smart: #bc8cff;
+  --fast: #3fb950;
+  --balanced: #58a6ff;
+  --long-context: #f0883e;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, sans-serif; }
+header { padding: 24px 32px; border-bottom: 1px solid var(--border); }
+header h1 { margin: 0 0 4px; font-size: 22px; }
+header p { margin: 0; color: var(--muted); }
+header a { color: var(--accent); }
+main { padding: 24px 32px; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.card h2 { margin: 0 0 2px; font-size: 17px; }
+.host { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+.badge { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 10px; border: 1px solid currentColor; text-transform: uppercase; letter-spacing: .5px; }
+.badge.smart { color: var(--smart); }
+.badge.fast { color: var(--fast); }
+.badge.balanced { color: var(--balanced); }
+.badge.long-context { color: var(--long-context); }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #6e7681; margin-right: 6px; }
+.dot.up { background: var(--fast); }
+.dot.down { background: #f85149; }
+.dot.planned { background: #6e7681; }
+.meta { color: var(--muted); font-size: 13px; margin: 8px 0; }
+pre { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 10px; font-size: 12px; overflow-x: auto; position: relative; white-space: pre-wrap; word-break: break-all; }
+.copy { position: absolute; top: 6px; right: 6px; background: var(--border); color: var(--text); border: 0; border-radius: 4px; font-size: 11px; padding: 2px 8px; cursor: pointer; }
+.copy:hover { background: var(--accent); color: #000; }
+a { color: var(--accent); text-decoration: none; }
+.notes { color: var(--muted); font-size: 13px; font-style: italic; }
+footer { padding: 16px 32px 32px; color: var(--muted); font-size: 13px; }
