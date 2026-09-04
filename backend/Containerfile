@@ -1,0 +1,13 @@
+FROM registry.access.redhat.com/ubi9/python-312:latest
+
+WORKDIR /app
+COPY backend/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY backend/ backend/
+COPY catalog.yaml ./
+
+ENV PORT=8020
+EXPOSE 8020
+# UBI python images are arbitrary-UID safe by default (OpenShift restricted SCC)
+CMD ["python", "-m", "uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8020", "--proxy-headers", "--forwarded-allow-ips", "*"]

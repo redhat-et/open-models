@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OCTO Open Models</title>
+  <link rel="stylesheet" href="https://unpkg.com/@patternfly/patternfly@6/patternfly.css">
+  <style>
+    body { background: var(--pf-t--global--background--color--background--150); }
+    .om-header {
+      display: flex; align-items: center; gap: var(--pf-t--global--spacer--md);
+      padding: var(--pf-t--global--spacer--md) var(--pf-t--global--spacer--xl);
+      background: linear-gradient(90deg, #4f1f8f 0%, #0f3b8c 55%, #0b6a7d 100%);
+      color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+    .om-logo {
+      width: 40px; height: 40px; border-radius: 10px; flex: 0 0 auto;
+      background: conic-gradient(from 210deg, #2b9af3, #3e8cd8 40%, #6753ac 70%, #2b9af3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; box-shadow: inset 0 0 0 2px rgba(255,255,255,.35);
+    }
+    .om-header h1 { font-size: 1.45rem; font-weight: 600; letter-spacing: .3px; }
+    .om-header .om-sub { opacity: .75; font-size: .8rem; margin-top: 2px; }
+    .om-header .pf-v6-c-button { color: inherit; }
+    .om-gh-btn {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: #fff; color: #151515 !important; font-weight: 600;
+      border: none; border-radius: 6px; padding: .45rem .9rem; cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,.3);
+    }
+    .om-gh-btn:hover { background: #f0f0f0; }
+    .om-main { max-width: 1200px; margin: 0 auto; padding: var(--pf-t--global--spacer--lg); }
+    .om-banner {
+      display: flex; align-items: center; gap: var(--pf-t--global--spacer--md);
+      background: #151515; color: #e0e0e0; border-radius: 8px;
+      padding: var(--pf-t--global--spacer--md) var(--pf-t--global--spacer--lg);
+      border-left: 6px solid #3e8cd8; flex-wrap: wrap;
+    }
+    .om-banner code { background: #2b2b2b; color: #73bcf7; padding: 4px 8px; border-radius: 6px; cursor: copy; }
+    .om-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--pf-t--global--spacer--lg); }
+    .om-card {
+      background: #fff; border-radius: 10px; border: 1px solid var(--pf-t--global--border--color--default);
+      border-top: 5px solid var(--om-accent, #8a8d90);
+      display: flex; flex-direction: column;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08); transition: box-shadow .15s, transform .15s;
+    }
+    .om-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.14); transform: translateY(-2px); }
+    .om-card__head { padding: var(--pf-t--global--spacer--lg) var(--pf-t--global--spacer--lg) 0; }
+    .om-card__head h3 { margin: 0 0 .5rem; font-size: 1.1rem; }
+    .om-badges { display: flex; gap: .4rem; flex-wrap: wrap; }
+    .om-card__body { padding: var(--pf-t--global--spacer--md) var(--pf-t--global--spacer--lg) var(--pf-t--global--spacer--lg); flex: 1 1 auto; }
+    .om-meta { color: var(--pf-t--global--text--color--subtle); font-size: .82rem; margin: 0 0 .75rem; }
+    pre.om-snippet {
+      background: #151515; color: #e0e0e0; border-radius: 8px;
+      padding: var(--pf-t--global--spacer--md); font-size: .75rem; line-height: 1.5;
+      overflow-x: auto; cursor: copy; position: relative; margin: 0;
+    }
+    pre.om-snippet:hover::after {
+      content: "copy"; position: absolute; top: 6px; right: 8px;
+      font-size: .65rem; color: #73bcf7; text-transform: uppercase; letter-spacing: 1px;
+    }
+    .om-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+    .om-toolbar {
+      display: flex; align-items: center; gap: var(--pf-t--global--spacer--md);
+      background: #fff; border: 1px solid var(--pf-t--global--border--color--default);
+      border-radius: 10px 10px 0 0; padding: var(--pf-t--global--spacer--md) var(--pf-t--global--spacer--lg);
+    }
+    .om-toolbar input { max-width: 300px; }
+    .om-keys-card { background: #fff; border: 1px solid var(--pf-t--global--border--color--default); border-top: none; border-radius: 0 0 10px 10px; overflow: hidden; }
+    table.om-keys { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    .om-keys th { text-align: left; padding: .6rem var(--pf-t--global--spacer--lg); background: #f5f5f5; font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .5px; color: #4d4d4d; }
+    .om-keys td { padding: .65rem var(--pf-t--global--spacer--lg); border-top: 1px solid #f0f0f0; vertical-align: middle; }
+    .om-keys tr:hover td { background: #faf7ff; }
+    #newkey-alert .om-newkey {
+      background: #e7f1fa; border: 1px solid #bee4e8; border-left: 6px solid #3e8cd8;
+      border-radius: 8px; padding: var(--pf-t--global--spacer--md) var(--pf-t--global--spacer--lg); margin-bottom: var(--pf-t--global--spacer--md);
+    }
+    #newkey-alert pre { background: #151515; color: #73bcf7; padding: .6rem .8rem; border-radius: 6px; cursor: copy; word-break: break-all; margin: .5rem 0 0; }
+    .om-spend-chip { font-weight: 700; }
+  </style>
+</head>
+<body>
+<div>
+  <header class="om-header">
+    <div class="om-logo">🐙</div>
+    <div>
+      <h1>OCTO Open Models</h1>
+      <div class="om-sub">Qwen 3.8, free for OCTO folks</div>
+    </div>
+    <div style="margin-left:auto" id="auth-area"></div>
+  </header>
+  <main class="om-main">
+
+    <div class="om-banner">
+      <span>⚡ All metered traffic goes through the gateway — paste this anywhere vLLM/OpenAI is expected:</span>
+      <code id="gateway-url" onclick="copyText(this)" title="click to copy">…</code>
+    </div>
+
+    <section style="margin-top:var(--pf-t--global--spacer--xl)">
+      <h2 style="font-size:1.2rem; margin:0 0 var(--pf-t--global--spacer--md)">Models</h2>
+      <div class="om-grid" id="models"></div>
+    </section>
+
+    <section id="keys-section" style="margin-top:var(--pf-t--global--spacer--xl); display:none">
+      <h2 style="font-size:1.2rem; margin:0 0 var(--pf-t--global--spacer--md)">My API keys</h2>
+      <div id="newkey-alert"></div>
+      <div class="om-toolbar">
+        <input id="key-name" placeholder="key name (lowercase, e.g. laptop)" onkeydown="if(event.key==='Enter')createKey()">
+        <button class="pf-v6-c-button pf-m-primary" onclick="createKey()">＋ Create key</button>
+        <span class="pf-v6-c-label pf-m-green om-spend-chip" style="margin-left:auto" id="total-spend"></span>
+      </div>
+      <div class="om-keys-card">
+        <table class="om-keys">
+          <thead><tr><th>Alias</th><th>Created</th><th>RPM</th><th>Budget/day</th><th>Spend today</th><th></th></tr></thead>
+          <tbody id="keys-body"></tbody>
+        </table>
+      </div>
+      <p style="color:var(--pf-t--global--text--color--subtle); font-size:.8rem; margin-top:.5rem">Limits are platform defaults; ask in #octo if you need more. Spend resets daily.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+let me = null;
+const TIER = {
+  balanced: {color: '#8b5cf6', label: 'balanced',  icon: '💎'},
+  fast:     {color: '#1ec457', label: 'fast',      icon: '⚡'},
+  smart:    {color: '#12a5c4', label: 'smart',     icon: '🧠'},
+};
+
+async function api(path, opts={}) {
+  const r = await fetch(path, {credentials:'same-origin', headers:{'Content-Type':'application/json'}, ...opts});
+  if (r.status === 401) { renderAuth(); throw new Error('not logged in'); }
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.detail || r.status);
+  return body;
+}
+
+function renderAuth() {
+  const el = document.getElementById('auth-area');
+  const gh = `<svg height="16" viewBox="0 0 16 16" width="16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>`;
+  el.innerHTML = me
+    ? `<span style="margin-right:1.2rem;opacity:.95;white-space:nowrap"><img src="https://github.com/${encodeURIComponent(me.github_user)}.png" alt="" style="width:28px;height:28px;border-radius:50%;vertical-align:middle;margin-right:.5rem;box-shadow:inset 0 0 0 2px rgba(255,255,255,.4)" onerror="this.replaceWith('🐙')"><b>${esc(me.github_user)}</b></span>
+       <button class="pf-v6-c-button pf-m-link" style="color:#fff;text-decoration:underline" onclick="logout()">Log out</button>`
+    : `<button class="om-gh-btn" onclick="location.href='/auth/login'">${gh} Log in with GitHub</button>`;
+  document.getElementById('keys-section').style.display = me ? '' : 'none';
+}
+
+async function logout() { await api('/auth/logout', {method:'POST'}); me=null; renderAuth(); }
+function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+function copyText(el){ navigator.clipboard.writeText(el.textContent.trim()); }
+
+function snippet(m) {
+  const url = m.metered ? (window.GW + '/chat/completions') : (m.direct_url + '/chat/completions');
+  const model = m.metered ? m.gateway_model : m.served_model;
+  const key = m.metered ? '$OCTO_KEY' : 'none';
+  return `curl ${url} \\\n  -H "Authorization: Bearer ${key}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model": "${model}", "messages": [{"role":"user","content":"hello"}], "max_tokens": 256}'`;
+}
+
+async function loadCatalog() {
+  const c = await api('/api/catalog');
+  window.GW = c.gateway_url;
+  document.getElementById('gateway-url').textContent = c.gateway_url;
+  document.getElementById('models').innerHTML = c.models.map(m => {
+    const t = TIER[m.tier] || {color: '#8a8d90', label: m.tier || 'n/a', icon: '🤖'};
+    const p = m.price || {};
+    const price = p.input ? `$${p.input}/M in · $${p.output}/M out` : 'price TBD';
+    const metered = m.metered
+      ? `<span class="pf-v6-c-label pf-m-green"><span class="om-dot" style="background:#1ec457"></span>metered</span>`
+      : `<span class="pf-v6-c-label pf-m-orange" title="${esc(m.notes)}"><span class="om-dot" style="background:#f4c145"></span>direct · VPN · unmetered</span>`;
+    return `<div class="om-card" style="--om-accent:${t.color}">
+      <div class="om-card__head">
+        <h3>${t.icon} ${esc(m.name)}</h3>
+        <div class="om-badges">
+          <span class="pf-v6-c-label" style="background:${t.color}22; border-color:${t.color}">${t.label}</span>
+          ${metered}
+        </div>
+      </div>
+      <div class="om-card__body">
+        <p class="om-meta">🖥 ${esc(c.hosts[m.host]||m.host)} · 📏 ctx ${m.context?m.context.toLocaleString():'?'} · 🔬 ${esc(m.quant||'n/a')} · 💰 ${esc(price)}</p>
+        <pre class="om-snippet" title="click to copy" onclick="copyText(this)">${esc(snippet(m))}</pre>
+        ${m.direct_url ? `<p class="om-meta" style="margin:.6rem 0 0">direct: <code style="font-size:.75rem">${esc(m.direct_url)}</code></p>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadKeys() {
+  if (!me) return;
+  const keys = await api('/api/keys');
+  const tbody = document.getElementById('keys-body');
+  tbody.innerHTML = keys.length ? keys.map(k => `<tr>
+      <td><code>${esc(k.key_alias)}</code></td>
+      <td>${esc((k.created_at||'').slice(0,10))}</td>
+      <td>${k.rpm_limit ?? '-'}</td>
+      <td>$${k.max_budget ?? '-'}</td>
+      <td style="font-weight:600; color:${Number(k.spend||0)>0?'#6753ac':'#6a6e73'}">$${Number(k.spend||0).toFixed(4)}</td>
+      <td style="text-align:right"><button class="pf-v6-c-button pf-m-danger pf-m-small pf-m-plain" onclick="delKey('${esc(k.key_alias)}')">🗑</button></td>
+    </tr>`).join('')
+    : '<tr><td colspan="6" style="color:#6a6e73">No keys yet — create one above.</td></tr>';
+  const total = keys.reduce((a,k)=>a+Number(k.spend||0),0);
+  document.getElementById('total-spend').textContent = `💸 spend today: $${total.toFixed(4)}`;
+}
+
+async function createKey() {
+  const name = document.getElementById('key-name').value.trim();
+  if (!name) return;
+  try {
+    const r = await api('/api/keys', {method:'POST', body: JSON.stringify({name})});
+    document.getElementById('newkey-alert').innerHTML = `
+      <div class="om-newkey"><b>✅ New key <code>${esc(r.key_alias)}</code></b> — copy it now, it is shown only once:
+        <pre onclick="copyText(this)">${esc(r.key)}</pre></div>`;
+    document.getElementById('key-name').value = '';
+    loadKeys();
+  } catch (e) { alert('create failed: ' + e.message); }
+}
+
+async function delKey(alias) {
+  if (!confirm('Delete key ' + alias + '?')) return;
+  await api('/api/keys/' + alias, {method:'DELETE'});
+  loadKeys();
+}
+
+async function init() {
+  try { me = await api('/api/me'); } catch { me = null; }
+  renderAuth();
+  await loadCatalog();
+  loadKeys();
+  setInterval(() => me && loadKeys().catch(()=>{}), 30000);
+}
+init();
+</script>
+</body>
+</html>
