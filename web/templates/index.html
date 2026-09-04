@@ -16,6 +16,13 @@
     <a href="/configs/opencode.json">opencode.json (download)</a>
   </p>
 </header>
+{% if platform.app_url %}
+<div style="background:#4f1f8f;color:#fff;padding:.75rem 1rem;border-radius:6px;margin:1rem auto;max-width:1100px">
+  This v1 page is being retired &mdash; go to the new
+  <a href="{{ platform.app_url }}" style="color:#8ec5ff;font-weight:bold">OCTO Open Models portal</a>
+  to log in with GitHub, create API keys, and track your spend.
+</div>
+{% endif %}
 <main>
   {% for m in models %}
   {% set host = hosts.get(m.host, {}) %}

@@ -4,7 +4,8 @@
 
 platform:
   name: OCTO Open Models
-  dashboard_base: http://localhost:3000/d/open-models/octo-open-models-usage-and-activity
+  dashboard_base: https://grafana-octo-models.apps.emerg.pcbk.p1.openshiftapps.com/d/open-models/octo-open-models-usage-and-activity
+  app_url: https://octo-app-octo-models.apps.emerg.pcbk.p1.openshiftapps.com
 
 defaults:
   health_path: /health
