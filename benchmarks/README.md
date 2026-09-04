@@ -34,4 +34,4 @@ compare. Record picks by updating `catalog.yaml` and this file's decision log.
 ## Historical data
 
 `../qwen3-serving/benchmarks.{csv,json}` - guidellm v0.7.3 runs against
-192.168.1.166 (the RTX 5090 box). Move copies here when convenient.
+136.47.153.236 (the RTX 5090 box). Move copies here when convenient.

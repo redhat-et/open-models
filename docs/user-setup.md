@@ -8,8 +8,13 @@ come from the front-end page (source of truth: `catalog.yaml`).
 ```bash
 curl http://<model-host>:8000/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model": "<served_model>", "messages": [{"role":"user","content":"hello"}]}'
+  -d '{"model": "<served_model>", "messages": [{"role":"user","content":"hello"}], "max_tokens": 256}'
 ```
+
+Tip: these are reasoning models - they spend tokens thinking before answering.
+`max_tokens` below ~128 can be fully consumed by reasoning and return an
+empty `content`. Use 256+ (or pass `chat_template_kwargs:
+{"enable_thinking": false}` where supported).
 
 ## opencode
 

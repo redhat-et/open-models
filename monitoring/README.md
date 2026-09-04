@@ -28,21 +28,16 @@ podman run -d --name om-grafana --network host \
 Note: `--network host` (not a bridge) so containers use the host's DNS -
 rootless pasta DNS cannot resolve internal corporate or cluster hostnames.
 
-Gotcha: rootless podman DNS may not resolve internal corporate hostnames -
-use IPs in `prometheus.yml` targets if you see `context deadline exceeded`.
-
 Grafana datasource + the "Usage & Activity" dashboard provision themselves.
 Front-end link lives in `platform.dashboard_base` in `catalog.yaml`.
 
 ## Per-host exporters
 
 ```bash
-# node_exporter on every host (binary or container)
-docker run -d --name node-exporter --restart unless-stopped \
-  --pid host --network host \
-  -v /proc:/host/proc:ro -v /sys:/host/sys:ro \
-  quay.io/prometheus/node-exporter:latest \
-  --path.procfs=/host/proc --path.sysfs=/host/sys
+# node_exporter on every host (rootless podman: no /proc bind, use --pid host)
+podman run -d --name om-node-exporter --restart unless-stopped \
+  --network host --pid host --security-opt label=disable \
+  quay.io/prometheus/node-exporter:latest
 
 # dcgm-exporter on NVIDIA hosts (RTX 5090 now; cluster nodes if reachable)
 docker run -d --name dcgm-exporter --restart unless-stopped \
@@ -56,9 +51,11 @@ version before adding it (RFE).
 
 ## Targets
 
-`prometheus/prometheus.yml` mirrors `catalog.yaml` hosts. Keep them in sync
-(automating that is a good first issue - generate the scrape list from the
-catalog).
+Model scrape targets are GENERATED from `catalog.yaml`
+(`scripts/gen_prom_targets.py` -> `targets-http/https.json`, file_sd;
+Prometheus reloads them within 60s, or `curl -X POST localhost:9090/-/reload`).
+After editing the catalog run `make gen`. The `node`/`dcgm` jobs stay manual
+until exporters land on the model hosts.
 
 ## Alerts (`prometheus/alert.rules.yml`)
 

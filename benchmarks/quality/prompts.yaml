@@ -3,12 +3,12 @@
 
 code:
   - "Write a Python function that parses an RFC 5424 syslog line into a dict, with tests."
-  - "Refactor this duplicated error handling into one decorator: [paste team snippet]"
+  - "Refactor this duplicated code into one decorator: three view functions each wrap their body in try/except ValueError, log exc, return JSONResponse(status_code=400, detail=str(exc))."
   - "Why does `SELECT * FROM t WHERE date = '2026-09'` use a full scan on Postgres and how do I fix it?"
   - "Write a bash script to find the 10 largest directories under /var, skipping symlinks."
   - "Explain and fix: 'tuple index out of range' in a str.format call inside an f-string."
   - "Implement a token bucket rate limiter class (thread-safe, no deps)."
-  - "Convert this synchronous requests loop to async httpx with a semaphore of 8: [paste]"
+  - "Convert this synchronous loop to async httpx with a semaphore of 8: for url in urls: r = requests.get(url); results.append(r.json())"
   - "Write a SQL migration to add a not-null column to a 100M-row table with zero downtime."
   - "Debug: pod CrashLoopBackOff, exit code 137 on a Java service with 512Mi limit."
   - "Write a unit test exposing an off-by-one in a binary search that uses (lo+hi)//2."

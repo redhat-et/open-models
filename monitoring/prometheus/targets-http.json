@@ -1,20 +1,11 @@
 [
   {
     "targets": [
-      "192.168.1.166:8000"
+      "136.47.153.236:8000"
     ],
     "labels": {
       "model": "rtx5090-fast",
       "tier": "fast"
-    }
-  },
-  {
-    "targets": [
-      "10.6.164.118:8000"
-    ],
-    "labels": {
-      "model": "spark2-smart",
-      "tier": "smart"
     }
   }
 ]

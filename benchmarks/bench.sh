@@ -8,7 +8,7 @@
 #   load        - ramped concurrency, find the practical capacity
 #   long-context- big prompts on the 256k cluster models
 set -euo pipefail
-BASE="${1:?base url, e.g. http://192.168.1.166:8000}"
+BASE="${1:?base url, e.g. http://136.47.153.236:8000}"
 MODEL="${2:?served model id, e.g. Qwen/Qwen3.8-27B}"
 PROFILE="${3:?latency|load|long-context}"
 shift 3

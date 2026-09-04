@@ -19,6 +19,23 @@ import yaml
 
 HERE = Path(__file__).resolve().parent
 
+TOOLS = [
+    {"type": "function", "function": {"name": name, "description": desc,
+     "parameters": {"type": "object", "properties": {}, "required": []}}}
+    for name, desc in [
+        ("calculator", "Evaluate an arithmetic expression"),
+        ("list_files", "List files in a directory"),
+        ("web_search", "Search the web"),
+        ("run_python", "Run python code in a sandbox"),
+        ("get_time", "Get the current time"),
+        ("set_reminder", "Create a calendar reminder"),
+        ("http_fetch", "HTTP GET a URL and return the body"),
+        ("db_query", "Run a read-only SQL query"),
+        ("image_resize", "Resize an image file"),
+        ("get_weather", "Get weather for a city"),
+    ]
+]
+
 
 def main(argv: list[str]) -> int:
     base = argv[1].rstrip("/")
@@ -36,6 +53,9 @@ def main(argv: list[str]) -> int:
                     "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": 1024,
                 }
+                if section == "tool_call":
+                    payload["tools"] = TOOLS
+                    payload["tool_choice"] = "auto"
                 record = {"section": section, "index": i, "prompt": prompt}
                 try:
                     r = httpx.post(

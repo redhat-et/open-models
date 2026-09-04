@@ -27,10 +27,12 @@ scrape_configs:
       - files: ["/etc/prometheus-data/targets-https.json"]
         refresh_interval: 60s
 
-  # TODO once exporters are installed on each host:
-  # - job_name: node
-  #   static_configs:
-  #     - targets: ["10.6.164.118:9100", "192.168.1.166:9100"]
+  - job_name: node
+    static_configs:
+      - targets: ["localhost:9100"]
+        labels: {host: monitoring}
+    # Other hosts once exporters are installed there:
+    #   - targets: ["10.6.164.118:9100", "136.47.153.236:9100"]
   # - job_name: dcgm
   #   static_configs:
-  #     - targets: ["192.168.1.166:9400"]
+  #     - targets: ["136.47.153.236:9400"]

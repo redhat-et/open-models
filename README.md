@@ -3,90 +3,85 @@
 > We need to make our platform the answer to our token spend problem.
 
 Open models for OCTO associates to use to offset their spend and/or when they
-run out of their monthly token budget. Run on existing hardware: DGX Sparks,
-Strix Halo, an OpenShift cluster with GPU nodes, and an RTX 5090.
+run out of their monthly token budget. Metered traffic flows through a central
+LiteLLM gateway on OpenShift; direct-attach endpoints (DGX Sparks, Strix Halo)
+are listed on the web app for VPN users but stay out of token accounting.
 
 ## Architecture
 
 ```
-                    +--------------------+
-                    |   web/ front end   |  model list + how-to + status
-                    +---------+----------+
-                              |
-   opencode.json  ----\       |       /---- vLLM @ spark2  (smart)
-   open-webui env -----+------v------/----- vLLM @ spark3  (fast)
-   (copy-paste         |  catalog.yaml -----+----- vLLM @ strix-halo (best of both)
-    configs/)          |  (source of        |
-                       |   truth)           +----- vLLM @ openshift g6e (long context)
-                       |
-                configs/ (generated)
-                       |
-               monitoring/ (Prometheus + Grafana, linked from the front end)
+   browser ──> web app (backend/)  ── GitHub OAuth (redhat-et) ── login, keys, spend
+                    │  FastAPI + PatternFly UI, serves /api/*
+                    │  mints keys via litellm admin API
+                    v
+   opencode / open-webui / curl ──> LiteLLM gateway (litellm/)     [metered]
+                    │                   /v1 group: qwen38-flash-next ── vLLM @ OpenShift g6e (AWS)
+                    │                   /v1 group: qwen38-27b-fast  ── vLLM @ RTX 5090 (+ hot aisle, soon)
+                    │                   fallbacks + per-user budgets + Prometheus spend
+                    ├── Postgres (keys/spend) + Redis (cache)
+                    └── namespace Prometheus ──> Grafana dashboard
+
+   listed only (VPN, unmetered):  vLLM @ spark2 / spark3 / strix-halo  (copy-paste URLs)
 ```
 
-- `catalog.yaml` is the single source of truth: every model, host, endpoint,
-  and capability flag. Everything else is generated from it.
-- `configs/opencode.json` is generated from the catalog so the team can just
-  copy it to `~/.config/opencode/opencode.json` (all models predefined).
-- `web/` (FastAPI) lists the models, live-probes each endpoint, shows
-  copy-paste snippets, and links to the Grafana dashboards.
-- `monitoring/` is a Prometheus + Grafana stack; each host runs the
-  exporters, and vLLM `/metrics` is scraped directly.
+`catalog.yaml` is the single source of truth: models, tiers, hosts, endpoints,
+prices, fallbacks, key defaults. The litellm config, Prometheus targets, the
+web UI catalog, and the generated user configs are all derived from it.
 
 ## Layout
 
-| Path            | What                                                    |
-|-----------------|---------------------------------------------------------|
-| `catalog.yaml`  | Model catalog: ids, tiers, hosts, endpoints, capabilities |
-| `web/`          | FastAPI front end (model list, status, how-to)          |
-| `configs/`      | Generated user configs (opencode.json, open-webui env)  |
-| `scripts/`      | `gen_configs.py`, `gen_prom_targets.py`, `timeline-startup.sh` |
-| `deployments/`  | Per-platform deploy files + OpenShift manifests for the web app |
-| `monitoring/`   | Prometheus, Grafana, exporters, dashboards (running locally) |
-| `benchmarks/`   | guidellm harness + 30-prompt quality eval               |
-| `docs/`         | Hardware inventory, model selection, user setup         |
-| `Makefile`, `Dockerfile` | Dev loop + front-end container               |
+| Path               | What                                                       |
+|--------------------|------------------------------------------------------------|
+| `catalog.yaml`     | Model catalog: ids, tiers, hosts, endpoints, prices         |
+| `backend/`         | FastAPI app: GitHub OAuth, key self-service, spend, UI      |
+| `charts/octo-models/` | One Helm chart for the whole platform (gateway, app, monitoring) |
+| `scripts/`         | Generators: litellm config, prom targets, user configs      |
+| `configs/`         | Generated user configs (opencode.json, open-webui env)      |
+| `web/`             | v1 read-only UI (being superseded by backend/)              |
+| `monitoring/`      | Local prom/grafana dev stack + dashboard JSON               |
+| `benchmarks/`      | guidellm harness + quality eval                             |
+| `docs/`            | Plan, hardware inventory, user setup                        |
 
-## Quick start (team dev loop)
+## Deploy (OpenShift, no cluster-admin)
 
 ```bash
-make setup    # venv + deps
-make test     # offline tests
-make gen      # catalog -> configs/ + prometheus file_sd targets
-make web      # front end on :8010 (8000 is probably your wheel-picker)
-make monitor-up    # prometheus :9090 + grafana :3000 via podman (host net)
-make image    # build the front-end container (deployments/openshift/web-openshift.yaml
-              # holds the manifests to put it on the cluster)
+make deploy              # gateway + pg + redis + prometheus + grafana
+make deploy APP=1        # + web app (needs ~/.config/octo-models/secrets.env)
+make backend-image       # rebuild + roll the app after touching backend/
+make gen                 # re-run after editing catalog.yaml (then make deploy)
 ```
 
-Editing `catalog.yaml`? `make gen` (only) is needed; Prometheus reloads
-file_sd targets automatically.
+`secrets.env` holds `PG_PASSWORD`, `RD_PASSWORD`, `LLM_MASTER_KEY`,
+`SESSION_SECRET`, `GITHUB_CLIENT_ID/SECRET/ORG`. The app builds in-cluster via
+the `om-backend` BuildConfig (binary upload, no external registry).
+
+## Dev loop
+
+```bash
+make test            # web + backend suites, offline
+make web             # v1 UI on :8010
+make backend         # v2 app on :8020 (loads secrets.env, needs LITELLM_URL)
+make monitor-up      # local prometheus :9090 + grafana :3000 via podman
+```
 
 ## Deliverables
 
-- [ ] 3-6 open model instances for OCTO engineers to use
-  - [ ] DGX Spark: smart model (deploy)
-  - [ ] DGX Spark: fast model (deploy)
-  - [ ] DGX Spark: best-of-both model (deploy)
-  - [ ] OpenShift g6e.12xlarge: long-context model (deploy)
-  - [ ] Strix Halo: (grab HW, pick + deploy model)
-  - [ ] RTX 5090: fast workhorse candidate
-- [x] `catalog.yaml` + generated opencode.json / open-webui configs (copy-paste)
-- [ ] Web front end listing models + how to use them (running locally on :8010;
-      container image + OpenShift manifests ready to push)
-- [ ] Monitoring stack + usage/activity dashboard (running locally; move to a
-      always-on host next)
-- [ ] Per-platform model benchmarks recorded in `benchmarks/` (harness ready:
-      `bench.sh` + quality eval prompts)
-- [ ] Other hardware scouted (scavenge/borrow/beg list in `docs/hardware.md`)
-- [ ] CPU-only model evaluated (see `docs/hardware.md`)
-- [ ] User how-to: configure opencode + open-webui with our models (`docs/user-setup.md`)
+- [x] LiteLLM gateway live: model groups, fallbacks, budgets, Prometheus spend
+- [x] Web app on-cluster: GitHub login, catalog + snippets, key CRUD + spend
+- [x] Monitoring on-cluster: namespace Prometheus + Grafana dashboard
+- [x] `catalog.yaml` -> generated opencode.json / open-webui configs
+- [x] 3 model instances live (g6e flash-next, RTX 5090 fast, spark2 smart [listed])
+- [ ] Hot-aisle GPU added to gateway (join `qwen38-27b-fast` group)
+- [ ] Old `web/` UI redirected to the new app (M4)
+- [ ] Grafana deepened: TTFT/TPOT, KV cache, queueing (Matt)
+- [ ] Per-platform benchmarks recorded (harness ready)
+- [x] User how-to: `docs/user-setup.md`
 
 ## Bugs / RFEs
 
 - [ ] Instrument and speed up the vLLM startup process (`docs/rfe-vllm-startup.md`)
 - [ ] "Monitoring of models: best practices" how-to doc (`docs/monitoring-howto.md`)
-- [ ] AuthN/authZ for model endpoints (currently open on the LAN)
+- [ ] On-prem metrics -> cluster Prometheus via remote_write (sparks are VPN-only)
 
 ## Team
 
