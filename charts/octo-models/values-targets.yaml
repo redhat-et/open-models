@@ -7,6 +7,12 @@ prometheus:
       model: rtx5090-fast
       tier: fast
       host: rtx5090
+  - targets:
+    - 23.183.40.70:8000
+    labels:
+      model: hotaisle
+      tier: fast
+      host: hotaisle
   vllmTargetsHttps:
   - targets:
     - qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com

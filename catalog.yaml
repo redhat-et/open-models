@@ -40,8 +40,8 @@ hosts:
     hardware: DGX Spark (GB10, 128GB unified)
     notes: Listed/direct only (VPN). Slow - kept out of the metered gateway.
   hotaisle:
-    hardware: Hot Aisle cloud GPU (TBD)
-    notes: New cloud GPU box; joins the metered gateway once configured.
+    hardware: 2x AMD Instinct MI300X (192GB) - power off when idle
+    notes: enc1-gpuvm005; vLLM container auto-starts on boot; safe to power off (5090 carries the fast group)
   rtx5090:
     hardware: RTX 5090 (32GB GDDR7)
     notes: Fast tier - NVFP4 quant, snappy, shorter context.
@@ -117,17 +117,21 @@ models:
 
   - id: hotaisle
     host: hotaisle
-    name: "TBD (Hot Aisle)"
-    served_model: tbd
+    name: "Qwen 3.8 27B FP8 (Fast, MI300X)"
+    served_model: Qwen/Qwen3.8-27B-FP8
     tier: fast
     group: qwen38-27b-fast
-    base_url: http://hotaisle:8000/v1
+    price: {input: 0.30, output: 1.20}
+    engine: {max_num_seqs: 32}
+    base_url: http://23.183.40.70:8000/v1
+    api_key: sk-local
     context: 32768
+    max_output: 8192
     tool_call: true
     reasoning: true
-    quant: tbd
-    status: planned
-    notes: Cloud GPU box, model/quant TBD - will join the metered gateway (fast group) when ready.
+    quant: fp8
+    status: running
+    notes: 2x MI300X VF; powered off when idle - gateway falls back to the 5090 (same group).
 
   - id: strix-halo
     host: strix-halo

@@ -99,7 +99,9 @@ def test_catalog_splits_metered_and_direct(client):
     assert by_id["ocp-flash-next"]["gateway_model"] == "qwen38-flash-next"
     assert by_id["spark2-smart"]["metered"] is False
     assert by_id["spark2-smart"]["direct_url"].startswith("http://octo-et-spark")
-    assert "hotaisle" not in by_id  # planned models excluded
+    assert by_id["hotaisle"]["metered"] is True
+    assert by_id["hotaisle"]["gateway_model"] == "qwen38-27b-fast"
+    assert "strix-halo" not in by_id  # planned models excluded
 
 
 def test_index_serves_ui(client):
