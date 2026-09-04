@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-litellm-config
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+{{ .Files.Get "files/litellm-config.yaml" | indent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-litellm
+  labels:
+    app: litellm
+    {{- include "octo-models.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.litellm.replicas }}
+  selector:
+    matchLabels: {app: litellm}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ .Files.Get "files/litellm-config.yaml" | sha256sum }}
+      labels:
+        app: litellm
+        {{- include "octo-models.labels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsUser: {{ .Values.runAsUser }}
+        fsGroup: {{ .Values.fsGroup }}
+      containers:
+        - name: litellm
+          image: {{ .Values.litellm.image }}
+          args:
+            - --config
+            - /etc/litellm/config.yaml
+            - --port
+            - {{ .Values.litellm.port | quote }}
+            - --telemetry
+            - "False"
+          ports: [{containerPort: {{ .Values.litellm.port }}}]
+          env:
+            - name: LITELLM_MASTER_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Release.Name }}-secrets, key: LITELLM_MASTER_KEY}}
+            - name: DATABASE_URL
+              valueFrom: {secretKeyRef: {name: {{ .Release.Name }}-secrets, key: DATABASE_URL}}
+            - name: REDIS_URL
+              value: redis://:$(REDIS_PASSWORD)@{{ .Release.Name }}-redis:6379/0
+            - name: REDIS_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ .Release.Name }}-secrets, key: REDIS_PASSWORD}}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/litellm
+              readOnly: true
+          startupProbe:
+            httpGet: {path: /health/liveliness, port: {{ .Values.litellm.port }}}
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /health/readiness, port: {{ .Values.litellm.port }}}
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.litellm.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Release.Name }}-litellm-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-litellm
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: {{ .Values.litellm.port | quote }}
+    prometheus.io/path: /metrics
+spec:
+  selector: {app: litellm}
+  ports: [{name: http, port: {{ .Values.litellm.port }}, targetPort: {{ .Values.litellm.port }}}]
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Values.litellm.route }}
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+spec:
+  to: {kind: Service, name: {{ .Release.Name }}-litellm}
+  port: {targetPort: http}
+  tls: {termination: edge}

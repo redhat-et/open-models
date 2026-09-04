@@ -1,0 +1,32 @@
+{{- if .Values.app.enabled }}
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: {{ .Values.app.backend.imageStream }}
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+    app.kubernetes.io/component: build
+spec:
+  runPolicy: Serial
+  source:
+    type: Binary
+    binary: {}
+  strategy:
+    dockerStrategy:
+      dockerfilePath: backend/Containerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: "{{ .Values.app.backend.imageStream }}:{{ .Values.app.backend.imageTag }}"
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: {{ .Values.app.backend.imageStream }}
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+    app.kubernetes.io/component: build
+spec:
+  lookupPolicy:
+    local: true
+{{- end }}

@@ -1,0 +1,79 @@
+{{- if .Values.app.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-app
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+    app.kubernetes.io/component: app
+spec:
+  replicas: {{ .Values.app.backend.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "octo-models.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "octo-models.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: app
+    spec:
+      securityContext:
+        runAsUser: {{ .Values.runAsUser }}
+        runAsGroup: {{ .Values.fsGroup }}
+        fsGroup: {{ .Values.fsGroup }}
+      containers:
+        - name: app
+          image: {{ .Values.app.backend.image | default (printf "%s:%s" .Values.app.backend.imageStream .Values.app.backend.imageTag) }}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8020
+          env:
+            - name: LITELLM_URL
+              value: http://{{ .Release.Name }}-litellm:{{ .Values.litellm.port }}
+          envFrom:
+            - secretRef:
+                name: {{ .Release.Name }}-secrets
+          readinessProbe:
+            httpGet: {path: /api/health, port: 8020}
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet: {path: /api/health, port: 8020}
+            initialDelaySeconds: 20
+          resources:
+            {{- toYaml .Values.app.backend.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.app.backend.route }}
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+    app.kubernetes.io/component: app
+spec:
+  selector:
+    app.kubernetes.io/name: {{ include "octo-models.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: app
+  ports:
+    - port: 80
+      targetPort: 8020
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Values.app.backend.route }}
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+    app.kubernetes.io/component: app
+spec:
+  to:
+    kind: Service
+    name: {{ .Values.app.backend.route }}
+  port:
+    targetPort: 8020
+  tls:
+    termination: edge
+{{- end }}

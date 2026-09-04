@@ -1,0 +1,47 @@
+# GENERATED from catalog.yaml by scripts/gen_litellm_config.py - do not edit
+model_list:
+- model_name: qwen38-flash-next
+  litellm_params:
+    model: openai/Inferact/Qwen3.8-Flash-Next-NVFP4
+    api_base: https://qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com/v1
+    api_key: sk-local
+    max_tokens: 8192
+    input_cost_per_token: 2.0000000000000002e-07
+    output_cost_per_token: 1.0e-06
+  model_info:
+    id: ocp-flash-next
+    max_input_tokens: 262144
+    supported_api:
+    - chat
+    - completions
+- model_name: qwen38-27b-fast
+  litellm_params:
+    model: openai/Inferact/Qwen3.8-27B-NVFP4
+    api_base: http://136.47.153.236:8000/v1
+    api_key: sk-local
+    max_tokens: 8192
+    input_cost_per_token: 3.0e-07
+    output_cost_per_token: 1.2e-06
+  model_info:
+    id: rtx5090-fast
+    max_input_tokens: 32768
+    supported_api:
+    - chat
+    - completions
+router_settings:
+  routing_strategy: least-busy
+  num_retries: 1
+  retry_after: 2
+  fallbacks:
+  - qwen38-flash-next:
+    - qwen38-27b-fast
+litellm_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  drop_params: true
+  set_verbose: false
+  callbacks:
+  - prometheus
+general_settings:
+  database_url: os.environ/DATABASE_URL
+  store_model_in_db: false
+  master_key: os.environ/LITELLM_MASTER_KEY

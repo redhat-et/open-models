@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-postgres
+  labels:
+    app: postgres
+    {{- include "octo-models.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: postgres}
+  template:
+    metadata:
+      labels:
+        app: postgres
+        {{- include "octo-models.labels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsUser: {{ .Values.runAsUser }}
+        fsGroup: {{ .Values.fsGroup }}
+      containers:
+        - name: postgres
+          image: {{ .Values.postgres.image }}
+          ports: [{containerPort: 5432}]
+          env:
+            - name: POSTGRESQL_ADMIN_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ .Release.Name }}-secrets, key: POSTGRES_PASSWORD}}
+            - name: POSTGRESQL_USER
+              value: {{ .Values.postgres.user | quote }}
+            - name: POSTGRESQL_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ .Release.Name }}-secrets, key: POSTGRES_PASSWORD}}
+            - name: POSTGRESQL_DATABASE
+              value: {{ .Values.postgres.database | quote }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/pgsql/data
+          readinessProbe:
+            exec: {command: ["/usr/libexec/check-container", "--live"]}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-postgres
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-postgres
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: {{ .Values.postgres.size }}}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-postgres
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+spec:
+  selector: {app: postgres}
+  ports: [{port: 5432, targetPort: 5432}]

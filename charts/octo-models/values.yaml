@@ -1,0 +1,64 @@
+nameOverride: ""
+# set from namespace annotation at install:
+#   oc get ns octo-models -o jsonpath='{.metadata.annotations.openshift\.io/sa\.scc\.run-as-user-range}'
+runAsUser: 1000900000
+fsGroup: 1000900000
+
+secrets:
+  llmMasterKey: "change-me-sk-local"
+  postgresPassword: "change-me"
+  redisPassword: "change-me-redis"
+  sessionSecret: ""
+  githubClientId: ""
+  githubClientSecret: ""
+  githubOrg: ""
+  # DATABASE_URL is assembled from postgres settings below
+
+postgres:
+  image: quay.io/sclorg/postgresql-16-c9s:latest
+  user: llmproxy
+  database: litellm
+  size: 10Gi
+
+redis:
+  image: docker.io/redis:7-alpine
+
+litellm:
+  image: ghcr.io/berriai/litellm:main-stable
+  replicas: 2
+  port: 4000
+  route: litellm
+  resources:
+    requests: {cpu: 250m, memory: 512Mi}
+    limits: {cpu: "2", memory: 2Gi}
+
+prometheus:
+  enabled: true
+  image: quay.io/prometheus/prometheus:latest
+  route: prometheus
+  size: 20Gi
+  vllmTargets: []        # http endpoints; overridden by values-targets.yaml (make gen)
+  vllmTargetsHttps: []   # https endpoints (edge routes); same
+  vllmBearerToken: sk-local
+
+grafana:
+  enabled: true
+  image: docker.io/grafana/grafana:latest
+  route: grafana
+  size: 2Gi
+  adminPassword: admin
+  anonymous: true
+
+app:
+  enabled: false
+  backend:
+    # in-cluster imagestream tag (built by the om-backend BuildConfig);
+    # override for external images
+    image: ""
+    imageStream: om-backend
+    imageTag: latest
+    route: octo-app   # https://octo-app-<ns>.apps...
+    replicas: 1
+    resources:
+      requests: {cpu: 100m, memory: 256Mi}
+      limits: {cpu: "1", memory: 512Mi}

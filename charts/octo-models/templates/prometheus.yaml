@@ -1,0 +1,132 @@
+{{- if .Values.prometheus.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-prometheus-config
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+      - job_name: prometheus
+        static_configs:
+          - targets: ["localhost:9090"]
+      - job_name: litellm
+        authorization:
+          type: Bearer
+          credentials_file: /etc/prometheus/secrets/llm-master-key
+        metrics_path: /metrics/
+        static_configs:
+          - targets: ["{{ .Release.Name }}-litellm:{{ .Values.litellm.port }}"]
+            labels: {host: gateway}
+      - job_name: vllm
+        static_configs:
+          {{- range .Values.prometheus.vllmTargets }}
+          - targets: {{ .targets | toJson }}
+            labels: {{ .labels | toJson }}
+          {{- end }}
+      {{- if .Values.prometheus.vllmTargetsHttps }}
+      - job_name: vllm-https
+        scheme: https
+        bearer_token: {{ .Values.prometheus.vllmBearerToken | quote }}
+        tls_config: {insecure_skip_verify: true}
+        static_configs:
+          {{- range .Values.prometheus.vllmTargetsHttps }}
+          - targets: {{ .targets | toJson }}
+            labels: {{ .labels | toJson }}
+          {{- end }}
+      {{- end }}
+    # baremetal hosts unreachable from the cluster (sparks, strix) push their
+    # metrics here via remote_write from the on-prem prometheus.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-prometheus
+  labels:
+    app: prometheus
+    {{- include "octo-models.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: prometheus}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ list .Values.prometheus.vllmTargets .Values.prometheus.vllmTargetsHttps | toYaml | sha256sum }}
+      labels:
+        app: prometheus
+        {{- include "octo-models.labels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsUser: {{ .Values.runAsUser }}
+        fsGroup: {{ .Values.fsGroup }}
+      containers:
+        - name: prometheus
+          image: {{ .Values.prometheus.image }}
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --web.enable-remote-write-receiver
+            - --storage.tsdb.retention.time=90d
+          ports: [{containerPort: 9090}]
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+            - name: secrets
+              mountPath: /etc/prometheus/secrets
+            - name: data
+              mountPath: /prometheus
+          readinessProbe:
+            httpGet: {path: /-/ready, port: 9090}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 100m, memory: 512Mi}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Release.Name }}-prometheus-config
+        - name: secrets
+          secret:
+            secretName: {{ .Release.Name }}-secrets
+            items:
+              - key: LITELLM_MASTER_KEY
+                path: llm-master-key
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-prometheus
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-prometheus
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: {{ .Values.prometheus.size }}}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-prometheus
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+spec:
+  selector: {app: prometheus}
+  ports: [{name: http, port: 9090, targetPort: 9090}]
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Values.prometheus.route }}
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+spec:
+  to: {kind: Service, name: {{ .Release.Name }}-prometheus}
+  port: {targetPort: http}
+  tls: {termination: edge}
+{{- end }}

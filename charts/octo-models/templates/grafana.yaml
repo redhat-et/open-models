@@ -1,0 +1,123 @@
+{{- if .Values.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-grafana-provisioning
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+data:
+  datasource.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://{{ .Release.Name }}-prometheus:9090
+        isDefault: true
+  dashboards.yml: |
+    apiVersion: 1
+    providers:
+      - name: open-models
+        folder: OCTO Open Models
+        type: file
+        options:
+          path: /var/lib/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-grafana-dashboards
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+data:
+  open-models.json: |
+{{ .Files.Get "files/dashboards/open-models.json" | indent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-grafana
+  labels:
+    app: grafana
+    {{- include "octo-models.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: grafana}
+  template:
+    metadata:
+      labels:
+        app: grafana
+        {{- include "octo-models.labels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsUser: {{ .Values.runAsUser }}
+        fsGroup: {{ .Values.fsGroup }}
+      containers:
+        - name: grafana
+          image: {{ .Values.grafana.image }}
+          ports: [{containerPort: 3000}]
+          env:
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: {{ .Values.grafana.adminPassword | quote }}
+            {{- if .Values.grafana.anonymous }}
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: Viewer
+            {{- end }}
+          volumeMounts:
+            - name: provisioning
+              mountPath: /etc/grafana/provisioning
+            - name: dashboards
+              mountPath: /var/lib/grafana/dashboards
+            - name: data
+              mountPath: /var/lib/grafana
+          readinessProbe:
+            httpGet: {path: /api/health, port: 3000}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+      volumes:
+        - name: provisioning
+          configMap:
+            name: {{ .Release.Name }}-grafana-provisioning
+        - name: dashboards
+          configMap:
+            name: {{ .Release.Name }}-grafana-dashboards
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-grafana
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-grafana
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: {{ .Values.grafana.size }}}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-grafana
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+spec:
+  selector: {app: grafana}
+  ports: [{name: http, port: 3000, targetPort: 3000}]
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Values.grafana.route }}
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+spec:
+  to: {kind: Service, name: {{ .Release.Name }}-grafana}
+  port: {targetPort: http}
+  tls: {termination: edge}
+{{- end }}

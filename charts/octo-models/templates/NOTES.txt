@@ -1,0 +1,22 @@
+OCTO Open Models deployed as release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+Routes (give these to your users):
+{{- if .Values.app.enabled }}
+  Web app (login + keys):  https://{{ .Values.app.backend.route }}-{{ .Release.Namespace }}.apps.<cluster-domain>
+{{- end }}
+  OpenAI-compatible API:   https://{{ .Values.litellm.route }}-{{ .Release.Namespace }}.apps.<cluster-domain>/v1
+  Prometheus:              https://{{ .Values.prometheus.route }}-{{ .Release.Namespace }}.apps.<cluster-domain>
+  Grafana:                 https://{{ .Values.grafana.route }}-{{ .Release.Namespace }}.apps.<cluster-domain>
+
+Run `oc get route -n {{ .Release.Namespace }}` to confirm the exact hostnames.
+
+After every change to catalog.yaml:
+  make gen && make deploy
+
+To rebuild + roll the web app after changing backend/:
+  make backend-image
+
+Reminders:
+  - Add each new route host to the GitHub OAuth App callback URLs when the host changes.
+  - Gateway model groups + costs come from catalog.yaml via `make gen`; litellm pods
+    roll automatically on config change (checksum annotation).
