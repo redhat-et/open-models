@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
 from app import main
-from app.catalog import load_catalog, probeable_models
+from app.catalog import PROBE_STATUSES, load_catalog, probeable_models
 
 client = TestClient(main.app)
 
@@ -27,7 +27,7 @@ def test_planned_models_reported_as_planned(monkeypatch):
         main, "probe_model", lambda m: {"id": m["id"], "status": "up", "detail": ""}
     )
     result = client.get("/api/status").json()
-    planned = {m["id"] for m in load_catalog()["models"] if m["status"] not in ("running", "live", "candidate")}
+    planned = {m["id"] for m in load_catalog()["models"] if m["status"] not in PROBE_STATUSES}
     statuses = {r["id"]: r["status"] for r in result}
     assert all(statuses[i] == "planned" for i in planned)
 

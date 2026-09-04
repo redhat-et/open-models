@@ -21,7 +21,7 @@ def test_model_ids_unique():
 def test_probeable_models_excludes_planned():
     catalog = load_catalog()
     for model in probeable_models(catalog):
-        assert model["status"] in {"running", "live", "candidate"}
+        assert model["status"] in {"running", "live", "candidate", "listed"}
 
 
 def test_validate_catalog_flags_bad_host():

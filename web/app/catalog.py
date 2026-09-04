@@ -19,7 +19,8 @@ REQUIRED_MODEL_KEYS = (
     "status",
 )
 
-PROBE_STATUSES = {"running", "live", "candidate"}
+PROBE_STATUSES = {"running", "live", "candidate", "listed"}
+UNMETERED_STATUSES = {"listed"}
 
 
 def load_catalog(path: Path | None = None) -> dict:

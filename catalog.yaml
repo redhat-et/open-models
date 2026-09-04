@@ -11,10 +11,36 @@ defaults:
   models_path: /v1/models
   chat_path: /v1/chat/completions
 
+# Central LiteLLM gateway (v2 platform). All user traffic goes through here;
+# users never hit vLLM base_urls directly once the gateway is live.
+# Regenerate gateway config after editing: scripts/gen_litellm_config.py
+gateway:
+  # route assigned after deploy, e.g. https://litellm-octo-models.apps.emerg.../v1
+  base_url: https://litellm-octo-models.apps.emerg.pcbk.p1.openshiftapps.com/v1
+  # licensing workaround: one shared litellm user owns every virtual key;
+  # our app backend maps key -> github user in its own Postgres.
+  shared_litellm_user: octo-shared
+  # defaults applied when the backend mints a virtual key
+  key_defaults:
+    rpm: 600
+    tpm: 250000
+    max_parallel_requests: 8
+    max_budget: 20        # notional USD/day (prices below are what the API
+    budget_duration: 1d   # would have charged -> the "spend offset" metric)
+  # litellm fallbacks: on 5xx/timeout, try in order (acyclic; fast box is the
+  # floor - it never falls back, protecting it from pileups). Sparks are
+  # deliberately absent: they are `listed` (direct/unmetered) only, and are
+  # slow - not worth a tunnel into the gateway's serving path.
+  fallbacks:
+    qwen38-flash-next: [qwen38-27b-fast]
+
 hosts:
   spark2:
     hardware: DGX Spark (GB10, 128GB unified)
-    notes: Smart (slow) tier - biggest context, highest quality.
+    notes: Listed/direct only (VPN). Slow - kept out of the metered gateway.
+  hotaisle:
+    hardware: Hot Aisle cloud GPU (TBD)
+    notes: New cloud GPU box; joins the metered gateway once configured.
   rtx5090:
     hardware: RTX 5090 (32GB GDDR7)
     notes: Fast tier - NVFP4 quant, snappy, shorter context.
@@ -40,9 +66,11 @@ models:
     name: "Qwen 3.8 Flash Next NVFP4 (Best of Both)"
     served_model: Inferact/Qwen3.8-Flash-Next-NVFP4
     tier: balanced
+    group: qwen38-flash-next
+    price: {input: 0.20, output: 1.00}  # notional $/Mtok vs public APIs
     base_url: https://qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com/v1
     api_key: sk-local
-    context: 131072
+    context: 262144
     max_output: 8192
     tool_call: true
     reasoning: true
@@ -54,7 +82,10 @@ models:
     name: "Qwen 3.8 27B NVFP4 (Fast)"
     served_model: Inferact/Qwen3.8-27B-NVFP4
     tier: fast
-    base_url: http://192.168.1.166:8000/v1
+    group: qwen38-27b-fast
+    price: {input: 0.30, output: 1.20}
+    engine: {max_num_seqs: 32}
+    base_url: http://136.47.153.236:8000/v1
     api_key: sk-local
     context: 32768
     max_output: 8192
@@ -69,6 +100,9 @@ models:
     name: "Qwen 3.8 27B FP8 (Smart)"
     served_model: Qwen/Qwen3.8-27B-FP8
     tier: smart
+    group: qwen38-27b-smart
+    price: {input: 0.30, output: 1.20}
+    engine: {max_num_seqs: 16}
     base_url: http://octo-et-spark-2.khw.eng.rdu2.dc.redhat.com:8000/v1
     scrape_url: http://10.6.164.118:8000/v1  # IP: internal name won't resolve in containers
     api_key: sk-local
@@ -77,14 +111,29 @@ models:
     tool_call: true
     reasoning: true
     quant: fp8
-    status: running
-    notes: Smart but slow; the 256k-context workhorse.
+    status: listed
+    notes: Direct endpoint only (VPN) - slow, not metered through the gateway.
+
+  - id: hotaisle
+    host: hotaisle
+    name: "TBD (Hot Aisle)"
+    served_model: tbd
+    tier: fast
+    group: qwen38-27b-fast
+    base_url: http://hotaisle:8000/v1
+    context: 32768
+    tool_call: true
+    reasoning: true
+    quant: tbd
+    status: planned
+    notes: Cloud GPU box, model/quant TBD - will join the metered gateway (fast group) when ready.
 
   - id: strix-halo
     host: strix-halo
     name: "Qwen3.8 27B (Strix Halo)"
     served_model: Qwen/Qwen3.8-27B
     tier: balanced
+    group: qwen38-27b-fast  # joins the fast pool once verified (redundancy)
     base_url: http://strix-halo:8080/v1
     context: 131072
     tool_call: true

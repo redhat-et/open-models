@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 import urllib.error
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -12,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 
-from .catalog import CONFIGS_DIR, load_catalog, probeable_models
+from .catalog import CONFIGS_DIR, UNMETERED_STATUSES, load_catalog, probeable_models
 
 WEB_DIR = Path(__file__).resolve().parents[1]
 
@@ -21,6 +23,13 @@ app.mount("/static", StaticFiles(directory=WEB_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=WEB_DIR / "templates")
 
 PROBE_TIMEOUT_SECONDS = 3
+PROM_URL = os.environ.get("PROM_URL", "http://localhost:9090")
+
+
+def prom_query(query: str) -> dict:
+    url = f"{PROM_URL}/api/v1/query?query={urllib.parse.quote(query)}"
+    with urllib.request.urlopen(url, timeout=5) as resp:
+        return json.loads(resp.read().decode())
 
 
 @app.get("/api/health")
@@ -62,6 +71,25 @@ def status() -> list[dict]:
         else:
             out.append({"id": model["id"], "status": "planned", "detail": ""})
     return out
+
+
+@app.get("/api/usage")
+def usage() -> dict:
+    catalog = load_catalog()
+    out = {}
+    for model in probeable_models(catalog):
+        if model.get("status") in UNMETERED_STATUSES:
+            continue
+        try:
+            data = prom_query(
+                f'sum(rate(vllm:generation_tokens_total{{model="{model["id"]}"}}[1h]))'
+            )
+            result = data.get("data", {}).get("result", [])
+            rate = float(result[0]["value"][1]) if result else 0.0
+            out[model["id"]] = {"gen_tokens_per_hour": round(rate * 3600)}
+        except Exception as exc:
+            out[model["id"]] = {"error": str(exc)}
+    return {"prometheus": PROM_URL, "models": out}
 
 
 @app.get("/configs/opencode.json")

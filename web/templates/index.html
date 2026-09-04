@@ -27,10 +27,12 @@
       context {{ "{:,}".format(m.context) }} &middot;
       {{ m.quant or "n/a" }}{% if m.tool_call %} &middot; tools{% endif %}{% if m.reasoning %} &middot; reasoning{% endif %}
     </div>
-    {% if m.status in ("running", "live") %}
+    {% if m.status in ("running", "live", "listed") %}
+    {% if m.status == "listed" %}<div class="notes">Direct endpoint (VPN required) - listed for convenience, <b>not metered through the gateway</b>.</div>{% endif %}
     <pre><button class="copy" onclick="copySnippet(this)">copy</button>curl {{ m.base_url }}/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model": "{{ m.served_model }}", "messages": [{"role":"user","content":"hello"}], "max_tokens": 64}'</pre>
+  -d '{"model": "{{ m.served_model }}", "messages": [{"role":"user","content":"hello"}], "max_tokens": 256}'</pre>
+    <div class="meta" data-usage="{{ m.id }}"></div>
     {% if m.route %}<div class="meta">outside the cluster: <code>{{ m.route }}/v1</code></div>{% endif %}
     {% else %}
     <div class="notes">{{ m.notes or "Coming soon." }}</div>
@@ -43,6 +45,21 @@
   Open WebUI: add each endpoint under Admin Settings &rarr; External Connections (see <code>configs/open-webui.env</code>).
 </footer>
 <script>
+async function refreshUsage() {
+  try {
+    const res = await fetch("/api/usage");
+    const data = await res.json();
+    for (const [id, u] of Object.entries(data.models || {})) {
+      const el = document.querySelector(`[data-usage="${id}"]`);
+      if (el && !u.error) {
+        const n = u.gen_tokens_per_hour;
+        el.textContent = n > 0
+          ? `\u2248 ${n.toLocaleString()} tokens generated in the last hour`
+          : "idle (last hour)";
+      }
+    }
+  } catch (e) { /* prometheus optional */ }
+}
 async function refreshStatus() {
   try {
     const res = await fetch("/api/status");
@@ -63,7 +80,9 @@ function copySnippet(btn) {
   setTimeout(() => (btn.textContent = "copy"), 1200);
 }
 refreshStatus();
+refreshUsage();
 setInterval(refreshStatus, 30000);
+setInterval(refreshUsage, 60000);
 </script>
 </body>
 </html>

@@ -13,7 +13,7 @@ from pathlib import Path
 import yaml
 
 OPENAI_COMPAT_NPM = "@ai-sdk/openai-compatible"
-STATUS_IN_CONFIGS = {"running", "live"}
+STATUS_IN_CONFIGS = {"running", "live", "listed"}
 
 
 def load_catalog(path: Path) -> dict:
@@ -32,11 +32,14 @@ def opencode_config(catalog: dict) -> dict:
         # one provider per endpoint: baseURL is per-provider in opencode
         prov_id = f"octo-{model['id'].replace('_', '-')}"
         base_url = model["base_url"]
+        listed = model.get("status") == "listed"
+        hardware = host_cfg.get("hardware", model["host"])
+        suffix = " - direct/unmetered (VPN)" if listed else ""
         entry = providers.setdefault(
             prov_id,
             {
                 "npm": OPENAI_COMPAT_NPM,
-                "name": f"OCTO Open Models ({host_cfg.get('hardware', model['host'])})",
+                "name": f"OCTO Open Models ({hardware}{suffix})",
                 "options": {"baseURL": base_url, "apiKey": model.get("api_key", "none")},
                 "models": {},
             },
@@ -70,7 +73,8 @@ def open_webui_env(catalog: dict) -> str:
     for model in catalog.get("models", []):
         if model.get("status") not in STATUS_IN_CONFIGS:
             continue
-        lines.append(f"# {model['name']}  [{model['tier']} @ {model['host']}]")
+        unmetered = "  [DIRECT/UNMETERED - VPN]" if model.get("status") == "listed" else ""
+        lines.append(f"# {model['name']}  [{model['tier']} @ {model['host']}]{unmetered}")
         lines.append(f"#   API Base URL : {model['base_url']}")
         lines.append(f"#   API Key      : none")
         lines.append(f"#   Model ID     : {model['served_model']}")
