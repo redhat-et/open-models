@@ -1,16 +1,16 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "provider": {
-    "octo-ocp-flash-next": {
+    "octo-gateway": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "OCTO Open Models (OpenShift cluster, g6e GPU nodes (Ryan Cook's, spending plan covered))",
+      "name": "OCTO Open Models gateway (metered; key from the web app)",
       "options": {
-        "baseURL": "https://qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com/v1",
-        "apiKey": "sk-local"
+        "baseURL": "https://litellm-octo-models.apps.emerg.pcbk.p1.openshiftapps.com/v1",
+        "apiKey": "$OCTO_KEY"
       },
       "models": {
-        "Inferact/Qwen3.8-Flash-Next-NVFP4": {
-          "name": "Qwen 3.8 Flash Next NVFP4 (Best of Both)",
+        "qwen38-flash-next": {
+          "name": "Qwen 3.8 Flash Next NVFP4 (Best of Both) [gateway]",
           "limit": {
             "context": 262144,
             "output": 8192
@@ -18,19 +18,9 @@
           "tool_call": true,
           "reasoning": true,
           "temperature": true
-        }
-      }
-    },
-    "octo-rtx5090-fast": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "OCTO Open Models (RTX 5090 (32GB GDDR7))",
-      "options": {
-        "baseURL": "http://136.47.153.236:8000/v1",
-        "apiKey": "sk-local"
-      },
-      "models": {
-        "Inferact/Qwen3.8-27B-NVFP4": {
-          "name": "Qwen 3.8 27B NVFP4 (Fast)",
+        },
+        "qwen38-27b-fast": {
+          "name": "Qwen 3.8 27B NVFP4 (Fast) [gateway]",
           "limit": {
             "context": 32768,
             "output": 8192
@@ -43,7 +33,7 @@
     },
     "octo-spark2-smart": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "OCTO Open Models (DGX Spark (GB10, 128GB unified) - direct/unmetered (VPN))",
+      "name": "OCTO Open Models (DGX Spark (GB10, 128GB unified) - direct/unmetered, VPN)",
       "options": {
         "baseURL": "http://octo-et-spark-2.khw.eng.rdu2.dc.redhat.com:8000/v1",
         "apiKey": "sk-local"
@@ -62,6 +52,6 @@
       }
     }
   },
-  "model": "octo-ocp-flash-next/Inferact/Qwen3.8-Flash-Next-NVFP4",
-  "small_model": "octo-rtx5090-fast/Inferact/Qwen3.8-27B-NVFP4"
+  "model": "octo-gateway/qwen38-flash-next",
+  "small_model": "octo-gateway/qwen38-27b-fast"
 }
