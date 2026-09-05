@@ -150,3 +150,32 @@ def test_model_toggle_roundtrip(tmp_path):
     orig = cat.read_text()
     run("b", "off"); run("b", "on")
     assert "previous_status" not in cat.read_text() and cat.read_text() == orig
+
+
+def test_compute_guard_and_hooks(tmp_path):
+    import subprocess
+    script = Path(__file__).resolve().parents[2] / "scripts" / "compute.py"
+    cat = tmp_path / "catalog.yaml"
+    cat.write_text(
+        "hosts:\n"
+        "  h1:\n"
+        "    compute: {'off': 'echo stopped', 'on': 'echo started'}\n"
+        "models:\n"
+        "  - {id: a, host: h1, status: running}\n"
+        "  - {id: b, host: h1, status: running}\n"
+    )
+    env = dict(os.environ, OCTO_CATALOG=str(cat))
+    run = lambda *a: subprocess.run([sys.executable, str(script), *a], env=env,
+                                    capture_output=True, text=True)
+    r = run("a", "off")
+    assert r.returncode != 0 and "still serves b" in r.stderr
+    import re
+    cat.write_text(re.sub(r"id: b, host: h1, status: running",
+                          "id: b, host: h1, status: paused", cat.read_text()))
+    r = run("a", "off")
+    assert r.returncode == 0 and "stopped" in r.stdout
+    r = run("a", "on")
+    assert r.returncode == 0 and "started" in r.stdout
+    cat.write_text(cat.read_text().replace(
+        "    compute: {'off': 'echo stopped', 'on': 'echo started'}\n", ""))
+    assert "no compute" in run("a", "off").stdout

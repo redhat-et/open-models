@@ -58,9 +58,11 @@ model-off:
 	@test -n "$(MODEL)" || { echo "usage: make model-off MODEL=<catalog-id>"; exit 2; }
 	python3 scripts/model_toggle.py $(MODEL) off
 	$(MAKE) deploy APP=1
+	$(if $(COMPUTE),python3 scripts/compute.py $(MODEL) off,)
 
 model-on:
 	@test -n "$(MODEL)" || { echo "usage: make model-on MODEL=<catalog-id>"; exit 2; }
+	$(if $(COMPUTE),python3 scripts/compute.py $(MODEL) on,)
 	python3 scripts/model_toggle.py $(MODEL) on
 	$(MAKE) deploy APP=1
 

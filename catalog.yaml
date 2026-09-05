@@ -41,9 +41,15 @@ hosts:
     notes: Listed/direct only (VPN). Slow - kept out of the metered gateway.
   hotaisle:
     hardware: 2x AMD Instinct MI300X (192GB) - power off when idle
+    compute:
+      "off": ./scripts/hotaisle.sh off
+      "on": ./scripts/hotaisle.sh serve && ./scripts/hotaisle.sh wait
     notes: enc1-gpuvm005; vLLM container auto-starts on boot; safe to power off (5090 carries the fast group)
   rtx5090:
     hardware: RTX 5090 (32GB GDDR7)
+    compute:  # TODO: fill in once host/user/cgroup details confirmed
+      # off: ssh <user>@<host> 'docker stop om-vllm'
+      # on:  ssh <user>@<host> 'docker start om-vll1'
     notes: Fast tier - NVFP4 quant, snappy, shorter context.
   openshift:
     hardware: OpenShift cluster, g6e GPU nodes (Ryan Cook's, spending plan covered)
