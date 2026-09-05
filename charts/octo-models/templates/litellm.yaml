@@ -22,7 +22,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ .Files.Get "files/litellm-config.yaml" | sha256sum }}
+        checksum/config: {{ (.Values.litellm.configOverride | default (.Files.Get "files/litellm-config.yaml")) | sha256sum }}
       labels:
         app: litellm
         {{- include "octo-models.labels" . | nindent 8 }}

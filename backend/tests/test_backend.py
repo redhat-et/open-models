@@ -1,6 +1,11 @@
 import time
 
 import pytest
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from backend import app as backend
@@ -108,3 +113,40 @@ def test_index_serves_ui(client):
     resp = client.get("/")
     assert resp.status_code == 200
     assert "OCTO Open Models" in resp.text
+
+
+def test_catalog_marks_paused(client, monkeypatch):
+    monkeypatch.setattr(backend, "load_catalog", lambda: {"gateway": {}, "models": [
+        {"id": "x", "name": "X", "status": "paused", "group": "g", "base_url": "http://x/v1"},
+        {"id": "y", "name": "Y", "status": "running", "group": "g", "base_url": "http://y/v1"},
+    ]})
+    models = {m["id"]: m for m in client.get("/api/catalog").json()["models"]}
+    assert models["x"]["status"] == "paused"
+    assert not models["x"]["metered"] and models["x"]["direct_url"] is None
+    assert models["y"]["metered"] and models["y"]["gateway_model"] == "g"
+
+
+def test_model_toggle_roundtrip(tmp_path):
+    import subprocess
+    script = Path(__file__).resolve().parents[2] / "scripts" / "model_toggle.py"
+    cat = tmp_path / "catalog.yaml"
+    cat.write_text(
+        "models:\n"
+        "  - id: a\n"
+        "    group: g\n"
+        "    status: running\n\n"
+        "  - id: b\n"
+        "    group: g\n"
+        "    status: running\n"
+    )
+    env = dict(os.environ, OCTO_CATALOG=str(cat))
+    run = lambda *a: subprocess.run([sys.executable, str(script), *a], env=env,
+                                    capture_output=True, text=True, check=True).stdout.strip()
+    assert run("a", "off") == "a: running -> paused (group g)"
+    assert "    previous_status: running" in cat.read_text()
+    assert run("a", "off") == "a: already paused"
+    assert run("a", "on") == "a: paused -> running (group g)"
+    assert "previous_status" not in cat.read_text()
+    orig = cat.read_text()
+    run("b", "off"); run("b", "on")
+    assert "previous_status" not in cat.read_text() and cat.read_text() == orig

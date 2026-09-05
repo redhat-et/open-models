@@ -276,9 +276,10 @@ def catalog():
             "tool_call": bool(m.get("tool_call")),
             "reasoning": bool(m.get("reasoning")),
             "price": m.get("price") or {},
+            "status": m.get("status"),
             "metered": m.get("status") in METERED_STATUSES,
             "gateway_model": m.get("group") if m.get("status") in METERED_STATUSES else None,
-            "direct_url": None if m.get("status") in METERED_STATUSES else m.get("base_url"),
+            "direct_url": None if m.get("status") in METERED_STATUSES or m.get("status") == "paused" else m.get("base_url"),
             "notes": m.get("notes", ""),
         })
     hosts = {k: v.get("hardware", "") for k, v in (cat.get("hosts") or {}).items()}

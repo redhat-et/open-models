@@ -151,6 +151,7 @@ function esc(s){ const d=document.createElement('div'); d.textContent=s??''; ret
 function copyText(el){ navigator.clipboard.writeText(el.textContent.trim()); }
 
 function snippet(m) {
+  if (m.status === 'paused') return '# this endpoint is paused — ask an admin to turn it back on';
   const url = m.metered ? (window.GW + '/chat/completions') : (m.direct_url + '/chat/completions');
   const model = m.metered ? m.gateway_model : m.served_model;
   const key = m.metered ? '$OCTO_KEY' : 'none';
@@ -165,7 +166,9 @@ async function loadCatalog() {
     const t = TIER[m.tier] || {color: '#8a8d90', label: m.tier || 'n/a', icon: '🤖'};
     const p = m.price || {};
     const price = p.input ? `$${p.input}/M in · $${p.output}/M out` : 'price TBD';
-    const metered = m.metered
+    const metered = m.status === 'paused'
+      ? `<span class="pf-v6-c-label" style="opacity:.7"><span class="om-dot" style="background:#8a8d90"></span>paused</span>`
+      : m.metered
       ? `<span class="pf-v6-c-label pf-m-green"><span class="om-dot" style="background:#1ec457"></span>metered</span>`
       : `<span class="pf-v6-c-label pf-m-orange" title="${esc(m.notes)}"><span class="om-dot" style="background:#f4c145"></span>direct · VPN · unmetered</span>`;
     return `<div class="om-card" style="--om-accent:${t.color}">

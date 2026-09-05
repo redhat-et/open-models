@@ -1,7 +1,7 @@
 VENV := $(CURDIR)/web/.venv
 PY := $(VENV)/bin/python
 
-.PHONY: dev dev-down lab lab-test lab-down setup test gen web monitor-up monitor-down logs quality image
+.PHONY: dev dev-down model-off model-on model-status lab lab-test lab-down setup test gen web monitor-up monitor-down logs quality image
 
 setup:
 	python3 -m venv $(VENV)
@@ -53,6 +53,19 @@ deploy: gen
 	    --set secrets.githubClientId=$$GITHUB_CLIENT_ID \
 	    --set secrets.githubClientSecret=$$GITHUB_CLIENT_SECRET \
 	    --set secrets.githubOrg=$$GITHUB_ORG,)
+
+model-off:
+	@test -n "$(MODEL)" || { echo "usage: make model-off MODEL=<catalog-id>"; exit 2; }
+	python3 scripts/model_toggle.py $(MODEL) off
+	$(MAKE) deploy APP=1
+
+model-on:
+	@test -n "$(MODEL)" || { echo "usage: make model-on MODEL=<catalog-id>"; exit 2; }
+	python3 scripts/model_toggle.py $(MODEL) on
+	$(MAKE) deploy APP=1
+
+model-status:
+	@python3 scripts/model_toggle.py --help 2>/dev/null; for m in $$(grep -E '^  - id: ' catalog.yaml | sed 's/.*id: //'); do python3 scripts/model_toggle.py $$m status; done
 
 DEV_NS ?= octo-models-dev
 # per-namespace SCC uid range; fall back to this cluster's restricted-v2 default

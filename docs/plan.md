@@ -86,3 +86,15 @@ scheduling, smart routing.
 - M4 DONE (2026-09-05): old UI retired (`make web` -> portal notice + sunset banner),
       config docs regenerated for gateway. Open: strix-halo + spark3 aliases
       onboarding, recorded benchmark runs (needs hardware time)
+- TIER-2 DONE (2026-09-05): staging release `omdev` in ns `octo-models-dev`
+  (`make dev`/`dev-down`) — real gateway+portal+prometheus against in-cluster
+  mock backends; own GitHub login (callback registered), per-ns SCC uid auto-derived,
+  configOverride in chart values; verified: oauth redirect, mock-backed chat,
+  prom targets up. `charts/octo-models/values-dev.yaml` is the overlay.
+- COST DIAL (2026-09-05): `make model-off/model-on/model-status MODEL=<id>` —
+  catalog `status: paused` (+ previous_status restore), regen+roll gateway,
+  portal paused badge; `docs/howto.md` covers the two-layer stop (gateway, then compute)
+  and per-host power-down commands.
+- NEXT: UI rework with richer data (per-model live status/latency, spend charts);
+  spark/strix onboarding + repeatable spark workflow; nightly soak combining
+  lab chaos + benchmarks; hot-aisle re-serve when box is powered back on.

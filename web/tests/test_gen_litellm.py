@@ -22,6 +22,8 @@ CATALOG = {
          "status": "running"},
         {"id": "d", "served_model": "T/D", "group": "smart", "base_url": "http://d/v1",
          "status": "planned"},
+        {"id": "e", "served_model": "T/E", "group": "fast", "base_url": "http://e/v1",
+         "status": "paused"},
     ],
 }
 
@@ -71,3 +73,10 @@ def test_shipped_config_groups_and_fallback_chain():
     chain = {k: v for fb in cfg["router_settings"]["fallbacks"] for k, v in fb.items()}
     assert chain["qwen38-flash-next"] == ["qwen38-27b-fast"]
     assert "qwen38-27b-fast" not in chain  # acyclic: fast is the floor
+
+
+def test_paused_models_excluded():
+    cfg = gen.litellm_config(CATALOG)
+    ids = {m["model_info"]["id"] for m in cfg["model_list"]}
+    assert "e" not in ids
+    assert {"b", "c"} <= ids
