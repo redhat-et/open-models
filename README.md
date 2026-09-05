@@ -59,7 +59,7 @@ the `om-backend` BuildConfig (binary upload, no external registry).
 
 ```bash
 make test            # web + backend suites, offline
-make web             # v1 UI on :8010
+make web             # v1 UI retired - points at the portal
 make backend         # v2 app on :8020 (loads secrets.env, needs LITELLM_URL)
 make monitor-up      # local prometheus :9090 + grafana :3000 via podman
 ```
@@ -72,7 +72,7 @@ make monitor-up      # local prometheus :9090 + grafana :3000 via podman
 - [x] `catalog.yaml` -> generated opencode.json / open-webui configs
 - [x] 3 model instances live (g6e flash-next, RTX 5090 fast, spark2 smart [listed])
 - [ ] Hot-aisle GPU added to gateway (join `qwen38-27b-fast` group)
-- [ ] Old `web/` UI redirected to the new app (M4)
+- [x] Old `web/` UI retired; portal is the single UI (M4)
 - [ ] Grafana deepened: TTFT/TPOT, KV cache, queueing (Matt)
 - [ ] Per-platform benchmarks recorded (harness ready)
 - [x] User how-to: `docs/user-setup.md`

@@ -83,5 +83,6 @@ scheduling, smart routing.
   prom targets). Manual matrix in `TESTBED.md`; per-user bootstrap in
   `scripts/setup-user.sh` (verified with fresh `omtest` user through reboot).
 - M3: personal/org spend views with pricing, grafana on OCP, dashboards green
-- M4: old UI retired to redirect, strix-halo + spark3 onboarded as aliases,
-      benchmark runs recorded, config docs regenerated for the gateway
+- M4 DONE (2026-09-05): old UI retired (`make web` -> portal notice + sunset banner),
+      config docs regenerated for gateway. Open: strix-halo + spark3 aliases
+      onboarding, recorded benchmark runs (needs hardware time)

@@ -63,7 +63,10 @@ backend-image:
 	oc set image deploy/om-app app=$(APP_STREAM):$(APP_TAG) -n $(NAMESPACE)
 
 web:
-	cd web && $(PY) -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8010
+	@echo "v1 UI retired (M4). The portal is the UI:"
+	@echo "  https://octo-app-octo-models.apps.emerg.pcbk.p1.openshiftapps.com"
+	@echo "web/ is kept for reference + tests; serve it locally with:"
+	@echo "  cd web && $(PY) -m uvicorn app.main:app --port 8010"
 
 monitor-up: gen
 	podman rm -f om-prometheus om-grafana om-node-exporter 2>/dev/null || true
