@@ -55,11 +55,13 @@ deploy: gen
 	    --set secrets.githubOrg=$$GITHUB_ORG,)
 
 DEV_NS ?= octo-models-dev
+# per-namespace SCC uid range; fall back to this cluster's restricted-v2 default
+DEV_UID = $(shell oc get ns $(DEV_NS) -o jsonpath='{.metadata.annotations.openshift\\.io/sa\\.scc\\.run-as-user-range}' 2>/dev/null | cut -d/ -f1 | grep -E '^[0-9]+$$' || echo 1001490000)
 dev:
 	oc create namespace $(DEV_NS) 2>/dev/null || true
 	. $(SECRETS); helm upgrade --install omdev charts/octo-models -n $(DEV_NS) \
 	  -f charts/octo-models/values-dev.yaml \
-	  --set runAsUser=$(RUN_AS) --set fsGroup=$(RUN_AS) \
+	  --set runAsUser=$(DEV_UID) --set fsGroup=$(DEV_UID) \
 	  --set secrets.postgresPassword=$$PG_PASSWORD \
 	  --set secrets.redisPassword=$$RD_PASSWORD \
 	  --set secrets.llmMasterKey=$$LLM_MASTER_KEY \
@@ -71,7 +73,7 @@ dev:
 	cp -r backend /tmp/om-backend-build/backend && \
 	cp catalog.yaml /tmp/om-backend-build/catalog.yaml && \
 	oc start-build om-backend -n $(DEV_NS) --from-dir /tmp/om-backend-build --follow && \
-	oc set image deploy/omdev-app app=om-backend:latest -n $(DEV_NS)
+	oc set image deploy/omdev-app app=$$(oc get istag om-backend:latest -n $(DEV_NS) -o jsonpath='{.image.dockerImageReference}') -n $(DEV_NS)
 	oc rollout status deploy/omdev-app -n $(DEV_NS) --timeout=180s || true
 
 dev-down:
