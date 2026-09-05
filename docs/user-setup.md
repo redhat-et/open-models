@@ -17,14 +17,15 @@ First step for everything below: log into the web app and **create a key**
 
 ## opencode
 
-Drop `configs/opencode.json` (from the repo, or the web app) into
-`~/.config/opencode/opencode.json`, then export your key — the config
-uses `{env:OCTO_KEY}` env expansion:
+Easiest: run `scripts/setup-user.sh` as the user that will use the models —
+it installs opencode, saves your key to `~/.config/octo/key` (0600), and
+points the config at it with `{file:...}` substitution, so it works in any
+shell, any launcher, and after reboots.
 
-```bash
-export OCTO_KEY=sk-...your-key...
-opencode
-```
+Manually: drop `configs/opencode.json` into `~/.config/opencode/opencode.json`
+and replace the `apiKey` value `"{env:OCTO_KEY}"` with
+`"{file:/home/YOU/.config/octo/key}"` (put the key in that file), or just
+`export OCTO_KEY=sk-...` in every shell that launches opencode.
 
 Both gateway models are pre-defined; `model`/`small_model` defaults are set.
 

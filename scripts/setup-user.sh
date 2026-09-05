@@ -108,8 +108,13 @@ else
 EOF
   log "installed gateway-only opencode.json (embedded copy)"
 fi
+# point the config at the key FILE (not the env) so it survives reboots/launchers
+sed -i "s|{env:OCTO_KEY}|{file:$KEY_FILE}|" "$OC_CFG"
+grep -q "{file:$KEY_FILE}" "$OC_CFG" || die "apiKey rewrite failed"
+log "opencode apiKey -> {file:$KEY_FILE} (no shell env needed)"
 
 log "done! try it:  opencode   (models: /models -> octo-gateway/*)"
+log "(key is read from file at startup - works in any shell, after any reboot)"
 echo "  portal:   $APP_URL"
 echo "  grafana:  https://grafana-octo-models.apps.emerg.pcbk.p1.openshiftapps.com"
 echo "  re-check: $0 --check"
