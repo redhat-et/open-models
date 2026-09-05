@@ -96,7 +96,13 @@ def test_health(client):
     assert client.get("/api/health").json()["status"] == "ok"
 
 
-def test_catalog_splits_metered_and_direct(client):
+def test_catalog_splits_metered_and_direct(client, monkeypatch):
+    monkeypatch.setattr(backend, "load_catalog", lambda: {"gateway": {"base_url": "https://gw/v1"}, "models": [
+        {"id": "ocp-flash-next", "name": "f", "status": "running", "group": "qwen38-flash-next", "base_url": "https://f/v1"},
+        {"id": "spark2-smart", "name": "s", "status": "listed", "base_url": "http://octo-et-spark2/v1"},
+        {"id": "hotaisle", "name": "h", "status": "paused", "group": "qwen38-27b-fast", "base_url": "http://h/v1"},
+        {"id": "strix-halo", "name": "x", "status": "planned", "base_url": "http://x/v1"},
+    ]})
     cat = client.get("/api/catalog").json()
     assert cat["gateway_url"].startswith("https://")
     by_id = {m["id"]: m for m in cat["models"]}
@@ -104,8 +110,8 @@ def test_catalog_splits_metered_and_direct(client):
     assert by_id["ocp-flash-next"]["gateway_model"] == "qwen38-flash-next"
     assert by_id["spark2-smart"]["metered"] is False
     assert by_id["spark2-smart"]["direct_url"].startswith("http://octo-et-spark")
-    assert by_id["hotaisle"]["metered"] is True
-    assert by_id["hotaisle"]["gateway_model"] == "qwen38-27b-fast"
+    assert by_id["hotaisle"]["metered"] is False
+    assert by_id["hotaisle"]["status"] == "paused" and by_id["hotaisle"]["direct_url"] is None
     assert "strix-halo" not in by_id  # planned models excluded
 
 
