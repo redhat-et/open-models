@@ -66,17 +66,18 @@ if ! grep -q "OCTO_KEY from octo-setup" "$RC" 2>/dev/null; then
   cat >> "$RC" <<'EOF'
 # OCTO_KEY from octo-setup
 export OCTO_KEY="$(cat "$HOME/.config/octo/key" 2>/dev/null)"
-export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/.opencode/bin:$PATH"
 EOF
   log "exported OCTO_KEY + PATH in ~/.bashrc"
 fi
 
 # ---------------------------------------------------------------- opencode install
+export PATH="$HOME/.local/bin:$HOME/.opencode/bin:$PATH"
 if ! command -v opencode >/dev/null 2>&1; then
   log "installing opencode to ~/.local/bin ..."
   curl -fsSL https://opencode.ai/install | bash >/dev/null || die "opencode install failed"
-  export PATH="$HOME/.local/bin:$PATH"
-  command -v opencode >/dev/null || die "opencode not on PATH after install"
+  export PATH="$HOME/.local/bin:$HOME/.opencode/bin:$PATH"
+  command -v opencode >/dev/null || die "opencode not on PATH after install (check ~/.opencode/bin)"
 fi
 log "opencode: $(opencode --version 2>/dev/null | head -1)"
 
