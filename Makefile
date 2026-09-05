@@ -1,7 +1,7 @@
 VENV := $(CURDIR)/web/.venv
 PY := $(VENV)/bin/python
 
-.PHONY: lab lab-test lab-down setup test gen web monitor-up monitor-down logs quality image
+.PHONY: dev dev-down lab lab-test lab-down setup test gen web monitor-up monitor-down logs quality image
 
 setup:
 	python3 -m venv $(VENV)
@@ -53,6 +53,30 @@ deploy: gen
 	    --set secrets.githubClientId=$$GITHUB_CLIENT_ID \
 	    --set secrets.githubClientSecret=$$GITHUB_CLIENT_SECRET \
 	    --set secrets.githubOrg=$$GITHUB_ORG,)
+
+DEV_NS ?= octo-models-dev
+dev:
+	oc create namespace $(DEV_NS) 2>/dev/null || true
+	. $(SECRETS); helm upgrade --install omdev charts/octo-models -n $(DEV_NS) \
+	  -f charts/octo-models/values-dev.yaml \
+	  --set runAsUser=$(RUN_AS) --set fsGroup=$(RUN_AS) \
+	  --set secrets.postgresPassword=$$PG_PASSWORD \
+	  --set secrets.redisPassword=$$RD_PASSWORD \
+	  --set secrets.llmMasterKey=$$LLM_MASTER_KEY \
+	  --set secrets.sessionSecret=$$SESSION_SECRET \
+	  --set secrets.githubClientId=$$GITHUB_CLIENT_ID \
+	  --set secrets.githubClientSecret=$$GITHUB_CLIENT_SECRET \
+	  --set secrets.githubOrg=$$GITHUB_ORG
+	rm -rf /tmp/om-backend-build && mkdir -p /tmp/om-backend-build && \
+	cp -r backend /tmp/om-backend-build/backend && \
+	cp catalog.yaml /tmp/om-backend-build/catalog.yaml && \
+	oc start-build om-backend -n $(DEV_NS) --from-dir /tmp/om-backend-build --follow && \
+	oc set image deploy/omdev-app app=om-backend:latest -n $(DEV_NS)
+	oc rollout status deploy/omdev-app -n $(DEV_NS) --timeout=180s || true
+
+dev-down:
+	helm uninstall omdev -n $(DEV_NS) 2>/dev/null || true
+	oc delete namespace $(DEV_NS) 2>/dev/null || true
 
 # build the backend image in-cluster (binary BuildConfig, no external registry)
 backend-image:

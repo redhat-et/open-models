@@ -6,7 +6,7 @@ metadata:
     {{- include "octo-models.labels" . | nindent 4 }}
 data:
   config.yaml: |
-{{ .Files.Get "files/litellm-config.yaml" | indent 4 }}
+{{ (.Values.litellm.configOverride | default (.Files.Get "files/litellm-config.yaml")) | indent 4 }}
 ---
 apiVersion: apps/v1
 kind: Deployment

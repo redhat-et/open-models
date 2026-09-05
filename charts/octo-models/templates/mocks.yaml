@@ -1,0 +1,59 @@
+{{- if .Values.mocks.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-mock-vllm
+  labels:
+    {{- include "octo-models.labels" . | nindent 4 }}
+data:
+  mock.py: |
+{{ .Files.Get "files/mock_vllm.py" | indent 4 }}
+{{- range $name, $model := dict "mock-flash" "mock-flash" "mock-fast-a" "mock-fast-a" "mock-fast-b" "mock-fast-b" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "octo-models.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: mock-vllm
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: {{ $name }}}
+  template:
+    metadata:
+      labels: {app: {{ $name }}}
+    spec:
+      securityContext:
+        runAsUser: {{ $.Values.runAsUser }}
+        fsGroup: {{ $.Values.fsGroup }}
+      containers:
+        - name: mock
+          image: docker.io/library/python:3.12-slim
+          command: ["python", "/srv/mock.py"]
+          env:
+            - {name: MOCK_ID, value: {{ $name | trimPrefix "mock-" | quote }}}
+            - {name: MOCK_MODEL, value: {{ $model | quote }}}
+          ports: [{containerPort: 8000}]
+          resources:
+            requests: {cpu: 10m, memory: 64Mi}
+            limits: {cpu: 200m, memory: 256Mi}
+          volumeMounts:
+            - {name: code, mountPath: /srv}
+      volumes:
+        - name: code
+          configMap:
+            name: {{ $.Release.Name }}-mock-vllm
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "octo-models.labels" $ | nindent 4 }}
+spec:
+  selector: {app: {{ $name }}}
+  ports: [{port: 8000, targetPort: 8000}]
+{{- end }}
+{{- end }}

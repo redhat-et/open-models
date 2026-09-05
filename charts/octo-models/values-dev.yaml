@@ -1,0 +1,52 @@
+# Staging overlay: `make dev` -> release omdev in octo-models-dev.
+# Gateway + portal + prom running against in-cluster MOCK deployments.
+app:
+  enabled: true
+grafana:
+  enabled: false
+litellm:
+  replicas: 1
+  configOverride: |
+    model_list:
+      - model_name: qwen38-flash-next
+        litellm_params:
+          model: openai/mock-flash
+          api_base: http://mock-flash:8000/v1
+          api_key: sk-mock
+          input_cost_per_token: 0.0000001
+          output_cost_per_token: 0.0000004
+      - model_name: qwen38-27b-fast
+        litellm_params:
+          model: openai/mock-fast-a
+          api_base: http://mock-fast-a:8000/v1
+          api_key: sk-mock
+          input_cost_per_token: 0.0000003
+          output_cost_per_token: 0.0000012
+      - model_name: qwen38-27b-fast
+        litellm_params:
+          model: openai/mock-fast-b
+          api_base: http://mock-fast-b:8000/v1
+          api_key: sk-mock
+          input_cost_per_token: 0.0000003
+          output_cost_per_token: 0.0000012
+    router_settings:
+      routing_strategy: least-busy
+      num_retries: 3
+      retry_after: 2
+      fallbacks:
+        - qwen38-flash-next: ["qwen38-27b-fast"]
+    litellm_settings:
+      master_key: os.environ/LITELLM_MASTER_KEY
+      drop_params: true
+      callbacks: ["prometheus"]
+mocks:
+  enabled: true
+prometheus:
+  vllmTargets:
+    - targets: ["mock-flash:8000"]
+      labels: {model: mock-flash, tier: flash, host: mock-flash}
+    - targets: ["mock-fast-a:8000"]
+      labels: {model: mock-fast-a, tier: fast, host: mock-fast-a}
+    - targets: ["mock-fast-b:8000"]
+      labels: {model: mock-fast-b, tier: fast, host: mock-fast-b}
+  vllmTargetsHttps: []
