@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# OCTO Open Models - per-user setup. Run as the user who will use the models
+# (no sudo needed). Idempotent: safe to re-run; existing configs are backed up.
+#
+#   ./scripts/setup-user.sh              # interactive (asks for your key)
+#   ./scripts/setup-user.sh --key sk-…   # non-interactive
+#   ./scripts/setup-user.sh --check      # re-verify an existing setup
+#
+# What it does:
+#   1. installs opencode (official installer -> ~/.local/bin, no sudo)
+#   2. writes ~/.config/opencode/opencode.json with our gateway models
+#   3. stores your portal key (~/.config/octo/key, 0600) + exports $OCTO_KEY
+#   4. smoke-tests the gateway end to end
+set -euo pipefail
+
+APP_URL="https://octo-app-octo-models.apps.emerg.pcbk.p1.openshiftapps.com"
+GW_URL="https://litellm-octo-models.apps.emerg.pcbk.p1.openshiftapps.com/v1"
+KEY_FILE="$HOME/.config/octo/key"
+OC_CFG="$HOME/.config/opencode/opencode.json"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd || true)"
+KEY=""
+CHECK=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --key) KEY="$2"; shift 2 ;;
+    --check) CHECK=1; shift ;;
+    *) echo "unknown flag: $1"; exit 1 ;;
+  esac
+done
+
+log() { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
+die() { printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
+
+[ "$(id -u)" = 0 ] && die "do not run as root - run as your model-using self (e.g. omtest)"
+
+# ---------------------------------------------------------------- key
+if [ -z "$KEY" ] && [ -f "$KEY_FILE" ]; then KEY=$(cat "$KEY_FILE"); fi
+if [ -z "$KEY" ] && [ "$CHECK" = 1 ]; then die "no key found ($KEY_FILE) - re-run without --check"; fi
+if [ -z "$KEY" ]; then
+  cat <<EOF
+
+  1. Open:  $APP_URL
+  2. Log in with GitHub (needs redhat-et org membership)
+  3. Create an API key (shown ONCE) and paste it below.
+
+EOF
+  read -rsp "  OCTO key (sk-...): " KEY; echo
+  [ -n "$KEY" ] || die "no key given"
+fi
+
+# ---------------------------------------------------------------- smoke test FIRST (bad key = stop early)
+log "testing gateway with your key..."
+SMOKE=$(curl -sf -m 60 "$GW_URL/chat/completions" \
+  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+  -d '{"model":"qwen38-flash-next","messages":[{"role":"user","content":"reply with exactly: setup works"}],"max_tokens":400,"reasoning_effort":"minimal"}' \
+  ) || die "gateway call failed - is the key correct / gateway up?"
+echo "$SMOKE" | grep -q "choices" || die "unexpected response: $(echo "$SMOKE" | head -c 200)"
+log "gateway OK ✓  (spend for this call shows up in the portal)"
+[ "$CHECK" = 1 ] && { log "setup looks good - key works, gateway reachable"; exit 0; }
+
+# ---------------------------------------------------------------- key storage + env
+mkdir -p "$(dirname "$KEY_FILE")"; chmod 700 "$(dirname "$KEY_FILE")"
+printf '%s' "$KEY" > "$KEY_FILE"; chmod 600 "$KEY_FILE"
+RC="$HOME/.bashrc"
+if ! grep -q "OCTO_KEY from octo-setup" "$RC" 2>/dev/null; then
+  cat >> "$RC" <<'EOF'
+# OCTO_KEY from octo-setup
+export OCTO_KEY="$(cat "$HOME/.config/octo/key" 2>/dev/null)"
+export PATH="$HOME/.local/bin:$PATH"
+EOF
+  log "exported OCTO_KEY + PATH in ~/.bashrc"
+fi
+
+# ---------------------------------------------------------------- opencode install
+if ! command -v opencode >/dev/null 2>&1; then
+  log "installing opencode to ~/.local/bin ..."
+  curl -fsSL https://opencode.ai/install | bash >/dev/null || die "opencode install failed"
+  export PATH="$HOME/.local/bin:$PATH"
+  command -v opencode >/dev/null || die "opencode not on PATH after install"
+fi
+log "opencode: $(opencode --version 2>/dev/null | head -1)"
+
+# ---------------------------------------------------------------- config
+mkdir -p "$(dirname "$OC_CFG")"
+[ -f "$OC_CFG" ] && [ ! -f "$OC_CFG.octo-backup" ] && cp "$OC_CFG" "$OC_CFG.octo-backup" && log "backed up existing config -> $OC_CFG.octo-backup"
+if [ -n "$REPO_DIR" ] && [ -f "$REPO_DIR/configs/opencode.json" ]; then
+  cp "$REPO_DIR/configs/opencode.json" "$OC_CFG"
+  log "installed opencode.json from repo ($REPO_DIR)"
+else
+  cat > "$OC_CFG" <<'EOF'
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "octo-gateway/qwen38-flash-next",
+  "small_model": "octo-gateway/qwen38-27b-fast",
+  "provider": {
+    "octo-gateway": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "OCTO Open Models gateway (metered; key from the web app)",
+      "options": { "baseURL": "https://litellm-octo-models.apps.emerg.pcbk.p1.openshiftapps.com/v1", "apiKey": "$OCTO_KEY" },
+      "models": {
+        "qwen38-flash-next": { "name": "Qwen 3.8 Flash Next (262k ctx)", "limit": { "context": 262144, "output": 8192 }, "tool_call": true, "reasoning": true, "temperature": true },
+        "qwen38-27b-fast": { "name": "Qwen 3.8 27B (fast)", "limit": { "context": 32768, "output": 8192 }, "tool_call": true, "reasoning": true, "temperature": true }
+      }
+    }
+  }
+}
+EOF
+  log "installed gateway-only opencode.json (embedded copy)"
+fi
+
+log "done! try it:  opencode   (models: /models -> octo-gateway/*)"
+echo "  portal:   $APP_URL"
+echo "  grafana:  https://grafana-octo-models.apps.emerg.pcbk.p1.openshiftapps.com"
+echo "  re-check: $0 --check"
