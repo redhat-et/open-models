@@ -78,6 +78,10 @@ scheduling, smart routing.
   key create/list/delete with per-key spend, built in-cluster via `om-backend`
   BuildConfig (`make backend-image`). M3 largely folded in: spend + grafana
   already on OCP; remaining = deeper vLLM dashboards (Matt).
+- TESTBED DONE (2026-09-05): offline lab — `make lab` / `make lab-test`
+  (podman stack + mock vLLM; 8 e2e tests incl. fallback, rate limit, spend,
+  prom targets). Manual matrix in `TESTBED.md`; per-user bootstrap in
+  `scripts/setup-user.sh` (verified with fresh `omtest` user through reboot).
 - M3: personal/org spend views with pricing, grafana on OCP, dashboards green
 - M4: old UI retired to redirect, strix-halo + spark3 onboarded as aliases,
       benchmark runs recorded, config docs regenerated for the gateway
