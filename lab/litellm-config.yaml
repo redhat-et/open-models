@@ -1,0 +1,30 @@
+model_list:
+  - model_name: qwen38-flash-next
+    litellm_params:
+      model: openai/mock-flash
+      api_base: http://mock-flash:8000/v1
+      api_key: sk-local
+      input_cost_per_token: 0.0000001
+      output_cost_per_token: 0.0000004
+  - model_name: qwen38-27b-fast
+    litellm_params:
+      model: openai/mock-fast-a
+      api_base: http://mock-fast-a:8000/v1
+      api_key: sk-local
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
+  - model_name: qwen38-27b-fast
+    litellm_params:
+      model: openai/mock-fast-b
+      api_base: http://mock-fast-b:8000/v1
+      api_key: sk-local
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
+
+litellm_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  callbacks: ["prometheus"]
+
+router_settings:
+  fallbacks:
+    - qwen38-flash-next: ["qwen38-27b-fast"]

@@ -1,11 +1,20 @@
 VENV := $(CURDIR)/web/.venv
 PY := $(VENV)/bin/python
 
-.PHONY: setup test gen web monitor-up monitor-down logs quality image
+.PHONY: lab lab-test lab-down setup test gen web monitor-up monitor-down logs quality image
 
 setup:
 	python3 -m venv $(VENV)
 	$(VENV)/bin/pip install -r web/requirements.txt
+
+lab:
+	./scripts/lab.sh up
+
+lab-test:
+	$(PY) -m pytest lab/tests -x
+
+lab-down:
+	./scripts/lab.sh down
 
 test:
 	cd web && $(PY) -m pytest

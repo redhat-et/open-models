@@ -24,7 +24,7 @@ redis:
   image: docker.io/redis:7-alpine
 
 litellm:
-  image: ghcr.io/berriai/litellm:main-stable
+  image: ghcr.io/berriai/litellm:v1.99.1
   replicas: 2
   port: 4000
   route: litellm
