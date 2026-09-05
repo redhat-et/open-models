@@ -62,7 +62,7 @@ def test_metered_models_collapse_into_gateway_provider():
     assert list(cfg["provider"]) == ["octo-gateway", "octo-direct-one"]
     gw = cfg["provider"]["octo-gateway"]
     assert gw["options"]["baseURL"] == "https://gw.test/v1"
-    assert gw["options"]["apiKey"] == "$OCTO_KEY"
+    assert gw["options"]["apiKey"] == "{env:OCTO_KEY}"
     prov = gw["models"]["test-fast"]
     assert prov["limit"] == {"context": 131072, "output": 4096}
     assert prov["tool_call"] is True

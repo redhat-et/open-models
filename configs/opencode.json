@@ -6,7 +6,7 @@
       "name": "OCTO Open Models gateway (metered; key from the web app)",
       "options": {
         "baseURL": "https://litellm-octo-models.apps.emerg.pcbk.p1.openshiftapps.com/v1",
-        "apiKey": "$OCTO_KEY"
+        "apiKey": "{env:OCTO_KEY}"
       },
       "models": {
         "qwen38-flash-next": {

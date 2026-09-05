@@ -97,7 +97,7 @@ else
     "octo-gateway": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "OCTO Open Models gateway (metered; key from the web app)",
-      "options": { "baseURL": "https://litellm-octo-models.apps.emerg.pcbk.p1.openshiftapps.com/v1", "apiKey": "$OCTO_KEY" },
+      "options": { "baseURL": "https://litellm-octo-models.apps.emerg.pcbk.p1.openshiftapps.com/v1", "apiKey": "{env:OCTO_KEY}" },
       "models": {
         "qwen38-flash-next": { "name": "Qwen 3.8 Flash Next (262k ctx)", "limit": { "context": 262144, "output": 8192 }, "tool_call": true, "reasoning": true, "temperature": true },
         "qwen38-27b-fast": { "name": "Qwen 3.8 27B (fast)", "limit": { "context": 32768, "output": 8192 }, "tool_call": true, "reasoning": true, "temperature": true }

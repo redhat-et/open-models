@@ -19,7 +19,7 @@ First step for everything below: log into the web app and **create a key**
 
 Drop `configs/opencode.json` (from the repo, or the web app) into
 `~/.config/opencode/opencode.json`, then export your key — the config
-references `$OCTO_KEY`:
+uses `{env:OCTO_KEY}` env expansion:
 
 ```bash
 export OCTO_KEY=sk-...your-key...

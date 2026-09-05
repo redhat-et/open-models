@@ -65,7 +65,7 @@ def opencode_config(catalog: dict) -> dict:
         providers["octo-gateway"] = {
             "npm": OPENAI_COMPAT_NPM,
             "name": "OCTO Open Models gateway (metered; key from the web app)",
-            "options": {"baseURL": gw_url, "apiKey": "$OCTO_KEY"},
+            "options": {"baseURL": gw_url, "apiKey": "{env:OCTO_KEY}"},
             "models": gateway_models,
         }
 
