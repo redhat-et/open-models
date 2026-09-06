@@ -60,6 +60,26 @@
           "temperature": true
         }
       }
+    },
+    "octo-spark4-lab": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "OCTO Open Models (DGX Spark (GB10, 128GB unified) - direct/unmetered, VPN)",
+      "options": {
+        "baseURL": "http://octo-et-spark-4.khw.eng.rdu2.dc.redhat.com:8888/v1",
+        "apiKey": "none"
+      },
+      "models": {
+        "qwen3.8-27b-sglang": {
+          "name": "Qwen 3.8 27B NVFP4 + MTP (Lab)",
+          "limit": {
+            "context": 262144,
+            "output": 8192
+          },
+          "tool_call": true,
+          "reasoning": true,
+          "temperature": true
+        }
+      }
     }
   },
   "model": "octo-gateway/qwen38-27b-fast",

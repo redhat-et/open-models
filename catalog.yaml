@@ -75,10 +75,11 @@ hosts:
     notes: Future slot.
   spark3:
     hardware: DGX Spark (GB10, 128GB unified)
-    notes: Previously ran qwen3.8 - future slot.
+    notes: Lab bake-off box - serving gpt-oss-120b (MXFP4, the canonical Spark model).
   spark4:
     hardware: DGX Spark (GB10, 128GB unified)
-    notes: Future slot.
+    notes: Was already serving Qwen3.8-27B-NVFP4+MTP spec-decode (port 8888);
+      we rebound 0.0.0.0 on 2026-09-07. Lab-tier redundancy for the 5090.
   strix-halo:
     hardware: AMD Strix Halo (Ryzen AI Max, 128GB unified)
     notes: Grab it. Has qwen 3.8 on it already (verify). Future slot.
@@ -184,3 +185,37 @@ models:
     reasoning: true
     quant: fp8
     status: running
+
+  - id: spark4-lab
+    host: spark4
+    name: "Qwen 3.8 27B NVFP4 + MTP (Lab)"
+    served_model: qwen3.8-27b-sglang
+    tier: lab
+    group: qwen38-27b-smart
+    base_url: http://octo-et-spark-4.khw.eng.rdu2.dc.redhat.com:8888/v1
+    scrape_url: http://10.6.164.126:8888/v1
+    api_key: none
+    context: 262144
+    max_output: 8192
+    tool_call: true
+    reasoning: true
+    quant: nvfp4
+    status: listed
+    notes: Direct endpoint (VPN). MTP spec-decode; ~16 tok/s over VPN.
+
+  - id: spark3-gptoss
+    host: spark3
+    name: "gpt-oss-120b MXFP4 (Lab)"
+    served_model: openai/gpt-oss-120b
+    tier: lab
+    group: gpt-oss-120b
+    base_url: http://octo-et-spark-3.khw.eng.rdu2.dc.redhat.com:8000/v1
+    scrape_url: http://10.6.164.125:8000/v1
+    api_key: none
+    context: 131072
+    max_output: 8192
+    tool_call: false
+    reasoning: true
+    quant: mxfp4
+    status: planned
+    notes: Bake-off flagship for GB10 (5.1B active); flip to listed when :8000 serves.
