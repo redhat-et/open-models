@@ -28,6 +28,16 @@
           "tool_call": true,
           "reasoning": true,
           "temperature": true
+        },
+        "glm-45-air": {
+          "name": "GLM-4.5-Air 106B-A12B (Smart) [gateway]",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "tool_call": true,
+          "reasoning": true,
+          "temperature": true
         }
       }
     },

@@ -40,6 +40,9 @@ hosts:
   hotaisle-1gpu:
     hardware: 1x AMD Instinct MI300X (192GB) - smart tier, power off when idle ($3/hr)
     notes: replaces 2-GPU config 2026-09-06; 235B TP=2 demo = resize up for an afternoon
+    compute:
+      "off": ./scripts/hotaisle.sh off
+      "on": HOTAISLE_SSH=hotaisle@23.183.40.87 HOTAISLE_MODEL=zai-org/GLM-4.5-Air-FP8 HOTAISLE_CTX=131072 ./scripts/hotaisle.sh serve && ./scripts/hotaisle.sh wait
   spark2:
     hardware: DGX Spark (GB10, 128GB unified)
     notes: Listed/direct only (VPN). Slow - kept out of the metered gateway.
@@ -164,10 +167,10 @@ models:
     tier: smart
     group: glm-45-air
     price: {input: 0.60, output: 2.40}  # notional $/Mtok vs public APIs
-    base_url: http://REPLACE-WITH-VM-IP:8000/v1
+    base_url: http://23.183.40.87:8000/v1
     api_key: sk-local
     context: 131072
     tool_call: true
     reasoning: true
     quant: fp8
-    status: planned
+    status: running
