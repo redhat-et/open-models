@@ -47,9 +47,9 @@ hosts:
     notes: enc1-gpuvm005; vLLM container auto-starts on boot; safe to power off (5090 carries the fast group)
   rtx5090:
     hardware: RTX 5090 (32GB GDDR7)
-    compute:  # TODO: fill in once host/user/cgroup details confirmed
-      # off: ssh <user>@<host> 'docker stop om-vllm'
-      # on:  ssh <user>@<host> 'docker start om-vll1'
+    compute:
+      "off": ssh 192.168.1.166 'podman stop qwen38-nvfp4'
+      "on": ssh 192.168.1.166 'podman start qwen38-nvfp4 && sleep 45'
     notes: Fast tier - NVFP4 quant, snappy, shorter context.
   openshift:
     hardware: OpenShift cluster, g6e GPU nodes (Ryan Cook's, spending plan covered)

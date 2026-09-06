@@ -6,7 +6,8 @@ Model serving has two layers to stop: **metering** (gateway) and **compute** (th
 Off means: no users routed to it, and its GPU box can idle/power down.
 
 ```bash
-make model-off MODEL=rtx5090-fast   # catalog -> paused, regen config, redeploy (litellm rolls)
+make model-off MODEL=rtx5090-fast COMPUTE=1   # pause in gateway, then stop the container
+make model-on  MODEL=rtx5090-fast COMPUTE=1   # start container, wait, then un-pause
 make model-status                   # see every model's state
 make model-on  MODEL=rtx5090-fast   # restores previous state
 ```
@@ -19,7 +20,10 @@ make model-on  MODEL=rtx5090-fast   # restores previous state
 Then stop the actual compute so you stop paying:
 - **hot-aisle box**: `./scripts/hotaisle.sh off` (never stop it while it's the only
   endpoint for a live group — check `make model-status` first).
-- **RTX 5090 / spark boxes**: `docker stop om-vllm` (or the systemd unit) on the host.
+- **RTX 5090** (`192.168.1.166`): `COMPUTE=1` handles it (`podman stop qwen38-nvfp4`);
+  manual: `ssh 192.168.1.166 'podman stop qwen38-nvfp4'` (start = same with `start`).
+  Note it's currently the ONLY fast endpoint while hotaisle is paused - turning it
+  off leaves the fast group empty.
 - **OCP-hosted endpoint**: `oc scale deploy/<name> -n <ns> --replicas=0`.
 
 Rule of thumb: pause the model in the gateway **first**, then kill compute;
