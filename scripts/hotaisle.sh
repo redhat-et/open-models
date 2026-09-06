@@ -32,6 +32,7 @@ serve)
       --network host --device /dev/kfd --device /dev/dri --group-add video \
       --security-opt seccomp=unconfined --shm-size 16g \
       -e HIP_VISIBLE_DEVICES=0 \
+      -e VLLM_ROCM_USE_AITER=1 -e VLLM_ROCM_USE_AITER_MOE=1 \
       '$IMAGE' \
       vllm serve '$MODEL' \
         --served-model-name '$MODEL' \

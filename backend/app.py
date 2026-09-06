@@ -34,7 +34,7 @@ GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
 SESSION_SECRET = os.environ.get("SESSION_SECRET", "dev-only-insecure-secret")
 GITHUB_ORG = os.environ.get("GITHUB_ORG", "")
 ALLOWED_USERS = {u.strip().lower() for u in os.environ.get("GITHUB_ALLOWLIST", "").split(",") if u.strip()}
-SESSION_TTL = int(os.environ.get("SESSION_TTL", "86400"))
+SESSION_TTL = int(os.environ.get("SESSION_TTL", "2592000"))  # 30 days
 
 LITELLM_URL = os.environ.get("LITELLM_URL", "").rstrip("/").removesuffix("/v1")
 LITELLM_MASTER_KEY = os.environ.get("LITELLM_MASTER_KEY", "")
