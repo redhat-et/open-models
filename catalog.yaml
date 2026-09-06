@@ -34,7 +34,7 @@ gateway:
   # slow - not worth a tunnel into the gateway's serving path.
   fallbacks:
     qwen38-flash-next: [qwen38-27b-fast]
-    glm-46-air: [qwen38-27b-fast]
+    glm-45-air: [qwen38-27b-fast]
 
 hosts:
   hotaisle-1gpu:
@@ -159,10 +159,10 @@ models:
 
   - id: hotaisle-air
     host: hotaisle-1gpu
-    name: "GLM-4.6-Air 106B-A12B (Smart)"
-    served_model: zai-org/GLM-4.6-Air-FP8
+    name: "GLM-4.5-Air 106B-A12B (Smart)"
+    served_model: zai-org/GLM-4.5-Air-FP8
     tier: smart
-    group: glm-46-air
+    group: glm-45-air
     price: {input: 0.60, output: 2.40}  # notional $/Mtok vs public APIs
     base_url: http://REPLACE-WITH-VM-IP:8000/v1
     api_key: sk-local
