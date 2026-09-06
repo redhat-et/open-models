@@ -96,6 +96,11 @@
       <code id="gateway-url" onclick="copyText(this)" title="click to copy">…</code>
     </div>
 
+    <div class="om-banner" style="background:#e7f4fb; border-left:4px solid #12a5c4">
+      <span>🖥 New here? One paste sets up your whole machine — opencode + key prompt + live model list (<a href="/setup.sh">view script</a>):</span>
+      <code id="setup-cmd" onclick="copyText(this)" title="click to copy">…</code>
+    </div>
+
     <section style="margin-top:var(--pf-t--global--spacer--xl)">
       <h2 style="font-size:1.2rem; margin:0 0 var(--pf-t--global--spacer--md)">Models</h2>
       <div class="om-grid" id="models"></div>
@@ -162,6 +167,7 @@ async function loadCatalog() {
   const c = await api('/api/catalog');
   window.GW = c.gateway_url;
   document.getElementById('gateway-url').textContent = c.gateway_url;
+  document.getElementById('setup-cmd').textContent = 'curl -fsSL ' + location.origin + '/setup.sh -o ~/setup.sh && bash ~/setup.sh';
   document.getElementById('models').innerHTML = c.models.map(m => {
     const t = TIER[m.tier] || {color: '#8a8d90', label: m.tier || 'n/a', icon: '🤖'};
     const p = m.price || {};
