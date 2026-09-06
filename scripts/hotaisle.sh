@@ -19,6 +19,9 @@ API_KEY="sk-local"
 CTX="${HOTAISLE_CTX:-32768}"
 MAX_SEQS=32
 
+REASON_ARGS=""
+case "$MODEL" in *GLM*|*glm*|*DeepSeek*|*deepseek*) REASON_ARGS="--reasoning-parser glm45" ;; esac
+
 run() { ssh -o ConnectTimeout=10 -o BatchMode=yes "$SSH" "$@"; }
 
 case "${1:-}" in
@@ -39,8 +42,8 @@ serve)
       vllm serve '$MODEL' \
         --served-model-name '$MODEL' \
         --api-key '$API_KEY' \
-        --max-model-len $CTX --max-num-seqs $MAX_SEQS \
-        --gpu-memory-utilization 0.9 \
+        --max-model-len $CTX --max-num-seqs $MAX_SEQS $REASON_ARGS \
+        --gpu-memory-utilization 0.9 --kv-cache-dtype fp8 --max-num-batched-tokens 8192 \
         --host 0.0.0.0 --port $PORT
     echo 'container started; weights re-download (~27GB) only if the box was re-imaged'
   "

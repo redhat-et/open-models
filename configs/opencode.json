@@ -10,7 +10,7 @@
       },
       "models": {
         "qwen38-flash-next": {
-          "name": "Qwen 3.8 Flash Next NVFP4 (Best of Both) [gateway]",
+          "name": "Qwen 3.8 Flash Next NVFP4 (Bulk) [gateway]",
           "limit": {
             "context": 262144,
             "output": 8192
@@ -20,7 +20,7 @@
           "temperature": true
         },
         "qwen38-27b-fast": {
-          "name": "Qwen 3.8 27B NVFP4 (Fast) [gateway]",
+          "name": "Qwen 3.8 27B NVFP4 (Core) [gateway]",
           "limit": {
             "context": 32768,
             "output": 8192
@@ -30,7 +30,7 @@
           "temperature": true
         },
         "glm-45-air": {
-          "name": "GLM-4.5-Air 106B-A12B (Smart) [gateway]",
+          "name": "GLM-4.5-Air 106B-A12B (Frontier) [gateway]",
           "limit": {
             "context": 131072,
             "output": 8192
@@ -50,7 +50,7 @@
       },
       "models": {
         "Qwen/Qwen3.8-27B-FP8": {
-          "name": "Qwen 3.8 27B FP8 (Smart)",
+          "name": "Qwen 3.8 27B FP8 (Lab)",
           "limit": {
             "context": 262144,
             "output": 8192
@@ -62,6 +62,6 @@
       }
     }
   },
-  "model": "octo-gateway/qwen38-flash-next",
-  "small_model": "octo-gateway/qwen38-27b-fast"
+  "model": "octo-gateway/qwen38-27b-fast",
+  "small_model": "octo-gateway/qwen38-flash-next"
 }

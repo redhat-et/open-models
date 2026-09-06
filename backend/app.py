@@ -224,14 +224,12 @@ def create_key(request: Request, payload: KeyCreate):
 @app.get("/api/keys")
 def list_keys(request: Request):
     user = current_user(request)
+    mult = float(load_gateway().get("frontier_savings_multiplier", 8))
     return [
         {
             "key_alias": k.get("key_alias"),
             "key_name": k.get("key_name") or k.get("token", "")[:10],
-            "spend": k.get("spend", 0),
-            "max_budget": k.get("max_budget"),
-            "rpm_limit": k.get("rpm_limit"),
-            "tpm_limit": k.get("tpm_limit"),
+            "saved": round(float(k.get("spend", 0) or 0) * mult, 4),
             "created_at": k.get("created_at"),
         }
         for k in owned_keys(user)
@@ -282,6 +280,8 @@ def catalog():
             "direct_url": None if m.get("status") in METERED_STATUSES or m.get("status") == "paused" else m.get("base_url"),
             "notes": m.get("notes", ""),
         })
+    order = {"frontier": 0, "core": 1, "bulk": 2, "lab": 3}
+    models.sort(key=lambda m: order.get(m.get("tier"), 9))
     hosts = {k: v.get("hardware", "") for k, v in (cat.get("hosts") or {}).items()}
     return {"gateway_url": gw.get("base_url", ""), "models": models, "hosts": hosts}
 
@@ -311,9 +311,10 @@ def setup_models():
         if g not in groups or cand["limit"]["context"] > groups[g]["limit"]["context"]:
             groups[g] = cand
     pick = lambda tier: next((g for g, t in tiers.items() if t == tier), None)
-    default = pick("smart") or pick("balanced") or (next(iter(groups), None))
+    default = (pick("core") or pick("frontier") or pick("bulk")
+               or (next(iter(groups), None)))
     return {"models": groups, "default": default,
-            "small": pick("fast") or default}
+            "small": pick("bulk") or default}
 
 
 @app.get("/")

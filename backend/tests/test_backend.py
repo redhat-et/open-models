@@ -86,7 +86,7 @@ def test_list_and_delete_only_own_keys(logged_in, monkeypatch):
     monkeypatch.setattr(backend, "litellm", fake_litellm)
     listed = logged_in.get("/api/keys").json()
     assert [k["key_alias"] for k in listed] == ["mine"]
-    assert listed[0]["spend"] == 1.5
+    assert listed[0]["saved"] > 0 and "spend" not in listed[0] and "max_budget" not in listed[0]
     assert logged_in.delete("/api/keys/theirs").status_code == 404
     assert logged_in.delete("/api/keys/mine").json()["deleted"] == "mine"
     assert deleted == ["mine"]
@@ -189,16 +189,16 @@ def test_compute_guard_and_hooks(tmp_path):
 
 def test_setup_endpoints(client, monkeypatch):
     monkeypatch.setattr(backend, "load_catalog", lambda: {"gateway": {}, "models": [
-        {"id": "f", "name": "F", "status": "running", "group": "flash-g", "tier": "balanced",
+        {"id": "f", "name": "F", "status": "running", "group": "flash-g", "tier": "bulk",
          "context": 262144, "max_output": 8192, "tool_call": True, "reasoning": True},
-        {"id": "a", "name": "A", "status": "running", "group": "air-g", "tier": "smart",
+        {"id": "a", "name": "A", "status": "running", "group": "air-g", "tier": "frontier",
          "context": 131072, "tool_call": True},
-        {"id": "r", "name": "R", "status": "running", "group": "fast-g", "tier": "fast",
+        {"id": "r", "name": "R", "status": "running", "group": "fast-g", "tier": "core",
          "context": 32768, "max_output": 8192},
-        {"id": "z", "name": "Z", "status": "paused", "group": "gone-g", "tier": "smart"},
+        {"id": "z", "name": "Z", "status": "paused", "group": "gone-g", "tier": "frontier"},
     ]})
     m = client.get("/setup/models.json").json()
-    assert m["default"] == "air-g" and m["small"] == "fast-g"
+    assert m["default"] == "fast-g" and m["small"] == "flash-g"
     assert set(m["models"]) == {"flash-g", "air-g", "fast-g"}
     assert m["models"]["air-g"]["limit"] == {"context": 131072, "output": 8192}
     sh = client.get("/setup.sh")

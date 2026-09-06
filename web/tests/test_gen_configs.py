@@ -21,7 +21,7 @@ CATALOG = {
             "name": "Fast One",
             "served_model": "Test/Fast",
             "group": "test-fast",
-            "tier": "fast",
+            "tier": "core",
             "base_url": "http://box1:8000/v1",
             "api_key": "sk-local",
             "context": 131072,
@@ -36,7 +36,7 @@ CATALOG = {
             "name": "Direct One",
             "served_model": "Test/Direct",
             "group": "test-direct",
-            "tier": "smart",
+            "tier": "frontier",
             "base_url": "http://box1:8001/v1",
             "api_key": "none",
             "context": 8192,
@@ -48,7 +48,7 @@ CATALOG = {
             "name": "Planned One",
             "served_model": "Test/Planned",
             "group": "test-planned",
-            "tier": "balanced",
+            "tier": "bulk",
             "base_url": "http://box1:8002/v1",
             "context": 8192,
             "status": "planned",
@@ -82,8 +82,8 @@ def test_model_defaults_use_tiers_via_gateway():
     catalog = json.loads(json.dumps(CATALOG))
     catalog["models"][2]["status"] = "running"
     cfg = gen_configs.opencode_config(catalog)
-    assert cfg["small_model"] == "octo-gateway/test-fast"
-    assert cfg["model"] == "octo-gateway/test-planned"
+    assert cfg["model"] == "octo-gateway/test-fast"
+    assert cfg["small_model"] == "octo-gateway/test-planned"
 
 
 def test_schema_key_present():

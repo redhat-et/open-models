@@ -116,11 +116,11 @@
       </div>
       <div class="om-keys-card">
         <table class="om-keys">
-          <thead><tr><th>Alias</th><th>Created</th><th>RPM</th><th>Budget/day</th><th>Spend today</th><th></th></tr></thead>
+          <thead><tr><th>Alias</th><th>Created</th><th>Saved so far</th><th></th></tr></thead>
           <tbody id="keys-body"></tbody>
         </table>
       </div>
-      <p style="color:var(--pf-t--global--text--color--subtle); font-size:.8rem; margin-top:.5rem">Limits are platform defaults; ask in #octo if you need more. Spend resets daily.</p>
+      <p style="color:var(--pf-t--global--text--color--subtle); font-size:.8rem; margin-top:.5rem">"Saved" = what the same tokens would have cost a frontier API (~8x our notional rates) - nothing is billed, you are just not paying it. We keep aggregate token counts per model to see where usage lands; nothing else is tied to your GitHub identity, and rate limits are generous defaults (ask in #octo if you ever need more).</p>
     </section>
   </main>
 </div>
@@ -128,9 +128,10 @@
 <script>
 let me = null;
 const TIER = {
-  balanced: {color: '#8b5cf6', label: 'balanced',  icon: '💎'},
-  fast:     {color: '#1ec457', label: 'fast',      icon: '⚡'},
-  smart:    {color: '#12a5c4', label: 'smart',     icon: '🧠'},
+  frontier: {color: '#12a5c4', label: 'frontier', icon: '🏆', blurb: 'hardest agentic work'},
+  core:     {color: '#1ec457', label: 'core',     icon: '⚡', blurb: 'daily driver - the default'},
+  bulk:     {color: '#8b5cf6', label: 'bulk',     icon: '📦', blurb: 'background + high volume'},
+  lab:      {color: '#8a8d90', label: 'lab',      icon: '🧪', blurb: 'experiments, no SLA'},
 };
 
 async function api(path, opts={}) {
@@ -204,14 +205,12 @@ async function loadKeys() {
   tbody.innerHTML = keys.length ? keys.map(k => `<tr>
       <td><code>${esc(k.key_alias)}</code></td>
       <td>${esc((k.created_at||'').slice(0,10))}</td>
-      <td>${k.rpm_limit ?? '-'}</td>
-      <td>$${k.max_budget ?? '-'}</td>
-      <td style="font-weight:600; color:${Number(k.spend||0)>0?'#6753ac':'#6a6e73'}">$${Number(k.spend||0).toFixed(4)}</td>
+      <td style="font-weight:600; color:${Number(k.saved||0)>0?'#1ec457':'#6a6e73'}">$${Number(k.saved||0).toFixed(2)}</td>
       <td style="text-align:right"><button class="pf-v6-c-button pf-m-danger pf-m-small pf-m-plain" onclick="delKey('${esc(k.key_alias)}')">🗑</button></td>
     </tr>`).join('')
-    : '<tr><td colspan="6" style="color:#6a6e73">No keys yet — create one above.</td></tr>';
-  const total = keys.reduce((a,k)=>a+Number(k.spend||0),0);
-  document.getElementById('total-spend').textContent = `💸 spend today: $${total.toFixed(4)}`;
+    : '<tr><td colspan="4" style="color:#6a6e73">No keys yet — create one above.</td></tr>';
+  const total = keys.reduce((a,k)=>a+Number(k.saved||0),0);
+  document.getElementById('total-spend').textContent = `🌱 saved vs frontier APIs: $${total.toFixed(2)}`;
 }
 
 async function createKey() {

@@ -26,41 +26,50 @@ gateway:
     rpm: 600
     tpm: 250000
     max_parallel_requests: 8
-    max_budget: 20        # notional USD/day (prices below are what the API
-    budget_duration: 1d   # would have charged -> the "spend offset" metric)
-  # litellm fallbacks: on 5xx/timeout, try in order (acyclic; fast box is the
-  # floor - it never falls back, protecting it from pileups). Sparks are
-  # deliberately absent: they are `listed` (direct/unmetered) only, and are
-  # slow - not worth a tunnel into the gateway's serving path.
+    max_budget: 100       # notional USD/day - abuse guard only, never
+    budget_duration: 1d   # surfaced in the UI; we show SAVINGS, not bills
+  # notional $/Mtok are priced off frontier APIs; users see "saved vs frontier
+  # API" = spend x this multiplier (Claude/GPT class, ~10x our notionals)
+  frontier_savings_multiplier: 8
+  # Tiers are NAMED BY ROLE, not speed (a frontier model may be slower than
+  # core - that is fine; role = what you reach for it for):
+  #   frontier = hardest agentic work (GLM on MI300X)
+  #   core     = daily driver coding (27B on the 5090) - default
+  #   bulk     = high-volume background/summarize (L40S cluster, cheap)
+  #   lab      = sparks/strix: bake-offs + direct endpoints, no SLA, never a
+  #              fallback target
+  # litellm fallbacks on 5xx/timeout (acyclic; core box is the floor - it
+  # never falls back, protecting it from pileups). Lab tier is deliberately
+  # absent: slow, listed-only, not worth a tunnel into the serving path.
   fallbacks:
     qwen38-flash-next: [qwen38-27b-fast]
     glm-45-air: [qwen38-27b-fast]
 
 hosts:
   hotaisle-1gpu:
-    hardware: 1x AMD Instinct MI300X (192GB) - smart tier, power off when idle ($3/hr)
+    hardware: 1x AMD Instinct MI300X (192GB) - frontier tier, power off when idle ($3/hr)
     notes: replaces 2-GPU config 2026-09-06; 235B TP=2 demo = resize up for an afternoon
     compute:
       "off": ./scripts/hotaisle.sh off
       "on": HOTAISLE_SSH=hotaisle@23.183.40.87 HOTAISLE_MODEL=zai-org/GLM-4.5-Air-FP8 HOTAISLE_CTX=131072 ./scripts/hotaisle.sh serve && ./scripts/hotaisle.sh wait
   spark2:
     hardware: DGX Spark (GB10, 128GB unified)
-    notes: Listed/direct only (VPN). Slow - kept out of the metered gateway.
+    notes: Lab tier - direct endpoint only (VPN). Bake-off sandbox for new candidates.
   hotaisle:
     hardware: 2x AMD Instinct MI300X (192GB) - power off when idle
     compute:
       "off": ./scripts/hotaisle.sh off
       "on": ./scripts/hotaisle.sh serve && ./scripts/hotaisle.sh wait
-    notes: enc1-gpuvm005; vLLM container auto-starts on boot; safe to power off (5090 carries the fast group)
+    notes: enc1-gpuvm005; vLLM container auto-starts on boot; safe to power off (5090 carries the core group)
   rtx5090:
     hardware: RTX 5090 (32GB GDDR7)
     compute:
       "off": ssh 192.168.1.166 'podman stop qwen38-nvfp4'
       "on": ssh 192.168.1.166 'podman start qwen38-nvfp4 && sleep 45'
-    notes: Fast tier - NVFP4 quant, snappy, shorter context.
+    notes: Core tier daily driver - NVFP4 quant, snappy, shorter context.
   openshift:
     hardware: OpenShift cluster, g6e GPU nodes (Ryan Cook's, spending plan covered)
-    notes: Best of both - Flash Next on the cluster, exposed via edge route.
+    notes: Bulk tier - high-volume/low-cost on covered g6e cards, edge route.
   spark1:
     hardware: DGX Spark (GB10, 128GB unified)
     notes: Future slot.
@@ -77,9 +86,9 @@ hosts:
 models:
   - id: ocp-flash-next
     host: openshift
-    name: "Qwen 3.8 Flash Next NVFP4 (Best of Both)"
+    name: "Qwen 3.8 Flash Next NVFP4 (Bulk)"
     served_model: Inferact/Qwen3.8-Flash-Next-NVFP4
-    tier: balanced
+    tier: bulk
     group: qwen38-flash-next
     price: {input: 0.20, output: 1.00}  # notional $/Mtok vs public APIs
     base_url: https://qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com/v1
@@ -93,9 +102,9 @@ models:
 
   - id: rtx5090-fast
     host: rtx5090
-    name: "Qwen 3.8 27B NVFP4 (Fast)"
+    name: "Qwen 3.8 27B NVFP4 (Core)"
     served_model: Inferact/Qwen3.8-27B-NVFP4
-    tier: fast
+    tier: core
     group: qwen38-27b-fast
     price: {input: 0.30, output: 1.20}
     engine: {max_num_seqs: 32}
@@ -107,13 +116,13 @@ models:
     reasoning: true
     quant: nvfp4
     status: running
-    notes: Fastest interactive option; 32k context keeps KV small on 32GB.
+    notes: Default daily driver; 32k context keeps KV small on 32GB.
 
   - id: spark2-smart
     host: spark2
-    name: "Qwen 3.8 27B FP8 (Smart)"
+    name: "Qwen 3.8 27B FP8 (Lab)"
     served_model: Qwen/Qwen3.8-27B-FP8
-    tier: smart
+    tier: lab
     group: qwen38-27b-smart
     price: {input: 0.30, output: 1.20}
     engine: {max_num_seqs: 16}
@@ -130,9 +139,9 @@ models:
 
   - id: hotaisle
     host: hotaisle
-    name: "Qwen 3.8 27B FP8 (Fast, MI300X)"
+    name: "Qwen 3.8 27B FP8 (Core, MI300X)"
     served_model: Qwen/Qwen3.8-27B-FP8
-    tier: fast
+    tier: core
     group: qwen38-27b-fast
     price: {input: 0.30, output: 1.20}
     engine: {max_num_seqs: 32}
@@ -151,8 +160,8 @@ models:
     host: strix-halo
     name: "Qwen3.8 27B (Strix Halo)"
     served_model: Qwen/Qwen3.8-27B
-    tier: balanced
-    group: qwen38-27b-fast  # joins the fast pool once verified (redundancy)
+    tier: lab
+    group: qwen38-27b-fast  # joins the core pool once verified (redundancy)
     base_url: http://strix-halo:8080/v1
     context: 131072
     tool_call: true
@@ -163,9 +172,9 @@ models:
 
   - id: hotaisle-air
     host: hotaisle-1gpu
-    name: "GLM-4.5-Air 106B-A12B (Smart)"
+    name: "GLM-4.5-Air 106B-A12B (Frontier)"
     served_model: zai-org/GLM-4.5-Air-FP8
-    tier: smart
+    tier: frontier
     group: glm-45-air
     price: {input: 0.60, output: 2.40}  # notional $/Mtok vs public APIs
     base_url: http://23.183.40.87:8000/v1

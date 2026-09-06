@@ -112,8 +112,8 @@ else
   cat > "$OC_CFG" <<'EOF'
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "octo-gateway/qwen38-flash-next",
-  "small_model": "octo-gateway/qwen38-27b-fast",
+  "model": "octo-gateway/qwen38-27b-fast",
+  "small_model": "octo-gateway/qwen38-flash-next",
   "provider": {
     "octo-gateway": {
       "npm": "@ai-sdk/openai-compatible",

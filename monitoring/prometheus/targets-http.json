@@ -5,7 +5,7 @@
     ],
     "labels": {
       "model": "rtx5090-fast",
-      "tier": "fast"
+      "tier": "core"
     }
   },
   {
@@ -14,7 +14,7 @@
     ],
     "labels": {
       "model": "hotaisle-air",
-      "tier": "smart"
+      "tier": "frontier"
     }
   }
 ]

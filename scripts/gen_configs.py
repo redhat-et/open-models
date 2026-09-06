@@ -94,10 +94,10 @@ def opencode_config(catalog: dict) -> dict:
         "$schema": "https://opencode.ai/config.json",
         "provider": providers,
     }
-    if "balanced" in defaults:
-        cfg["model"] = defaults["balanced"]
-    if "fast" in defaults:
-        cfg["small_model"] = defaults["fast"]
+    if "core" in defaults:
+        cfg["model"] = defaults["core"]
+    if "bulk" in defaults:
+        cfg["small_model"] = defaults["bulk"]
     return cfg
 
 
