@@ -28,20 +28,6 @@ model_list:
     supported_api:
     - chat
     - completions
-- model_name: qwen38-27b-fast
-  litellm_params:
-    model: openai/Qwen/Qwen3.8-27B-FP8
-    api_base: http://23.183.40.70:8000/v1
-    api_key: sk-local
-    max_tokens: 8192
-    input_cost_per_token: 3.0e-07
-    output_cost_per_token: 1.2e-06
-  model_info:
-    id: hotaisle
-    max_input_tokens: 32768
-    supported_api:
-    - chat
-    - completions
 - model_name: glm-45-air
   litellm_params:
     model: openai/zai-org/GLM-4.5-Air-FP8

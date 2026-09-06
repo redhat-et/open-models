@@ -10,15 +10,6 @@
   },
   {
     "targets": [
-      "23.183.40.70:8000"
-    ],
-    "labels": {
-      "model": "hotaisle",
-      "tier": "fast"
-    }
-  },
-  {
-    "targets": [
       "23.183.40.87:8000"
     ],
     "labels": {

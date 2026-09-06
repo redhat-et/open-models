@@ -22,7 +22,7 @@ from pathlib import Path
 
 import yaml
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
@@ -284,6 +284,36 @@ def catalog():
         })
     hosts = {k: v.get("hardware", "") for k, v in (cat.get("hosts") or {}).items()}
     return {"gateway_url": gw.get("base_url", ""), "models": models, "hosts": hosts}
+
+
+@app.get("/setup.sh")
+def setup_sh():
+    return FileResponse(REPO_ROOT / "scripts" / "setup-user.sh",
+                        media_type="text/plain; charset=utf-8")
+
+
+@app.get("/setup/models.json")
+def setup_models():
+    cat = load_catalog()
+    live = [m for m in cat.get("models", []) if m.get("status") in METERED_STATUSES]
+    groups: dict = {}
+    tiers: dict = {}
+    for m in live:
+        g = m.get("group", m["id"])
+        tiers[g] = m.get("tier")
+        cand = {
+            "name": m.get("name", g),
+            "limit": {"context": m.get("context", 8192), "output": m.get("max_output", 8192)},
+            "tool_call": bool(m.get("tool_call")),
+            "reasoning": bool(m.get("reasoning")),
+            "temperature": True,
+        }
+        if g not in groups or cand["limit"]["context"] > groups[g]["limit"]["context"]:
+            groups[g] = cand
+    pick = lambda tier: next((g for g, t in tiers.items() if t == tier), None)
+    default = pick("smart") or pick("balanced") or (next(iter(groups), None))
+    return {"models": groups, "default": default,
+            "small": pick("fast") or default}
 
 
 @app.get("/")

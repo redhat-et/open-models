@@ -143,7 +143,8 @@ models:
     tool_call: true
     reasoning: true
     quant: fp8
-    status: running
+    status: paused
+    previous_status: running
     notes: 2x MI300X VF; powered off when idle - gateway falls back to the 5090 (same group).
 
   - id: strix-halo

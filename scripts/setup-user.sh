@@ -4,6 +4,7 @@
 #
 #   ./scripts/setup-user.sh              # interactive (asks for your key)
 #   ./scripts/setup-user.sh --key sk-…   # non-interactive
+#   OCTO_KEY=sk-… curl -fsSL <portal>/setup.sh | bash   # one-paste setup
 #   ./scripts/setup-user.sh --check      # re-verify an existing setup
 #
 # What it does:
@@ -34,6 +35,7 @@ die() { printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 [ "$(id -u)" = 0 ] && die "do not run as root - run as your model-using self (e.g. omtest)"
 
 # ---------------------------------------------------------------- key
+KEY="${KEY:-${OCTO_KEY:-}}"
 if [ -z "$KEY" ] && [ -f "$KEY_FILE" ]; then KEY=$(cat "$KEY_FILE"); fi
 if [ -z "$KEY" ] && [ "$CHECK" = 1 ]; then die "no key found ($KEY_FILE) - re-run without --check"; fi
 if [ -z "$KEY" ]; then
@@ -84,7 +86,26 @@ log "opencode: $(opencode --version 2>/dev/null | head -1)"
 # ---------------------------------------------------------------- config
 mkdir -p "$(dirname "$OC_CFG")"
 [ -f "$OC_CFG" ] && [ ! -f "$OC_CFG.octo-backup" ] && cp "$OC_CFG" "$OC_CFG.octo-backup" && log "backed up existing config -> $OC_CFG.octo-backup"
-if [ -n "$REPO_DIR" ] && [ -f "$REPO_DIR/configs/opencode.json" ]; then
+MODELS_JSON=$(mktemp /tmp/octo-models.XXXXXX)
+if curl -sf -m 10 "$APP_URL/setup/models.json" -o "$MODELS_JSON" && command -v python3 >/dev/null 2>&1; then
+  python3 - "$OC_CFG" "$GW_URL" "$MODELS_JSON" <<'PY'
+import json, sys
+cfg_path, gw, mpath = sys.argv[1:4]
+m = json.load(open(mpath))
+json.dump({
+  "$schema": "https://opencode.ai/config.json",
+  "model": f"octo-gateway/{m['default']}",
+  "small_model": f"octo-gateway/{m['small']}",
+  "provider": {"octo-gateway": {
+    "npm": "@ai-sdk/openai-compatible",
+    "name": "OCTO Open Models gateway (metered; key from the web app)",
+    "options": {"baseURL": gw, "apiKey": "{env:OCTO_KEY}"},
+    "models": m["models"],
+  }},
+}, open(cfg_path, "w"), indent=2)
+PY
+  log "installed opencode.json built from the LIVE catalog ($(python3 -c "import json;print(len(json.load(open('$MODELS_JSON'))['models']))" 2>/dev/null || echo '?') gateway models)"
+elif [ -n "$REPO_DIR" ] && [ -f "$REPO_DIR/configs/opencode.json" ]; then
   cp "$REPO_DIR/configs/opencode.json" "$OC_CFG"
   log "installed opencode.json from repo ($REPO_DIR)"
 else
@@ -106,8 +127,9 @@ else
   }
 }
 EOF
-  log "installed gateway-only opencode.json (embedded copy)"
+  log "installed gateway-only opencode.json (embedded fallback copy)"
 fi
+rm -f "$MODELS_JSON"
 # point the config at the key FILE (not the env) so it survives reboots/launchers
 sed -i "s|{env:OCTO_KEY}|{file:$KEY_FILE}|" "$OC_CFG"
 grep -q "{file:$KEY_FILE}" "$OC_CFG" || die "apiKey rewrite failed"

@@ -211,8 +211,10 @@ async function createKey() {
   try {
     const r = await api('/api/keys', {method:'POST', body: JSON.stringify({name})});
     document.getElementById('newkey-alert').innerHTML = `
-      <div class="om-newkey"><b>✅ New key <code>${esc(r.key_alias)}</code></b> — copy it now, it is shown only once:
-        <pre onclick="copyText(this)">${esc(r.key)}</pre></div>`;
+      <div class="om-newkey"><b>✅ New key <code>${esc(r.key_alias)}</code></b> — copy it now, it is shown only once.
+        One paste on any Linux box installs opencode + this key + the live model lineup:
+        <pre onclick="copyText(this)">curl -fsSL ${location.origin}/setup.sh | OCTO_KEY='${esc(r.key)}' bash</pre>
+        (or just the key: <pre onclick="copyText(this)">${esc(r.key)}</pre>)</div>`;
     document.getElementById('key-name').value = '';
     loadKeys();
   } catch (e) { alert('create failed: ' + e.message); }

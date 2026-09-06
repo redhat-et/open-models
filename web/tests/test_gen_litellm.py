@@ -69,9 +69,10 @@ def test_shipped_config_groups_and_fallback_chain():
         pytest.skip("run scripts/gen_litellm_config.py first")
     cfg = yaml.safe_load(shipped_path.read_text())
     groups = {m["model_name"] for m in cfg["model_list"]}
-    assert groups == {"qwen38-flash-next", "qwen38-27b-fast"}
+    assert groups == {"qwen38-flash-next", "qwen38-27b-fast", "glm-45-air"}
     chain = {k: v for fb in cfg["router_settings"]["fallbacks"] for k, v in fb.items()}
     assert chain["qwen38-flash-next"] == ["qwen38-27b-fast"]
+    assert chain["glm-45-air"] == ["qwen38-27b-fast"]
     assert "qwen38-27b-fast" not in chain  # acyclic: fast is the floor
 
 

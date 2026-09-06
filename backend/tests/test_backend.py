@@ -185,3 +185,21 @@ def test_compute_guard_and_hooks(tmp_path):
     cat.write_text(cat.read_text().replace(
         "    compute: {'off': 'echo stopped', 'on': 'echo started'}\n", ""))
     assert "no compute" in run("a", "off").stdout
+
+
+def test_setup_endpoints(client, monkeypatch):
+    monkeypatch.setattr(backend, "load_catalog", lambda: {"gateway": {}, "models": [
+        {"id": "f", "name": "F", "status": "running", "group": "flash-g", "tier": "balanced",
+         "context": 262144, "max_output": 8192, "tool_call": True, "reasoning": True},
+        {"id": "a", "name": "A", "status": "running", "group": "air-g", "tier": "smart",
+         "context": 131072, "tool_call": True},
+        {"id": "r", "name": "R", "status": "running", "group": "fast-g", "tier": "fast",
+         "context": 32768, "max_output": 8192},
+        {"id": "z", "name": "Z", "status": "paused", "group": "gone-g", "tier": "smart"},
+    ]})
+    m = client.get("/setup/models.json").json()
+    assert m["default"] == "air-g" and m["small"] == "fast-g"
+    assert set(m["models"]) == {"flash-g", "air-g", "fast-g"}
+    assert m["models"]["air-g"]["limit"] == {"context": 131072, "output": 8192}
+    sh = client.get("/setup.sh")
+    assert sh.status_code == 200 and "opencode" in sh.text

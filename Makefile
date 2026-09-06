@@ -89,7 +89,8 @@ dev:
 	rm -rf /tmp/om-backend-build && mkdir -p /tmp/om-backend-build && \
 	cp -r backend /tmp/om-backend-build/backend && \
 	cp catalog.yaml /tmp/om-backend-build/catalog.yaml && \
-	oc start-build om-backend -n $(DEV_NS) --from-dir /tmp/om-backend-build --follow && \
+	cp -r scripts /tmp/om-backend-build/scripts && \
+	oc start-build om-backend -n $(DEV_NS) --from-dir /tmp/om-backend-build --follow --wait && \
 	oc set image deploy/omdev-app app=$$(oc get istag om-backend:latest -n $(DEV_NS) -o jsonpath='{.image.dockerImageReference}') -n $(DEV_NS)
 	oc rollout status deploy/omdev-app -n $(DEV_NS) --timeout=180s || true
 
@@ -102,7 +103,8 @@ backend-image:
 	rm -rf /tmp/om-backend-build && mkdir -p /tmp/om-backend-build && \
 	cp -r backend /tmp/om-backend-build/backend && \
 	cp catalog.yaml /tmp/om-backend-build/catalog.yaml && \
-	oc start-build om-backend -n $(NAMESPACE) --from-dir /tmp/om-backend-build --follow && \
+	cp -r scripts /tmp/om-backend-build/scripts && \
+	oc start-build om-backend -n $(NAMESPACE) --from-dir /tmp/om-backend-build --follow --wait && \
 	oc set image deploy/om-app app=$(APP_STREAM):$(APP_TAG) -n $(NAMESPACE)
 
 web:
