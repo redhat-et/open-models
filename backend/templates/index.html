@@ -108,9 +108,7 @@
 
     <section id="keys-section" style="margin-top:var(--pf-t--global--spacer--xl); display:none">
       <h2 style="font-size:1.2rem; margin:0 0 var(--pf-t--global--spacer--md)">My API keys</h2>
-      <div class="om-banner" style="border-left-color:#8b5cf6; margin-bottom:var(--pf-t--global--spacer--md)">
-        <span>💡 Nothing here is a bill or a tracker. These numbers exist for exactly two reasons: showing you the <b>$ you save</b> vs frontier APIs, and counting <b>which models get used</b> so we know which GPUs to point at next. Your key is yours, and nothing else about your usage is tied to your identity.</span>
-      </div>
+      <p style="color:var(--pf-t--global--text--color--subtle); font-size:.85rem; margin:-.25rem 0 var(--pf-t--global--spacer--md)">Token counts are kept for two things only: your savings vs frontier APIs, and per-model usage totals so we know where to add capacity.</p>
       <div id="newkey-alert"></div>
       <div class="om-toolbar">
         <input id="key-name" placeholder="key name (lowercase, e.g. laptop)" onkeydown="if(event.key==='Enter')createKey()">
