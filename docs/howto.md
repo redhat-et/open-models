@@ -53,7 +53,9 @@ Fully offline (no cluster): `make lab`, `make lab-test`, `make lab-down`.
    `values-targets.yaml` (`make gen` writes it).
 5. Verify: `curl <gateway>/v1/models`, a chat call, then prometheus `up==1`.
 
-See `docs/user-setup.md` for the client side (per-user keys/opencode).
+See `docs/model-onboarding.md` for the full new-model workflow (admin + user side),
+and `docs/user-setup.md` for the client side (per-user keys/opencode).
+Setup script + live model list: `GET <portal>/setup.sh`, `GET <portal>/setup/models.json`.
 
 ## Bump the LiteLLM version
 
