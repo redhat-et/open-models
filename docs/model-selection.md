@@ -1,3 +1,5 @@
+# Tier vocabulary note: 'smart/fast' below are the OLD names for today's frontier/core roles; bulk = old flash/balanced. The bandwidth math is unchanged.
+
 # Model selection
 
 One entry per platform; update when a benchmark picks a winner. Keep
