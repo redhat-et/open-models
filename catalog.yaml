@@ -217,5 +217,6 @@ models:
     tool_call: false
     reasoning: true
     quant: mxfp4
-    status: planned
-    notes: Bake-off flagship for GB10 (5.1B active); flip to listed when :8000 serves.
+    status: listed
+    notes: Bake-off flagship for GB10 (5.1B active) - 33 tok/s over VPN. Needs
+      TIKTOKEN_ENCODINGS_BASE rank files mounted (box cannot reach OpenAI CDN).

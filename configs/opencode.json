@@ -80,6 +80,26 @@
           "temperature": true
         }
       }
+    },
+    "octo-spark3-gptoss": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "OCTO Open Models (DGX Spark (GB10, 128GB unified) - direct/unmetered, VPN)",
+      "options": {
+        "baseURL": "http://octo-et-spark-3.khw.eng.rdu2.dc.redhat.com:8000/v1",
+        "apiKey": "none"
+      },
+      "models": {
+        "openai/gpt-oss-120b": {
+          "name": "gpt-oss-120b MXFP4 (Lab)",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "tool_call": false,
+          "reasoning": true,
+          "temperature": true
+        }
+      }
     }
   },
   "model": "octo-gateway/qwen38-27b-fast",
