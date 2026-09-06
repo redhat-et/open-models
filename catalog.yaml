@@ -34,8 +34,12 @@ gateway:
   # slow - not worth a tunnel into the gateway's serving path.
   fallbacks:
     qwen38-flash-next: [qwen38-27b-fast]
+    glm-46-air: [qwen38-27b-fast]
 
 hosts:
+  hotaisle-1gpu:
+    hardware: 1x AMD Instinct MI300X (192GB) - smart tier, power off when idle ($3/hr)
+    notes: replaces 2-GPU config 2026-09-06; 235B TP=2 demo = resize up for an afternoon
   spark2:
     hardware: DGX Spark (GB10, 128GB unified)
     notes: Listed/direct only (VPN). Slow - kept out of the metered gateway.
@@ -136,8 +140,7 @@ models:
     tool_call: true
     reasoning: true
     quant: fp8
-    status: paused
-    previous_status: running
+    status: running
     notes: 2x MI300X VF; powered off when idle - gateway falls back to the 5090 (same group).
 
   - id: strix-halo
@@ -153,3 +156,18 @@ models:
     quant: tbd
     status: planned
     notes: Verify what is actually serving on this box once we grab it.
+
+  - id: hotaisle-air
+    host: hotaisle-1gpu
+    name: "GLM-4.6-Air 106B-A12B (Smart)"
+    served_model: zai-org/GLM-4.6-Air-FP8
+    tier: smart
+    group: glm-46-air
+    price: {input: 0.60, output: 2.40}  # notional $/Mtok vs public APIs
+    base_url: http://REPLACE-WITH-VM-IP:8000/v1
+    api_key: sk-local
+    context: 131072
+    tool_call: true
+    reasoning: true
+    quant: fp8
+    status: planned

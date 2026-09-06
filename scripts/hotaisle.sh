@@ -13,10 +13,10 @@ set -euo pipefail
 
 SSH="${HOTAISLE_SSH:-hotaisle@23.183.40.70}"
 IMAGE="rocm/vllm:rocm7.13.0_gfx94X-dcgpu_ubuntu24.04_py3.13_pytorch_2.10.0_vllm_0.19.1"
-MODEL="Qwen/Qwen3.8-27B-FP8"
+MODEL="${HOTAISLE_MODEL:-Qwen/Qwen3.8-27B-FP8}"
 PORT=8000
 API_KEY="sk-local"
-CTX=32768
+CTX="${HOTAISLE_CTX:-32768}"
 MAX_SEQS=32
 
 run() { ssh -o ConnectTimeout=10 -o BatchMode=yes "$SSH" "$@"; }

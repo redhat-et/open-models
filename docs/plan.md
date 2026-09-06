@@ -98,3 +98,6 @@ scheduling, smart routing.
 - NEXT: UI rework with richer data (per-model live status/latency, spend charts);
   spark/strix onboarding + repeatable spark workflow; nightly soak combining
   lab chaos + benchmarks; hot-aisle re-serve when box is powered back on.
+- SMART TIER (2026-09-06): GLM-4.6-Air-FP8 (106B-A12B) on resized 1x MI300X
+  hot-aisle ($3/hr vs $6): quality/coding tier `glm-46-air` (fallback -> fast),
+  27B fast stays on the free 5090, 235B TP=2 reserved for resize-for-demo-days.
