@@ -58,6 +58,7 @@ model-off:
 	@test -n "$(MODEL)" || { echo "usage: make model-off MODEL=<catalog-id>"; exit 2; }
 	python3 scripts/model_toggle.py $(MODEL) off
 	$(MAKE) deploy APP=1
+	oc rollout status deploy/$(shell oc get deploy -n $(NAMESPACE) --no-headers | awk '/litellm/{print $$1; exit}') -n $(NAMESPACE) --timeout=180s
 	$(if $(COMPUTE),python3 scripts/compute.py $(MODEL) off,)
 
 model-on:
@@ -65,6 +66,7 @@ model-on:
 	$(if $(COMPUTE),python3 scripts/compute.py $(MODEL) on,)
 	python3 scripts/model_toggle.py $(MODEL) on
 	$(MAKE) deploy APP=1
+	oc rollout status deploy/$(shell oc get deploy -n $(NAMESPACE) --no-headers | awk '/litellm/{print $$1; exit}') -n $(NAMESPACE) --timeout=180s
 
 model-status:
 	@python3 scripts/model_toggle.py --help 2>/dev/null; for m in $$(grep -E '^  - id: ' catalog.yaml | sed 's/.*id: //'); do python3 scripts/model_toggle.py $$m status; done
