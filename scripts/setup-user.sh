@@ -18,7 +18,13 @@ APP_URL="https://octo-app-octo-models.apps.emerg.pcbk.p1.openshiftapps.com"
 GW_URL="https://litellm-octo-models.apps.emerg.pcbk.p1.openshiftapps.com/v1"
 KEY_FILE="$HOME/.config/octo/key"
 OC_CFG="$HOME/.config/opencode/opencode.json"
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd || true)"
+SELF_PATH="${BASH_SOURCE[0]:-${0:-}}"
+REPO_DIR=""
+case "$SELF_PATH" in
+  */*) REPO_DIR="$(cd "$(dirname "$SELF_PATH")/.." 2>/dev/null && pwd || true)" ;;
+esac
+# when piped via curl|bash there is no real path; validate repo dir
+[ -n "$REPO_DIR" ] && [ ! -f "$REPO_DIR/scripts/setup-user.sh" ] && REPO_DIR=""
 KEY=""
 CHECK=0
 while [ $# -gt 0 ]; do
