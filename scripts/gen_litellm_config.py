@@ -58,9 +58,30 @@ def litellm_config(catalog: dict) -> dict:
             }
         )
 
+    fallback_map = gw.get("fallbacks") or {}
+    # a group with zero live deployments would otherwise vanish from
+    # /v1/models and hard-400 its users; keep the name alive as a shadow
+    # deployment wired to the first live fallback target (litellm has no
+    # fallback for unknown names, only for failing deployments).
+    by_group: dict = {}
+    for entry in model_list:
+        by_group.setdefault(entry["model_name"], entry)
+    for group, targets in fallback_map.items():
+        if group in by_group:
+            continue
+        for target in targets:
+            if target in by_group:
+                import copy
+
+                shadow = copy.deepcopy(by_group[target])
+                shadow["model_name"] = group
+                shadow["model_info"]["id"] = f"shadow-{group}"
+                model_list.append(shadow)
+                break
+
     fallbacks = [
         {group: targets}
-        for group, targets in (gw.get("fallbacks") or {}).items()
+        for group, targets in fallback_map.items()
         if group in groups
     ]
 
