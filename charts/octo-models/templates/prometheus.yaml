@@ -74,7 +74,6 @@ spec:
           args:
             - --config.file=/etc/prometheus/prometheus.yml
             - --storage.tsdb.path=/prometheus
-            - --web.enable-remote-write-receiver
             - --storage.tsdb.retention.time=90d
             {{- if .Values.secrets.promBcrypt }}
             - --web.config.file=/etc/prometheus/secrets/web-config.yml

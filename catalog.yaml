@@ -68,12 +68,15 @@ hosts:
   rtx5090:
     hardware: RTX 5090 (32GB GDDR7)
     compute:
-      "off": ssh 192.168.1.166 'podman stop qwen38-nvfp4'
-      "on": ssh 192.168.1.166 'podman start qwen38-nvfp4 && sleep 45'
+      "off": ssh -i /tmp/om-ssh-home/.ssh/id_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/tmp/om-ssh-home/.ssh/known_hosts -p 8022 bturner@136.47.153.236 'podman stop qwen38-nvfp4'
+      "on": ssh -i /tmp/om-ssh-home/.ssh/id_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/tmp/om-ssh-home/.ssh/known_hosts -p 8022 bturner@136.47.153.236 'podman start qwen38-nvfp4 && sleep 45'
     notes: Bulk tier - background/batch work; snappy solo but ~100 tok/s aggregate ceiling.
+      Desk-side box; ssh moved to port 8022 (22 closed; 6999-9000 is the router-forwarded range). Wake via cluster
+      works today - the range is already port-forwarded.
   openshift:
     hardware: OpenShift cluster, g6e GPU nodes (Ryan Cook's, spending plan covered)
     notes: Core tier - daily driver on covered g6e (4x L40S, TP=4, MTP spec-decode), edge route.
+      Plan: retire the 4x L40S (~$6/hr) for a single RTX Pro 6000 ($3/hr, similar VRAM).
   spark1:
     hardware: DGX Spark (GB10, 128GB unified)
     notes: Future slot.
