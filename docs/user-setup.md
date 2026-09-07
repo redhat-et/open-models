@@ -12,7 +12,7 @@ one key, all models — with automatic fallback and per-user budgets.
   - lab boxes (DGX Sparks: `octo-spark2-smart`, `octo-spark4-lab`, `octo-spark3-gptoss`) land in your opencode config too - direct endpoints, on VPN only, unmetered, no SLA
 - Login: GitHub, requires membership in the `redhat-et` org.
 - Limits: 600 req/min, $20/day worth of tokens (measured at public API price —
-  effectively enormous). Ask in #octo if you need more.
+  effectively enormous). Ask in #octo-open-model-platform if you need more.
 
 First step for everything below: log into the web app and **create a key**
 (`sk-...`, shown once — save it).
