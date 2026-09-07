@@ -142,7 +142,7 @@
            style="float:right; font-size:.8rem; color:#73bcf7; text-decoration:underline">📊 live dashboard</a>
       </h2>
       <div class="om-grid" id="models"></div>
-      <p style="margin-top:.8rem"><button class="om-copy" id="lab-toggle" style="display:none" onclick="toggleLab()">show lab &amp; paused</button></p>
+      <p style="margin-top:.8rem"><button class="om-copy" id="lab-toggle" style="display:none" onclick="toggleLab()">show paused</button></p>
     </section>
 
     <section style="margin-top:var(--pf-t--global--spacer--xl)">
@@ -215,7 +215,7 @@ let labOn = false;
 function toggleLab(){
   labOn = !labOn;
   document.querySelectorAll('.om-lab').forEach(el => el.style.display = labOn ? '' : 'none');
-  document.getElementById('lab-toggle').textContent = labOn ? 'hide lab & paused' : 'show lab & paused';
+  document.getElementById('lab-toggle').textContent = labOn ? 'hide paused' : 'show paused';
 }
 
 function snippet(m) {
@@ -244,7 +244,7 @@ async function loadCatalog() {
       ? `<span class="pf-v6-c-label pf-m-green"><span class="om-dot" style="background:#1ec457"></span>metered</span>`
       : `<span class="pf-v6-c-label pf-m-orange" title="${esc(m.notes)}"><span class="om-dot" style="background:#f4c145"></span>direct · VPN · unmetered</span>`;
     const startHere = m.tier === 'core' && m.status !== 'paused';
-    const hidden = m.tier === 'lab' || m.status === 'paused';
+    const hidden = m.status === 'paused';
     const modelId = m.metered ? m.gateway_model : m.served_model;
     return `<div class="om-card${hidden ? ' om-lab' : ''}"${hidden ? ' style="display:none"' : ''} data-tier="${m.tier}">
       <div class="om-card__head">
@@ -271,7 +271,7 @@ async function loadCatalog() {
   const nLab = document.querySelectorAll('.om-lab').length;
   const tog = document.getElementById('lab-toggle');
   tog.style.display = nLab ? '' : 'none';
-  tog.textContent = labOn ? 'hide lab & paused' : `show lab & paused (${nLab})`;
+  tog.textContent = labOn ? 'hide paused' : `show paused (${nLab})`;
 }
 
 const HDOT = {ok: '#1ec457', slow: '#f4c145', down: '#c9190b', waking: '#73bcf7', sleeping: '#8a8d90', unknown: '#8a8d90'};
