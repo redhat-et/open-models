@@ -110,19 +110,28 @@ if curl -sf -m 10 "$APP_URL/setup/models.json" -o "$MODELS_JSON" && command -v p
 import json, sys
 cfg_path, gw, mpath = sys.argv[1:4]
 m = json.load(open(mpath))
+prov = {"octo-gateway": {
+  "npm": "@ai-sdk/openai-compatible",
+  "name": "OCTO Open Models gateway (metered; key from the web app)",
+  "options": {"baseURL": gw, "apiKey": "{env:OCTO_KEY}"},
+  "models": m["models"],
+}}
+for lab in m.get("lab", []):
+  prov[lab["provider"]] = {
+    "npm": "@ai-sdk/openai-compatible",
+    "name": lab["name"],
+    "options": {"baseURL": lab["base_url"], "apiKey": lab.get("api_key") or "none"},
+    "models": {lab["served_model"]: lab["model"]},
+  }
 json.dump({
   "$schema": "https://opencode.ai/config.json",
   "model": f"octo-gateway/{m['default']}",
   "small_model": f"octo-gateway/{m['small']}",
-  "provider": {"octo-gateway": {
-    "npm": "@ai-sdk/openai-compatible",
-    "name": "OCTO Open Models gateway (metered; key from the web app)",
-    "options": {"baseURL": gw, "apiKey": "{env:OCTO_KEY}"},
-    "models": m["models"],
-  }},
+  "provider": prov,
 }, open(cfg_path, "w"), indent=2)
 PY
-  log "installed opencode.json built from the LIVE catalog ($(python3 -c "import json;print(len(json.load(open('$MODELS_JSON'))['models']))" 2>/dev/null || echo '?') gateway models)"
+  COUNTS=$(python3 -c "import json;d=json.load(open('$MODELS_JSON'));print(str(len(d['models'])) + ' gateway models + ' + str(len(d.get('lab', []))) + ' lab providers')" 2>/dev/null || echo "gateway models")
+  log "installed opencode.json built from the LIVE catalog ($COUNTS)"
 elif [ -n "$REPO_DIR" ] && [ -f "$REPO_DIR/configs/opencode.json" ]; then
   cp "$REPO_DIR/configs/opencode.json" "$OC_CFG"
   log "installed opencode.json from repo ($REPO_DIR)"

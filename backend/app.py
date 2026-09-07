@@ -561,7 +561,27 @@ def setup_models():
     pick = lambda tier: next((g for g, t in tiers.items() if t == tier), None)
     default = (pick("core") or pick("frontier") or pick("bulk")
                or (next(iter(groups), None)))
-    return {"models": groups, "default": default,
+    hosts = cat.get("hosts") or {}
+    lab = []
+    for m in cat.get("models", []):
+        if (m.get("tier") == "lab" and m.get("base_url")
+                and m.get("status") in {"running", "live", "listed"}):
+            served = m.get("served_model") or m["id"]
+            lab.append({
+                "provider": "octo-" + m["id"],
+                "name": f"OCTO Open Models ({(hosts.get(m.get('host')) or {}).get('hardware') or m.get('host')} - direct/unmetered, VPN)",
+                "base_url": m["base_url"],
+                "api_key": m.get("api_key") or "none",
+                "served_model": served,
+                "model": {
+                    "name": m.get("name", served),
+                    "limit": {"context": m.get("context", 8192), "output": m.get("max_output", 8192)},
+                    "tool_call": bool(m.get("tool_call")),
+                    "reasoning": bool(m.get("reasoning")),
+                    "temperature": True,
+                },
+            })
+    return {"models": groups, "default": default, "lab": lab,
             "small": pick("bulk") or default}
 
 

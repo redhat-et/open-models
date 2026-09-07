@@ -196,11 +196,17 @@ def test_setup_endpoints(client, monkeypatch):
         {"id": "r", "name": "R", "status": "running", "group": "fast-g", "tier": "core",
          "context": 32768, "max_output": 8192},
         {"id": "z", "name": "Z", "status": "paused", "group": "gone-g", "tier": "frontier"},
+        {"id": "labx", "name": "Lab X", "status": "listed", "tier": "lab", "host": "sparkx",
+         "base_url": "http://labx:8000/v1", "served_model": "Lab/X", "context": 131072},
     ]})
     m = client.get("/setup/models.json").json()
     assert m["default"] == "fast-g" and m["small"] == "flash-g"
     assert set(m["models"]) == {"flash-g", "air-g", "fast-g"}
     assert m["models"]["air-g"]["limit"] == {"context": 131072, "output": 8192}
+    assert [p["provider"] for p in m["lab"]] == ["octo-labx"]
+    assert m["lab"][0]["served_model"] == "Lab/X" and m["lab"][0]["api_key"] == "none"
+    assert m["lab"][0]["model"]["limit"]["context"] == 131072
+    assert "VPN" in m["lab"][0]["name"]
     sh = client.get("/setup.sh")
     assert sh.status_code == 200 and "opencode" in sh.text
 
