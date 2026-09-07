@@ -62,11 +62,11 @@ off)
 up)
   [ -f "$SPECS" ] || { echo "missing $SPECS - run 'spec' while a VM exists first"; exit 1; }
   echo "provisioning VM from $SPECS"
-  body=$(python3 -c "
-import json
-specs = json.load(open('$SPECS'))
-if '${HOTAISLE_USERDATA_URL:-}':
-    specs['user_data_url'] = '${HOTAISLE_USERDATA_URL}'
+  body=$(SPECS="$SPECS" python3 -c "
+import json, os
+specs = json.load(open(os.environ['SPECS']))
+if os.environ.get('HOTAISLE_USERDATA_URL'):
+    specs['user_data_url'] = os.environ['HOTAISLE_USERDATA_URL']
 print(json.dumps(specs))")
   created=$(echo "$body" | api -X POST -H 'Content-Type: application/json' -d @- \
     "$API/teams/$TEAM/virtual_machines/")
