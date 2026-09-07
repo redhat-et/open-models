@@ -8,6 +8,8 @@ one key, all models — with automatic fallback and per-user budgets.
 - Models available to you (see the web app for the live list):
   - `qwen38-flash-next` — Qwen 3.8 Flash Next, 262k context (core default; 4x L40S cluster, MTP spec-decode)
   - `qwen38-27b-fast` — Qwen 3.8 27B (bulk; background/batch, single 5090 - falls back to flash-next when down)
+  - `glm-45-air` — GLM-4.5-Air (frontier; hardest agentic work, box idles powered down - the portal card has a Wake button)
+  - lab boxes (DGX Sparks: `octo-spark2-smart`, `octo-spark4-lab`, `octo-spark3-gptoss`) land in your opencode config too - direct endpoints, on VPN only, unmetered, no SLA
 - Login: GitHub, requires membership in the `redhat-et` org.
 - Limits: 600 req/min, $20/day worth of tokens (measured at public API price —
   effectively enormous). Ask in #octo if you need more.
@@ -27,7 +29,7 @@ and replace the `apiKey` value `"{env:OCTO_KEY}"` with
 `"{file:/home/YOU/.config/octo/key}"` (put the key in that file), or just
 `export OCTO_KEY=sk-...` in every shell that launches opencode.
 
-Both gateway models are pre-defined; `model`/`small_model` defaults are set.
+All gateway models (plus the lab boxes) are pre-defined; `model`/`small_model` defaults are set.
 
 ## Open WebUI
 

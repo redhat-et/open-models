@@ -13,17 +13,19 @@ make model-on  MODEL=rtx5090-fast   # restores previous state
 ```
 
 - Paused models drop out of `/v1/models` immediately and fall back normally
-  (e.g. pausing flash still serves its `qwen38-27b-fast` fallback group).
+  (`qwen38-27b-fast → qwen38-flash-next`, `glm-45-air → qwen38-flash-next`;
+  flash-next is the floor and never falls back). So pausing the 5090's 27B
+  keeps bulk traffic alive on the core cluster, a bit slower per seat.
 - The portal shows a grey **paused** badge and hides the snippet.
 - Catalog keeps `previous_status` while paused so `model-on` restores exactly.
 
 Then stop the actual compute so you stop paying:
-- **hot-aisle box**: `./scripts/hotaisle.sh off` (never stop it while it's the only
-  endpoint for a live group — check `make model-status` first).
-- **RTX 5090** (`192.168.1.166`): `COMPUTE=1` handles it (`podman stop qwen38-nvfp4`);
-  manual: `ssh 192.168.1.166 'podman stop qwen38-nvfp4'` (start = same with `start`).
-  Note it's currently the ONLY fast endpoint while hotaisle is paused - turning it
-  off leaves the fast group empty.
+- **hot-aisle box**: `./scripts/hotaisle.sh off` (power-on for the 1gpu GLM box
+  is manual at admin.hotaisle.app; the portal Wake button then starts serving).
+- **RTX 5090** (desk box, sshd on port **8022**): `COMPUTE=1` handles it
+  (`podman stop qwen38-nvfp4`); manual:
+  `ssh -p 8022 bturner@136.47.153.236 'podman stop qwen38-nvfp4'`
+  (or `192.168.1.166:8022` on the home LAN; start = same with `start`).
 - **OCP-hosted endpoint**: `oc scale deploy/<name> -n <ns> --replicas=0`.
 
 Rule of thumb: pause the model in the gateway **first**, then kill compute;
