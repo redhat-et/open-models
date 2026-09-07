@@ -49,13 +49,13 @@ gateway:
 
 hosts:
   hotaisle-1gpu:
-    hardware: 1x AMD Instinct MI300X (192GB) - frontier tier, power off when idle ($3/hr)
-    notes: replaces 2-GPU config 2026-09-06; 235B TP=2 demo = resize up for an afternoon
-    wake_note: "If the box is fully powered off, power it on at admin.hotaisle.app first, then click Wake again."
+    hardware: 1x AMD Instinct MI300X (192GB) - frontier tier, billed while the VM exists ($3/hr) - delete when idle
+    notes: enc1-gpuvm024 (team rh-octo-emerging-tech); power-off does NOT stop billing - only delete does (hotaisle-api.sh)
+    wake_note: "Wake re-provisions the VM from scratch and re-downloads ~27GB of weights - cold start ~45-60 min. Until it serves, glm-45-air answers from the shadow (flash-next)."
     compute:
-      "off": HOTAISLE_SSH=hotaisle@23.183.40.87 HOTAISLE_SSH_OPTS="-F /tmp/om-ssh-home/.ssh/config" ./scripts/hotaisle.sh off
-      "on": HOTAISLE_SSH=hotaisle@23.183.40.87 HOTAISLE_SSH_OPTS="-F /tmp/om-ssh-home/.ssh/config" HOTAISLE_MODEL=zai-org/GLM-4.5-Air-FP8 HOTAISLE_CTX=131072 ./scripts/hotaisle.sh serve && ./scripts/hotaisle.sh wait
-    # idle_off: true   # arm auto-poweroff only once wake needs no human (console-only wake today)
+      "off": HOTAISLE_TEAM=rh-octo-emerging-tech HOTAISLE_VM=enc1-gpuvm024 ./scripts/hotaisle-api.sh off
+      "on": HOTAISLE_TEAM=rh-octo-emerging-tech HOTAISLE_VM=enc1-gpuvm024 HOTAISLE_IP=23.183.40.87 HOTAISLE_SSH_OPTS="-F /tmp/om-ssh-home/.ssh/config" HOTAISLE_MODEL=zai-org/GLM-4.5-Air-FP8 HOTAISLE_CTX=131072 ./scripts/hotaisle-api.sh up
+    # idle_off: true   # arm auto-delete only after the up hook is proven end-to-end
   spark2:
     hardware: DGX Spark (GB10, 128GB unified)
     notes: Lab tier - direct endpoint only (VPN). Bake-off sandbox for new candidates.
