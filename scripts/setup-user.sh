@@ -64,20 +64,32 @@ SMOKE=$(curl -sf -m 60 "$GW_URL/chat/completions" \
   ) || die "gateway call failed - is the key correct / gateway up?"
 echo "$SMOKE" | grep -q "choices" || die "unexpected response: $(echo "$SMOKE" | head -c 200)"
 log "gateway OK ✓  (spend for this call shows up in the portal)"
-[ "$CHECK" = 1 ] && { log "setup looks good - key works, gateway reachable"; exit 0; }
+if [ "$CHECK" = 1 ]; then
+  if command -v opencode >/dev/null 2>&1; then
+    log "setup looks good - key works, gateway reachable, opencode on PATH"
+  else
+    log "key works but opencode isn't on this shell's PATH - run:"
+    echo '    export PATH="$HOME/.local/bin:$HOME/.opencode/bin:$PATH"'
+    echo "  (or open a new terminal) and re-run --check"
+  fi
+  exit 0
+fi
+PATH_HAD_OC=0; command -v opencode >/dev/null 2>&1 && PATH_HAD_OC=1
 
 # ---------------------------------------------------------------- key storage + env
 mkdir -p "$(dirname "$KEY_FILE")"; chmod 700 "$(dirname "$KEY_FILE")"
 printf '%s' "$KEY" > "$KEY_FILE"; chmod 600 "$KEY_FILE"
-RC="$HOME/.bashrc"
-if ! grep -q "OCTO_KEY from octo-setup" "$RC" 2>/dev/null; then
-  cat >> "$RC" <<'EOF'
+# cover bash (interactive), sh (login) and zsh - whichever rc the user's shell reads
+for RC in "$HOME/.bashrc" "$HOME/.profile" "$HOME/.zshrc"; do
+  if ! grep -q "OCTO_KEY from octo-setup" "$RC" 2>/dev/null; then
+    cat >> "$RC" <<'EOF'
 # OCTO_KEY from octo-setup
 export OCTO_KEY="$(cat "$HOME/.config/octo/key" 2>/dev/null)"
 export PATH="$HOME/.local/bin:$HOME/.opencode/bin:$PATH"
 EOF
-  log "exported OCTO_KEY + PATH in ~/.bashrc"
-fi
+    log "exported OCTO_KEY + PATH in ~/${RC##*/}"
+  fi
+done
 
 # ---------------------------------------------------------------- opencode install
 export PATH="$HOME/.local/bin:$HOME/.opencode/bin:$PATH"
@@ -142,6 +154,11 @@ grep -q "{file:$KEY_FILE}" "$OC_CFG" || die "apiKey rewrite failed"
 log "opencode apiKey -> {file:$KEY_FILE} (no shell env needed)"
 
 log "done! try it:  opencode   (models: /models -> octo-gateway/*)"
+if [ "$PATH_HAD_OC" = 0 ]; then
+  log "first time only - this terminal can't be changed by a piped script, so run:"
+  echo '    export PATH="$HOME/.local/bin:$HOME/.opencode/bin:$PATH"'
+  echo "  ...or just open a new terminal (bash/zsh pick it up automatically from now on)"
+fi
 log "(key is read from file at startup - works in any shell, after any reboot)"
 echo "  portal:   $APP_URL"
 echo "  grafana:  https://grafana-octo-models.apps.emerg.pcbk.p1.openshiftapps.com"
