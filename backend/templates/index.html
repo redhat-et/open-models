@@ -49,6 +49,16 @@
     .om-card__head h3 { margin: 0 0 .5rem; font-size: 1.1rem; }
     .om-badges { display: flex; gap: .4rem; flex-wrap: wrap; }
     .om-card__body { padding: var(--pf-t--global--spacer--md) var(--pf-t--global--spacer--lg) var(--pf-t--global--spacer--lg); flex: 1 1 auto; }
+    .om-steps { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1.1rem; }
+    .om-step { background: var(--pf-t--global--background--color--secondary--default); border: 1px solid var(--pf-t--global--border--color--default); border-radius: .5rem; padding: .45rem .8rem; font-size: .84rem; }
+    .om-step b { display: inline-block; background: #0066cc; color: #fff; border-radius: 50%; width: 1.25rem; height: 1.25rem; text-align: center; line-height: 1.3; margin-right: .45rem; font-size: .78rem; }
+    .om-more { margin-top: .8rem; font-size: .85rem; }
+    .om-more summary { cursor: pointer; color: #0066cc; font-size: .8rem; }
+    .om-copy { border: 1px solid var(--pf-t--global--border--color--default); background: transparent; border-radius: .4rem; cursor: pointer; font-size: .75rem; padding: .25rem .6rem; }
+    .om-copy:hover { background: var(--pf-t--global--background--color--secondary--default); }
+    .om-lat { color: #6a6e73; font-size: .75rem; }
+    #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #151515; color: #fff; padding: .6rem 1rem; border-radius: .5rem; font-size: .85rem; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 99; }
+    #toast.on { opacity: .95; }
     .om-meta { color: var(--pf-t--global--text--color--subtle); font-size: .82rem; margin: 0 0 .75rem; }
     pre.om-snippet {
       background: #151515; color: #e0e0e0; border-radius: 8px;
@@ -96,13 +106,38 @@
 
     <div class="om-banner">
       <span>⚡ All metered traffic goes through the gateway — paste this anywhere vLLM/OpenAI is expected:</span>
-      <code id="gateway-url" onclick="copyText(this)" title="click to copy">…</code>
+      <code id="gateway-url" onclick="copyText(this.textContent,'gateway URL')" title="click to copy">…</code>
     </div>
 
     <div class="om-banner" style="border-left-color:#12a5c4">
       <span>🖥 New here? One paste sets up your whole machine — opencode + key prompt + live model list (<a href="/setup.sh" style="color:#73bcf7; text-decoration:underline">view script</a>):</span>
-      <code id="setup-cmd" onclick="copyText(this)" title="click to copy">…</code>
+      <code id="setup-cmd" onclick="copyText(this.textContent,'setup command')" title="click to copy">…</code>
     </div>
+
+    <div class="om-steps">
+      <span class="om-step"><b>1</b> Create your key below</span>
+      <span class="om-step"><b>2</b> Paste the setup line above on any Linux box</span>
+      <span class="om-step"><b>3</b> opencode → <code>/models</code> → <b>octo-gateway/qwen38-flash-next</b> (already your default)</span>
+      <span class="om-step"><b>4</b> Any OpenAI-compatible code works — curl examples inside each card</span>
+    </div>
+
+    <section id="keys-section" style="margin-top:var(--pf-t--global--spacer--xl); display:none">
+      <h2 style="font-size:1.2rem; margin:0 0 var(--pf-t--global--spacer--md)">My API keys</h2>
+      <p style="color:var(--pf-t--global--text--color--subtle); font-size:.85rem; margin:-.25rem 0 var(--pf-t--global--spacer--md)">Token counts are kept for two things only: your savings vs frontier APIs, and per-model usage totals so we know where to add capacity.</p>
+      <div id="newkey-alert"></div>
+      <div class="om-toolbar">
+        <input id="key-name" placeholder="key name (lowercase, e.g. laptop)" onkeydown="if(event.key==='Enter')createKey()">
+        <button class="pf-v6-c-button pf-m-primary" onclick="createKey()">＋ Create key</button>
+        <span class="pf-v6-c-label pf-m-green om-spend-chip" style="margin-left:auto" id="total-spend"></span>
+      </div>
+      <div class="om-keys-card">
+        <table class="om-keys">
+          <thead><tr><th>Alias</th><th>Created</th><th>Saved so far</th><th></th></tr></thead>
+          <tbody id="keys-body"></tbody>
+        </table>
+      </div>
+      <p style="color:var(--pf-t--global--text--color--subtle); font-size:.8rem; margin-top:.5rem">"Saved" = what the same tokens would have cost a frontier API (~8x our notional rates). Rate limits are generous defaults - ask in #octo if you ever need more.</p>
+    </section>
 
     <section style="margin-top:var(--pf-t--global--spacer--xl)">
       <h2 style="font-size:1.2rem; margin:0 0 var(--pf-t--global--spacer--md)">Models
@@ -112,6 +147,7 @@
            style="float:right; font-size:.8rem; color:#73bcf7; text-decoration:underline">📊 live dashboard</a>
       </h2>
       <div class="om-grid" id="models"></div>
+      <p style="margin-top:.8rem"><button class="om-copy" id="lab-toggle" style="display:none" onclick="toggleLab()">show lab &amp; paused</button></p>
     </section>
 
     <section style="margin-top:var(--pf-t--global--spacer--xl)">
@@ -135,24 +171,7 @@
         <p style="margin:.8rem 0 0">📚 Full docs: <a href="/guide">/guide</a> — setup, model selection, runbook.</p>
       </div>
     </section>
-
-    <section id="keys-section" style="margin-top:var(--pf-t--global--spacer--xl); display:none">
-      <h2 style="font-size:1.2rem; margin:0 0 var(--pf-t--global--spacer--md)">My API keys</h2>
-      <p style="color:var(--pf-t--global--text--color--subtle); font-size:.85rem; margin:-.25rem 0 var(--pf-t--global--spacer--md)">Token counts are kept for two things only: your savings vs frontier APIs, and per-model usage totals so we know where to add capacity.</p>
-      <div id="newkey-alert"></div>
-      <div class="om-toolbar">
-        <input id="key-name" placeholder="key name (lowercase, e.g. laptop)" onkeydown="if(event.key==='Enter')createKey()">
-        <button class="pf-v6-c-button pf-m-primary" onclick="createKey()">＋ Create key</button>
-        <span class="pf-v6-c-label pf-m-green om-spend-chip" style="margin-left:auto" id="total-spend"></span>
-      </div>
-      <div class="om-keys-card">
-        <table class="om-keys">
-          <thead><tr><th>Alias</th><th>Created</th><th>Saved so far</th><th></th></tr></thead>
-          <tbody id="keys-body"></tbody>
-        </table>
-      </div>
-      <p style="color:var(--pf-t--global--text--color--subtle); font-size:.8rem; margin-top:.5rem">"Saved" = what the same tokens would have cost a frontier API (~8x our notional rates). Rate limits are generous defaults - ask in #octo if you ever need more.</p>
-    </section>
+    <div id="toast"></div>
   </main>
 </div>
 
@@ -188,7 +207,21 @@ function renderAuth() {
 
 async function logout() { await api('/auth/logout', {method:'POST'}); me=null; renderAuth(); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
-function copyText(el){ navigator.clipboard.writeText(el.textContent.trim()); }
+let toastTimer;
+function copyText(text, label){
+  navigator.clipboard.writeText(text.trim()).catch(() => {});
+  const t = document.getElementById('toast');
+  t.textContent = 'copied ✓ ' + (label || text.trim().slice(0, 42));
+  t.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('on'), 1400);
+}
+let labOn = false;
+function toggleLab(){
+  labOn = !labOn;
+  document.querySelectorAll('.om-lab').forEach(el => el.style.display = labOn ? '' : 'none');
+  document.getElementById('lab-toggle').textContent = labOn ? 'hide lab & paused' : 'show lab & paused';
+}
 
 function snippet(m) {
   if (m.status === 'paused') return '# this endpoint is paused — ask an admin to turn it back on';
@@ -206,17 +239,21 @@ async function loadCatalog() {
   window.SEATS = Object.fromEntries(c.models.map(m => [m.id, m.seats || 0]));
   document.getElementById('setup-cmd').textContent = 'curl -fsSL ' + location.origin + '/setup.sh -o ~/setup.sh && bash ~/setup.sh';
   document.getElementById('models').innerHTML = c.models.map(m => {
-    const t = TIER[m.tier] || {color: '#8a8d90', label: m.tier || 'n/a', icon: '🤖'};
+    const t = TIER[m.tier] || {color: '#8a8d90', label: m.tier || 'n/a', icon: '🤖', blurb: ''};
     const p = m.price || {};
     const price = p.input ? `$${p.input}/M in · $${p.output}/M out` : 'price TBD';
+    const hw = (c.hosts[m.host] || {}).hardware || m.host;
     const metered = m.status === 'paused'
       ? `<span class="pf-v6-c-label" style="opacity:.7"><span class="om-dot" style="background:#8a8d90"></span>paused</span>`
       : m.metered
       ? `<span class="pf-v6-c-label pf-m-green"><span class="om-dot" style="background:#1ec457"></span>metered</span>`
       : `<span class="pf-v6-c-label pf-m-orange" title="${esc(m.notes)}"><span class="om-dot" style="background:#f4c145"></span>direct · VPN · unmetered</span>`;
-    return `<div class="om-card" style="--om-accent:${t.color}">
+    const startHere = m.tier === 'core' && m.status !== 'paused';
+    const hidden = m.tier === 'lab' || m.status === 'paused';
+    const modelId = m.metered ? m.gateway_model : m.served_model;
+    return `<div class="om-card${hidden ? ' om-lab' : ''}"${hidden ? ' style="display:none"' : ''} data-tier="${m.tier}">
       <div class="om-card__head">
-        <h3>${t.icon} ${esc(m.name)}</h3>
+        <h3>${t.icon} ${esc(m.name)}${startHere ? ' <span class="pf-v6-c-label pf-m-blue" title="Already set as your default in setup.sh">⭐ Start here</span>' : ''}</h3>
         <div class="om-badges">
           <span class="pf-v6-c-label" style="background:${t.color}22; border-color:${t.color}">${t.label}</span>
           ${metered}
@@ -225,46 +262,49 @@ async function loadCatalog() {
         </div>
       </div>
       <div class="om-card__body">
-        <p class="om-meta">🖥 ${esc((c.hosts[m.host]||{}).hardware||m.host)} · 📏 ctx ${m.context?m.context.toLocaleString():'?'} · 🔬 ${esc(m.quant||'n/a')} · 💰 ${esc(price)}</p>
-        <pre class="om-snippet" title="click to copy" onclick="copyText(this)">${esc(snippet(m))}</pre>
-        ${m.direct_url ? `<p class="om-meta" style="margin:.6rem 0 0">direct: <code style="font-size:.75rem">${esc(m.direct_url)}</code></p>` : ''}
-        ${m.notes ? `<p class="om-meta" style="margin:.5rem 0 0; font-size:.78rem">${esc(m.notes)}</p>` : ''}
+        <p class="om-meta" style="margin:.2rem 0 .7rem">${t.blurb ? esc(t.blurb) + ' · ' : ''}${esc(hw)}${startHere ? ' · your opencode default' : ''}</p>
+        <button class="om-copy" title="Use this id in configs and code" onclick="copyText('${modelId}', 'model id')">📋 ${modelId}</button>
+        <details class="om-more"><summary>curl example &amp; hardware details</summary>
+          <p class="om-meta" style="margin:.6rem 0 .4rem">🖥 ${esc(hw)} · 📏 ctx ${m.context?m.context.toLocaleString():'?'} · 🔬 ${esc(m.quant||'n/a')} · 💰 ${esc(price)}</p>
+          <pre class="om-snippet" title="click to copy" onclick="copyText(this.textContent, 'curl example')">${esc(snippet(m))}</pre>
+          ${m.direct_url ? `<p class="om-meta" style="margin:.6rem 0 0">direct: <code style="font-size:.75rem">${esc(m.direct_url)}</code></p>` : ''}
+          ${m.notes ? `<p class="om-meta" style="margin:.5rem 0 0; font-size:.78rem">${esc(m.notes)}</p>` : ''}
+        </details>
       </div>
     </div>`;
   }).join('');
+  const nLab = document.querySelectorAll('.om-lab').length;
+  const tog = document.getElementById('lab-toggle');
+  tog.style.display = nLab ? '' : 'none';
+  tog.textContent = labOn ? 'hide lab & paused' : `show lab & paused (${nLab})`;
 }
 
-const HSTATE = {
-  ok:      ['#1ec457', d => `alive · ${d.latency_ms}ms`],
-  slow:    ['#f4c145', d => `slow · ${(d.latency_ms/1000).toFixed(1)}s`],
-  down:    ['#c9190b', () => 'unreachable'],
-  waking:  ['#73bcf7', () => 'waking…'],
-  sleeping:['#8a8d90', () => 'asleep'],
-  unknown: ['#8a8d90', () => 'checking…'],
-};
+const HDOT = {ok: '#1ec457', slow: '#f4c145', down: '#c9190b', waking: '#73bcf7', sleeping: '#8a8d90', unknown: '#8a8d90'};
+const HWORD = {ok: 'up', slow: 'up (slow)', down: 'down', waking: 'waking…', sleeping: 'asleep', unknown: 'checking…'};
 
 function paintHealth() {
   for (const el of document.querySelectorAll('[id^="seats-"]')) {
     const id = el.id.slice(6);
     const total = window.SEATS?.[id] || 0;
     const d = window.HEALTH?.[id] || {};
-    let color = '#6a6e73', txt = `🪑 ~${total} seats`;
+    let color = '#6a6e73', txt = `🪑 ${total} seats`;
     if (d.status === 'sleeping') txt = '🪑 asleep';
     else if (d.status === 'waking') txt = '🪑 waking…';
     else if (d.running != null) {
       const pct = total ? d.running / total : 0;
-      color = pct >= 0.9 ? '#c9190b' : pct >= 0.5 ? '#f4c145' : '#1ec457';
-      txt = `🪑 ${d.running}/${total} in use`;
+      color = pct >= 0.9 ? '#c9190b' : pct >= 0.5 ? '#f4c145' : '#6a6e73';
+      txt = `🪑 ${d.running}/${total} busy`;
     }
-    el.innerHTML = `<span class="pf-v6-c-label" title="live concurrent generations on this machine"><span class="om-dot" style="background:${color}"></span>${txt}</span>`;
+    el.innerHTML = `<span class="pf-v6-c-label" title="generations running right now - at capacity requests queue briefly, nothing breaks"><span class="om-dot" style="background:${color}"></span>${txt}</span>`;
   }
   for (const el of document.querySelectorAll('[id^="health-"]')) {
     const id = el.id.slice(7);
     const d = window.HEALTH?.[id] || {status: 'unknown'};
-    const [color, fmt] = (HSTATE[d.status] || HSTATE.unknown);
+    const lat = (d.status === 'ok' || d.status === 'slow')
+      ? ` <span class="om-lat" title="ping latency">${d.latency_ms}ms</span>` : '';
     const btn = d.status === 'sleeping'
       ? ` <button class="pf-v6-c-button pf-m-link pf-m-small" style="padding:0;font-size:.75rem" onclick="powerOn('${id}')">⏻ Wake</button>` : '';
-    el.innerHTML = `<span class="pf-v6-c-label"><span class="om-dot" style="background:${color}"></span>${fmt(d)}</span>${btn}`;
+    el.innerHTML = `<span class="pf-v6-c-label" title="endpoint health"><span class="om-dot" style="background:${HDOT[d.status] || HDOT.unknown}"></span>${HWORD[d.status] || 'checking…'}</span>${lat}${btn}`;
   }
 }
 
@@ -312,8 +352,8 @@ async function createKey() {
     document.getElementById('newkey-alert').innerHTML = `
       <div class="om-newkey"><b>✅ New key <code>${esc(r.key_alias)}</code></b> — copy it now, it is shown only once.
         One paste on any Linux box installs opencode + this key + the live model lineup:
-        <pre onclick="copyText(this)">curl -fsSL ${location.origin}/setup.sh | OCTO_KEY='${esc(r.key)}' bash</pre>
-        (or just the key: <pre onclick="copyText(this)">${esc(r.key)}</pre>)</div>`;
+        <pre onclick="copyText(this.textContent, 'setup command + key')">curl -fsSL ${location.origin}/setup.sh | OCTO_KEY='${esc(r.key)}' bash</pre>
+        (or just the key: <pre onclick="copyText(this.textContent, 'key')">${esc(r.key)}</pre>)</div>`;
     document.getElementById('key-name').value = '';
     loadKeys();
   } catch (e) { alert('create failed: ' + e.message); }
