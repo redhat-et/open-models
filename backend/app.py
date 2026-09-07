@@ -180,7 +180,26 @@ def callback(request: Request, code: str = "", state: str = ""):
         if not allowed:
             print(f"[auth] {user} denied: token sees orgs {[o.get('login') for o in orgs]}")
     if not allowed:
-        raise HTTPException(403, f"{user} is not a member of {GITHUB_ORG or 'the allowlist'}")
+        return HTMLResponse(
+            f"""<!doctype html><html><head><title>OCTO Open Models - access needed</title></head>
+<body style="font-family:sans-serif; max-width:38rem; margin:6rem auto; padding:0 1rem">
+<h2>🐙 Almost there, {user}</h2>
+<p>OCTO Open Models is gated on membership in the
+<b><a href="https://github.com/{GITHUB_ORG}">{GITHUB_ORG}</a></b> GitHub org,
+and your token doesn't see you as a member.</p>
+<ul>
+  <li>Are you in the org but private from API tokens? Visit
+    <a href="https://github.com/settings/connections/applications">GitHub app
+    settings</a> and grant <b>octo-models</b> (the OAuth app) access to the org,
+    then log in again.</li>
+  <li>Not a member yet? Ping <b>#octo-open-model-platform</b> in Slack and
+    we'll get you invited - the models themselves just need an API key from
+    this portal once you're in.</li>
+</ul>
+<p><a href="/">Back to the portal</a></p>
+</body></html>""",
+            status_code=403,
+        )
     resp = RedirectResponse("/")
     resp.set_cookie(COOKIE, sign({"gh_user": user, "exp": time.time() + SESSION_TTL}),
                     httponly=True, samesite="lax", max_age=SESSION_TTL)

@@ -243,3 +243,24 @@ def test_docs_routes(client):
     page = client.get("/guide/model-selection")
     assert page.status_code == 200 and "<h1" in page.text or "<h2" in page.text
     assert client.get("/guide/nope").status_code == 404
+
+
+def test_non_member_gets_helpful_denial(monkeypatch, client):
+    monkeypatch.setattr(backend, "GITHUB_ORG", "redhat-et")
+    monkeypatch.setattr(backend, "ALLOWED_USERS", set())
+
+    def fake_http_json(url, *a, **k):
+        if "access_token?" in url:
+            return {"access_token": "gh-oauth-token"}
+        if url.endswith("/user"):
+            return {"login": "stranger"}
+        if url.endswith("/user/orgs"):
+            return [{"login": "some-other-org"}]
+        raise AssertionError(url)
+
+    monkeypatch.setattr(backend, "http_json", fake_http_json)
+    client.cookies.set("om_oauth_state", "s1")
+    r = client.get("/auth/callback?code=x&state=s1")
+    assert r.status_code == 403
+    assert "octo-open-model-platform" in r.text
+    assert "github.com/redhat-et" in r.text
