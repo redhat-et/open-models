@@ -57,6 +57,27 @@ See `docs/model-onboarding.md` for the full new-model workflow (admin + user sid
 and `docs/user-setup.md` for the client side (per-user keys/opencode).
 Setup script + live model list: `GET <portal>/setup.sh`, `GET <portal>/setup/models.json`.
 
+## Measure seats & idle power policy
+
+Seat counts on the portal cards come from `scripts/loadtest.py` (streams
+chat completions at increasing concurrency until per-session tok/s drops
+below `--min-tps`):
+
+```
+python3 scripts/loadtest.py --url http://<host>:8000/v1 --model <served> [--key sk-local] \
+    --levels 1,2,4,8,16 --sessions 1 --min-tokens 150 --min-tps 10
+```
+
+Put the recommended number in the model's `seats:` field in `catalog.yaml`
+(shown as "🪑 ~N seats" on the card).
+
+Idle-off: hosts with `idle_off: true` + a `compute.off` hook get powered off
+by the portal backend after `IDLE_OFF_MINUTES` (default 45) with no vLLM
+activity, once a per-host ssh key secret `om-ssh` is mounted (see
+`charts/octo-models` `app.ssh`). A "⏻ Wake" button on the card runs
+`compute.on`. Alerts (down/recovery/idle-off) go to `SLACK_WEBHOOK_URL` in
+`om-secrets` if set.
+
 ## Bump the LiteLLM version
 
 Pin `litellm.image` in `charts/octo-models/values.yaml` **and** the `ghcr.io/berriai/litellm:<tag>`

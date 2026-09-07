@@ -77,6 +77,9 @@
     }
     #newkey-alert pre { background: #151515; color: #73bcf7; padding: .6rem .8rem; border-radius: 6px; cursor: copy; word-break: break-all; margin: .5rem 0 0; }
     .om-spend-chip { font-weight: 700; }
+    .om-help details { background:#fff; border:1px solid var(--pf-t--global--border--color--default); border-radius:8px; padding:.6rem 1rem; margin-bottom:.5rem; }
+    .om-help summary { cursor:pointer; font-weight:600; }
+    .om-help p { margin:.5rem 0 0; color:#4d5053; font-size:.9rem; }
   </style>
 </head>
 <body>
@@ -102,8 +105,32 @@
     </div>
 
     <section style="margin-top:var(--pf-t--global--spacer--xl)">
-      <h2 style="font-size:1.2rem; margin:0 0 var(--pf-t--global--spacer--md)">Models</h2>
+      <h2 style="font-size:1.2rem; margin:0 0 var(--pf-t--global--spacer--md)">Models
+        <span class="pf-v6-c-label pf-m-green" id="team-stats" style="font-size:.75rem; display:none"></span>
+      </h2>
       <div class="om-grid" id="models"></div>
+    </section>
+
+    <section style="margin-top:var(--pf-t--global--spacer--xl)">
+      <h2 style="font-size:1.2rem; margin:0 0 var(--pf-t--global--spacer--md)">Notes &amp; help</h2>
+      <div class="om-help">
+        <details open><summary>🧭 Which model should I pick?</summary>
+          <p><b>core — Qwen 3.8 27B</b>: your default. Fast, good at everything daily, always up.</p>
+          <p><b>frontier — GLM-4.5-Air</b>: hardest agentic / long-horizon work. It "thinks" first, so answers take longer; the box is powered down when idle, so first call after a quiet stretch can be slow or need the ⏻ Wake button.</p>
+          <p><b>bulk — Qwen 3.8 Flash-Next</b>: background jobs, batch runs, high volume — cheap notional rates, slightly less smart.</p>
+          <p><b>lab — DGX Sparks</b>: experiments. Direct endpoints over VPN only (see URL on the card), no SLA, no metering.</p>
+        </details>
+        <details><summary>🪑 What are "seats"?</summary>
+          <p>Live generation slots on that machine — the counter shows how many are busy right now. Near full? Requests still work, they just queue a bit. Consistently full everywhere is exactly what we watch for: say so in #octo and we add capacity.</p>
+        </details>
+        <details><summary>🧯 Something's slow, red, or erroring?</summary>
+          <p>Red dot on a card = that endpoint is down; the gateway usually fails traffic over to a sibling automatically. Lab cards need the VPN. Hit a rate limit (429)? Limits are generous defaults — ping #octo and we raise yours. Everything green but broken? Tell us in #octo.</p>
+        </details>
+        <details><summary>🔑 Keys, costs &amp; privacy</summary>
+          <p>Keys are personal — create one below, one per machine if you like. Nothing is billed to you; token counts exist only to compute "saved vs frontier APIs" and to size capacity. Nothing is stored per-request beyond LiteLLM's spend log.</p>
+        </details>
+        <p style="margin:.8rem 0 0">📚 Full docs: <a href="/guide">/guide</a> — setup, model selection, runbook.</p>
+      </div>
     </section>
 
     <section id="keys-section" style="margin-top:var(--pf-t--global--spacer--xl); display:none">
@@ -172,6 +199,8 @@ async function loadCatalog() {
   const c = await api('/api/catalog');
   window.GW = c.gateway_url;
   document.getElementById('gateway-url').textContent = c.gateway_url;
+  window.WAKE_NOTE = Object.fromEntries(c.models.map(m => [m.id, (c.hosts[m.host]||{}).wake_note || '']));
+  window.SEATS = Object.fromEntries(c.models.map(m => [m.id, m.seats || 0]));
   document.getElementById('setup-cmd').textContent = 'curl -fsSL ' + location.origin + '/setup.sh -o ~/setup.sh && bash ~/setup.sh';
   document.getElementById('models').innerHTML = c.models.map(m => {
     const t = TIER[m.tier] || {color: '#8a8d90', label: m.tier || 'n/a', icon: '🤖'};
@@ -188,15 +217,73 @@ async function loadCatalog() {
         <div class="om-badges">
           <span class="pf-v6-c-label" style="background:${t.color}22; border-color:${t.color}">${t.label}</span>
           ${metered}
+          ${m.power ? `<span id="health-${m.id}"></span>` : ''}
+          ${m.seats ? `<span id="seats-${m.id}"></span>` : ''}
         </div>
       </div>
       <div class="om-card__body">
-        <p class="om-meta">🖥 ${esc(c.hosts[m.host]||m.host)} · 📏 ctx ${m.context?m.context.toLocaleString():'?'} · 🔬 ${esc(m.quant||'n/a')} · 💰 ${esc(price)}</p>
+        <p class="om-meta">🖥 ${esc((c.hosts[m.host]||{}).hardware||m.host)} · 📏 ctx ${m.context?m.context.toLocaleString():'?'} · 🔬 ${esc(m.quant||'n/a')} · 💰 ${esc(price)}</p>
         <pre class="om-snippet" title="click to copy" onclick="copyText(this)">${esc(snippet(m))}</pre>
         ${m.direct_url ? `<p class="om-meta" style="margin:.6rem 0 0">direct: <code style="font-size:.75rem">${esc(m.direct_url)}</code></p>` : ''}
+        ${m.notes ? `<p class="om-meta" style="margin:.5rem 0 0; font-size:.78rem">${esc(m.notes)}</p>` : ''}
       </div>
     </div>`;
   }).join('');
+}
+
+const HSTATE = {
+  ok:      ['#1ec457', d => `alive · ${d.latency_ms}ms`],
+  slow:    ['#f4c145', d => `slow · ${(d.latency_ms/1000).toFixed(1)}s`],
+  down:    ['#c9190b', () => 'unreachable'],
+  waking:  ['#73bcf7', () => 'waking…'],
+  sleeping:['#8a8d90', () => 'asleep'],
+  unknown: ['#8a8d90', () => 'checking…'],
+};
+
+function paintHealth() {
+  for (const el of document.querySelectorAll('[id^="seats-"]')) {
+    const id = el.id.slice(6);
+    const total = window.SEATS?.[id] || 0;
+    const d = window.HEALTH?.[id] || {};
+    let color = '#6a6e73', txt = `🪑 ~${total} seats`;
+    if (d.status === 'sleeping') txt = '🪑 asleep';
+    else if (d.status === 'waking') txt = '🪑 waking…';
+    else if (d.running != null) {
+      const pct = total ? d.running / total : 0;
+      color = pct >= 0.9 ? '#c9190b' : pct >= 0.5 ? '#f4c145' : '#1ec457';
+      txt = `🪑 ${d.running}/${total} in use`;
+    }
+    el.innerHTML = `<span class="pf-v6-c-label" title="live concurrent generations on this machine"><span class="om-dot" style="background:${color}"></span>${txt}</span>`;
+  }
+  for (const el of document.querySelectorAll('[id^="health-"]')) {
+    const id = el.id.slice(7);
+    const d = window.HEALTH?.[id] || {status: 'unknown'};
+    const [color, fmt] = (HSTATE[d.status] || HSTATE.unknown);
+    const btn = d.status === 'sleeping'
+      ? ` <button class="pf-v6-c-button pf-m-link pf-m-small" style="padding:0;font-size:.75rem" onclick="powerOn('${id}')">⏻ Wake</button>` : '';
+    el.innerHTML = `<span class="pf-v6-c-label"><span class="om-dot" style="background:${color}"></span>${fmt(d)}</span>${btn}`;
+  }
+}
+
+async function loadHealth() {
+  try { window.HEALTH = await api('/api/models/health'); } catch { return; }
+  paintHealth();
+}
+
+async function powerOn(id) {
+  const note = window.WAKE_NOTE?.[id] || '';
+  if (!confirm((note ? note + '\n\n' : '') + 'Wake this machine? It takes a few minutes and costs ~$3/hr while up.')) return;
+  try { await api('/api/power', {method:'POST', body: JSON.stringify({model: id, action: 'on'})}); window.HEALTH[id] = {status:'waking'}; paintHealth(); }
+  catch (e) { alert('wake failed: ' + e.message); }
+}
+
+async function loadStats() {
+  try {
+    const s = await api('/api/stats');
+    const el = document.getElementById('team-stats');
+    el.textContent = `🌱 team: $${Number(s.saved_usd).toFixed(0)} saved vs frontier APIs`;
+    el.style.display = '';
+  } catch { /* non-fatal */ }
 }
 
 async function loadKeys() {
@@ -239,8 +326,10 @@ async function init() {
   try { me = await api('/api/me'); } catch { me = null; }
   renderAuth();
   await loadCatalog();
+  loadHealth(); loadStats();
   loadKeys();
   setInterval(() => me && loadKeys().catch(()=>{}), 30000);
+  setInterval(() => loadHealth().catch(()=>{}), 60000);
 }
 init();
 </script>

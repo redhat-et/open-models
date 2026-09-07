@@ -22,7 +22,7 @@ MAX_SEQS=32
 REASON_ARGS=""
 case "$MODEL" in *GLM*|*glm*|*DeepSeek*|*deepseek*) REASON_ARGS="--reasoning-parser glm45" ;; esac
 
-run() { ssh -o ConnectTimeout=10 -o BatchMode=yes "$SSH" "$@"; }
+run() { ssh -o ConnectTimeout=10 -o BatchMode=yes ${HOTAISLE_SSH_OPTS:-} "$SSH" "$@"; }
 
 case "${1:-}" in
 serve)

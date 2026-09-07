@@ -12,6 +12,10 @@ secrets:
   githubClientId: ""
   githubClientSecret: ""
   githubOrg: ""
+  # Prometheus basic auth (bcrypt hash generated with: htpasswd -nbB USER PASS | awk '{print $2}')
+  promUser: ""
+  promPassword: ""
+  promBcrypt: ""
   # DATABASE_URL is assembled from postgres settings below
 
 postgres:
@@ -62,5 +66,8 @@ app:
     resources:
       requests: {cpu: 100m, memory: 256Mi}
       limits: {cpu: "1", memory: 512Mi}
+  ssh:
+    # mount <release>-ssh secret (optional) at /etc/om-ssh for compute wake/sleep
+    enabled: true
 mocks:
   enabled: false

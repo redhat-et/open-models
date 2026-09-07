@@ -15,6 +15,9 @@ import os
 import re
 import secrets
 import time
+import subprocess
+import threading
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -22,7 +25,7 @@ from pathlib import Path
 
 import yaml
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
@@ -38,6 +41,27 @@ SESSION_TTL = int(os.environ.get("SESSION_TTL", "2592000"))  # 30 days
 
 LITELLM_URL = os.environ.get("LITELLM_URL", "").rstrip("/").removesuffix("/v1")
 LITELLM_MASTER_KEY = os.environ.get("LITELLM_MASTER_KEY", "")
+SLACK_WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL", "")
+SSH_MOUNT = os.environ.get("SSH_MOUNT", "/etc/om-ssh")
+SSH_HOME = os.environ.get("SSH_HOME", "/tmp/om-ssh-home")
+
+
+def _bootstrap_ssh() -> None:
+    # mounted secret files are root-owned world-readable; ssh needs an
+    # owner-only copy in a HOME the running uid owns
+    src = Path(SSH_MOUNT) / ".ssh"
+    dst = Path(SSH_HOME) / ".ssh"
+    if src.exists() and not (dst / "id_ed25519").exists():
+        import shutil
+        shutil.copytree(src, dst, dirs_exist_ok=True)
+        dst.chmod(0o700)
+        for f in dst.iterdir():
+            f.chmod(0o600)
+
+
+_bootstrap_ssh()
+SSH_READY = Path(SSH_HOME) / ".ssh" / "id_ed25519"
+IDLE_OFF_MINUTES = int(os.environ.get("IDLE_OFF_MINUTES", "45"))
 COOKIE = "om_session"
 GITHUB_API = "https://api.github.com"
 
@@ -176,6 +200,172 @@ def me(request: Request):
     return {"github_user": current_user(request), "org": GITHUB_ORG}
 
 
+# ------------------------------------------------- health / power / savings
+
+HEALTH: dict[str, dict] = {}
+WAKE_TS: dict[str, float] = {}
+BOOT_TS = time.time()
+_STATS: dict = {}
+
+
+def _notify(text: str) -> None:
+    print(f"[alert] {text}")
+    if not SLACK_WEBHOOK_URL:
+        return
+    try:
+        http_json(SLACK_WEBHOOK_URL, method="POST", body={"text": text}, timeout=10)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[alert] webhook failed: {exc}")
+
+
+def _probe(model: dict) -> dict:
+    root = (model.get("base_url") or "").rstrip("/").removesuffix("/v1")
+    key = model.get("api_key") or "none"
+    entry = {"status": "unknown", "latency_ms": None, "fails": HEALTH.get(model["id"], {}).get("fails", 0),
+             "busy": HEALTH.get(model["id"], {}).get("busy") or time.time()}
+    t0 = time.time()
+    try:
+        http_json(f"{root}/v1/models", key, timeout=8)
+        entry["latency_ms"] = round((time.time() - t0) * 1000)
+        entry["status"] = "slow" if entry["latency_ms"] > 2500 else "ok"
+        entry["fails"] = 0
+    except Exception:  # noqa: BLE001
+        entry["status"] = "down"
+        entry["fails"] += 1
+    try:  # activity signal: vLLM /metrics -> running requests + completed counter
+        req = urllib.request.Request(f"{root}/metrics", headers={"Authorization": f"Bearer {key}"})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            body = resp.read().decode()
+        running = sum(float(l.split()[-1]) for l in body.splitlines()
+                      if l.startswith("vllm:num_requests_running"))
+        done = sum(float(l.split()[-1]) for l in body.splitlines()
+                   if l.startswith("vllm:request_success_total"))
+        prev_done = HEALTH.get(model["id"], {}).get("done")
+        if running > 0 or (prev_done is not None and done > prev_done):
+            entry["busy"] = time.time()
+        entry["done"] = done
+        entry["running"] = int(running)
+    except Exception:  # noqa: BLE001
+        pass
+    return entry
+
+
+def _run_hook(cmd: str, timeout: int = 900) -> str:
+    env = {**os.environ, "HOME": SSH_HOME if SSH_READY.exists() else os.environ.get("HOME", "/tmp")}
+    try:
+        r = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True,
+                           timeout=timeout, cwd=REPO_ROOT, env=env)
+        out = (r.stdout + r.stderr).strip()
+        return f"rc={r.returncode} {out[-300:]}"
+    except Exception as exc:  # noqa: BLE001
+        return f"error: {exc}"
+
+
+def _power_poll() -> None:
+    time.sleep(5)
+    while True:
+        try:
+            cat = load_catalog()
+            hosts = cat.get("hosts") or {}
+            for m in cat.get("models", []):
+                if m.get("status") not in METERED_STATUSES or not m.get("base_url"):
+                    continue
+                prev = HEALTH.get(m["id"], {}).get("status")
+                if prev == "sleeping":
+                    continue
+                entry = _probe(m)
+                if prev == "waking" and entry["status"] in ("ok", "slow"):
+                    _notify(f"OCTO: '{m['name']}' is awake and serving")
+                HEALTH[m["id"]] = entry
+                if prev == "ok" and entry["status"] == "down" and entry["fails"] >= 3:
+                    _notify(f"OCTO: model '{m['name']}' ({m['id']}) is DOWN at {m['base_url']}")
+                if prev == "down" and entry["status"] in ("ok", "slow"):
+                    _notify(f"OCTO: model '{m['name']}' recovered")
+                host = hosts.get(m.get("host") or "", {})
+                if not host.get("idle_off") or not SSH_READY.exists() or not (host.get("compute") or {}).get("off"):
+                    continue
+                if time.time() - WAKE_TS.get(m.get("host", ""), 0) < IDLE_OFF_MINUTES * 60:
+                    continue
+                idle_for = time.time() - (entry.get("busy") or time.time())
+                if time.time() - BOOT_TS < 3600:  # fresh pod: relearn busy history first
+                    continue
+                if entry["status"] in ("ok", "slow") and entry.get("done") is not None and idle_for > IDLE_OFF_MINUTES * 60:
+                    _notify(f"OCTO: '{m['name']}' idle {int(idle_for // 60)}m -> powering off host {m['host']} (Wake button brings it back)")
+                    print("[power] off:", _run_hook(f"python3 scripts/compute.py {m['id']} off", 120))
+                    HEALTH[m["id"]] = {"status": "sleeping", "latency_ms": None, "fails": 0, "busy": 0}
+        except Exception as exc:  # noqa: BLE001
+            print(f"[power-poll] {exc}")
+        time.sleep(60)
+
+
+@app.on_event("startup")
+def _start_poller() -> None:
+    threading.Thread(target=_power_poll, daemon=True).start()
+
+
+@app.get("/api/models/health")
+def models_health():
+    return HEALTH
+
+
+class Power(BaseModel):
+    model: str
+    action: str  # "on" | "off"
+
+
+@app.post("/api/power")
+def power(request: Request, payload: Power):
+    user = current_user(request)
+    if payload.action not in ("on", "off"):
+        raise HTTPException(422, "action must be on|off")
+    cat = load_catalog()
+    m = next((x for x in cat.get("models", []) if x["id"] == payload.model and x.get("host")), None)
+    if not m:
+        raise HTTPException(404, "no such model")
+    host_cfg = (cat.get("hosts") or {}).get(m["host"], {})
+    if not (host_cfg.get("compute") or {}).get(payload.action):
+        raise HTTPException(422, "host has no compute hook")
+    if not SSH_READY.exists():
+        raise HTTPException(503, "backend has no ssh credentials mounted")
+    if payload.action == "on":
+        WAKE_TS[m["host"]] = time.time()
+        HEALTH[m["id"]] = {"status": "waking", "latency_ms": None, "fails": 0,
+                           "busy": time.time(), "done": None}
+    else:
+        HEALTH[m["id"]] = {"status": "sleeping", "latency_ms": None, "fails": 0, "busy": 0}
+    def bg():
+        print(f"[power] {payload.action} by {user}:", _run_hook(f"python3 scripts/compute.py {payload.model} {payload.action}"))
+    threading.Thread(target=bg, daemon=True).start()
+    return {"started": payload.action, "model": payload.model}
+
+
+def _platform_spend() -> float:
+    for path in ("/global/spend", "/global/spend/all"):
+        try:
+            data = litellm(path) or {}
+            for k in ("total_spend", "spend"):
+                if isinstance(data, dict) and k in data:
+                    return float(data[k] or 0)
+        except Exception:  # noqa: BLE001
+            continue
+    return float((litellm(f"/user/info?user_id={load_gateway().get('shared_litellm_user', 'octo-shared')}") or {})
+                 .get("user_info", {}).get("spend", 0) or 0)
+
+
+@app.get("/api/stats")
+def stats():
+    if _STATS and time.time() - _STATS.get("at", 0) < 120:
+        return _STATS["body"]
+    try:
+        spend = _platform_spend()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(503, f"spend unavailable: {exc}") from exc
+    mult = float(load_gateway().get("frontier_savings_multiplier", 8))
+    body = {"spend_usd": round(spend, 4), "saved_usd": round(spend * mult, 2)}
+    _STATS.clear(); _STATS.update(at=time.time(), body=body)
+    return body
+
+
 # ---------------------------------------------------------------- keys
 
 class KeyCreate(BaseModel):
@@ -274,16 +464,55 @@ def catalog():
             "tool_call": bool(m.get("tool_call")),
             "reasoning": bool(m.get("reasoning")),
             "price": m.get("price") or {},
+            "seats": m.get("seats"),
             "status": m.get("status"),
             "metered": m.get("status") in METERED_STATUSES,
             "gateway_model": m.get("group") if m.get("status") in METERED_STATUSES else None,
             "direct_url": None if m.get("status") in METERED_STATUSES or m.get("status") == "paused" else m.get("base_url"),
             "notes": m.get("notes", ""),
+            "power": bool(((cat.get("hosts") or {}).get(m.get("host") or "") or {}).get("compute")),
         })
     order = {"frontier": 0, "core": 1, "bulk": 2, "lab": 3}
     models.sort(key=lambda m: order.get(m.get("tier"), 9))
-    hosts = {k: v.get("hardware", "") for k, v in (cat.get("hosts") or {}).items()}
+    hosts = {k: {"hardware": v.get("hardware", ""), "wake_note": v.get("wake_note", "")}
+             for k, v in (cat.get("hosts") or {}).items()}
     return {"gateway_url": gw.get("base_url", ""), "models": models, "hosts": hosts}
+
+
+DOCS_DIR = REPO_ROOT / "docs"
+DOC_PAGES = {
+    "user-setup": ("Setup on your machine", "Install opencode + an OCTO key in one paste"),
+    "model-selection": ("Choosing a model", "Which tier for which job"),
+    "howto": ("Runbook", "How the platform is operated (also useful reading)"),
+}
+
+
+@app.get("/guide")
+def docs_index():
+    items = "".join(
+        f'<li><a href="/guide/{k}"><b>{v[0]}</b></a><div class="sub">{v[1]}</div></li>'
+        for k, v in DOC_PAGES.items() if (DOCS_DIR / f"{k}.md").exists())
+    return HTMLResponse(f"<html><head><meta charset='utf-8'><title>OCTO docs</title><style>"
+                        "body{font-family:sans-serif;max-width:46rem;margin:3rem auto;padding:0 1rem;color:#151515}"
+                        "a{color:#0066cc}.sub{color:#6a6e73;font-size:.85rem;margin-bottom:1rem}</style></head>"
+                        "<body><h2>🐙 OCTO Open Models - docs</h2><ul style='list-style:none;padding:0'>"
+                        f"{items}</ul><p><a href='/'>← back to the portal</a></p></body></html>")
+
+
+@app.get("/guide/{name}")
+def docs_page(name: str):
+    if name not in DOC_PAGES or not (DOCS_DIR / f"{name}.md").exists():
+        raise HTTPException(404, "no such doc")
+    import markdown as md
+    body = md.markdown((DOCS_DIR / f"{name}.md").read_text(),
+                       extensions=["tables", "fenced_code"])
+    return HTMLResponse("<html><head><meta charset='utf-8'><title>OCTO docs</title><style>"
+                        "body{font-family:sans-serif;max-width:46rem;margin:3rem auto;padding:0 1.5rem;color:#151515;line-height:1.5}"
+                        "a{color:#0066cc}pre{background:#151515;color:#e0e0e0;padding:.8rem;border-radius:6px;overflow-x:auto}"
+                        "code{background:#f0f0f0;padding:.1rem .3rem;border-radius:3px}pre code{background:none;padding:0}"
+                        "table{border-collapse:collapse}td,th{border:1px solid #d2d2d2;padding:.3rem .6rem}"
+                        "h1,h2{border-bottom:1px solid #eee;padding-bottom:.2rem}</style></head>"
+                        f"<body><p><a href='/docs'>← docs</a> · <a href='/'>portal</a></p>{body}</body></html>")
 
 
 @app.get("/setup.sh")

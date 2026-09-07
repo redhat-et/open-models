@@ -14,6 +14,12 @@ data:
         access: proxy
         url: http://{{ .Release.Name }}-prometheus:9090
         isDefault: true
+        {{- if .Values.secrets.promBcrypt }}
+        basicAuth: true
+        basicAuthUser: ${DS_PROM_USER}
+        secureJsonData:
+          basicAuthPassword: ${DS_PROM_PASSWORD}
+        {{- end }}
   dashboards.yml: |
     apiVersion: 1
     providers:
@@ -47,6 +53,8 @@ spec:
     matchLabels: {app: grafana}
   template:
     metadata:
+      annotations:
+        checksum/provisioning: {{ list (.Files.Get "files/dashboards/open-models.json") .Values.secrets.promBcrypt | toYaml | sha256sum }}
       labels:
         app: grafana
         {{- include "octo-models.labels" . | nindent 8 }}
@@ -59,6 +67,20 @@ spec:
           image: {{ .Values.grafana.image }}
           ports: [{containerPort: 3000}]
           env:
+            - name: DS_PROM_URL
+              value: http://{{ .Release.Name }}-prometheus:9090
+            {{- if .Values.secrets.promBcrypt }}
+            - name: DS_PROM_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: PROM_USER
+            - name: DS_PROM_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: PROM_PASSWORD
+            {{- end }}
             - name: GF_SECURITY_ADMIN_PASSWORD
               value: {{ .Values.grafana.adminPassword | quote }}
             {{- if .Values.grafana.anonymous }}
@@ -69,7 +91,11 @@ spec:
             {{- end }}
           volumeMounts:
             - name: provisioning
-              mountPath: /etc/grafana/provisioning
+              mountPath: /etc/grafana/provisioning/dashboards/dashboards.yml
+              subPath: dashboards.yml
+            - name: provisioning
+              mountPath: /etc/grafana/provisioning/datasources/datasource.yml
+              subPath: datasource.yml
             - name: dashboards
               mountPath: /var/lib/grafana/dashboards
             - name: data

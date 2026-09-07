@@ -44,6 +44,23 @@ spec:
             initialDelaySeconds: 20
           resources:
             {{- toYaml .Values.app.backend.resources | nindent 12 }}
+          {{- if .Values.app.ssh.enabled }}
+          volumeMounts:
+            - name: ssh
+              mountPath: /etc/om-ssh
+              readOnly: true
+          {{- end }}
+      {{- if .Values.app.ssh.enabled }}
+      volumes:
+        - name: ssh
+          secret:
+            secretName: {{ .Release.Name }}-ssh
+            optional: true
+            defaultMode: 0444
+            items:
+              - {key: id_ed25519, path: .ssh/id_ed25519}
+              - {key: config, path: .ssh/config}
+      {{- end }}
 ---
 apiVersion: v1
 kind: Service

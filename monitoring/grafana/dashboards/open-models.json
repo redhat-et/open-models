@@ -1,107 +1,741 @@
 {
-  "title": "OCTO Open Models - Usage & Activity",
-  "uid": "open-models",
-  "schemaVersion": 39,
-  "time": { "from": "now-6h", "to": "now" },
-  "refresh": "30s",
-  "panels": [
+ "uid": "open-models",
+ "title": "OCTO Open Models - Environment Monitor",
+ "tags": [
+  "octo"
+ ],
+ "timezone": "browser",
+ "schemaVersion": 39,
+ "version": 2,
+ "refresh": "1m",
+ "time": {
+  "from": "now-24h",
+  "to": "now"
+ },
+ "panels": [
+  {
+   "type": "row",
+   "title": "Platform overview",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 0
+   },
+   "panels": []
+  },
+  {
+   "type": "stat",
+   "title": "Endpoints up",
+   "description": "",
+   "gridPos": {
+    "h": 4,
+    "w": 4,
+    "x": 0,
+    "y": 1
+   },
+   "targets": [
     {
-      "id": 1,
-      "type": "timeseries",
-      "title": "Requests running",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "targets": [
-        { "expr": "vllm:num_requests_running", "legendFormat": "{{model}}" }
-      ]
-    },
-    {
-      "id": 2,
-      "type": "timeseries",
-      "title": "Requests waiting (queue)",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "targets": [
-        { "expr": "vllm:num_requests_waiting", "legendFormat": "{{model}}" }
-      ]
-    },
-    {
-      "id": 3,
-      "type": "timeseries",
-      "title": "Token throughput (tok/s)",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "targets": [
-        { "expr": "rate(vllm:prompt_tokens_total[5m])", "legendFormat": "in {{model}}" },
-        { "expr": "rate(vllm:generation_tokens_total[5m])", "legendFormat": "out {{model}}" }
-      ]
-    },
-    {
-      "id": 4,
-      "type": "timeseries",
-      "title": "Time to first token (p95)",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.95, sum by (le, model) (rate(vllm:time_to_first_token_seconds_bucket[5m])))",
-          "legendFormat": "{{model}}"
-        }
-      ]
-    },
-    {
-      "id": 5,
-      "type": "timeseries",
-      "title": "E2E request latency (p50/p95)",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.50, sum by (le, model) (rate(vllm:e2e_request_latency_seconds_bucket[5m])))",
-          "legendFormat": "p50 {{model}}"
-        },
-        {
-          "expr": "histogram_quantile(0.95, sum by (le, model) (rate(vllm:e2e_request_latency_seconds_bucket[5m])))",
-          "legendFormat": "p95 {{model}}"
-        }
-      ]
-    },
-    {
-      "id": 6,
-      "type": "timeseries",
-      "title": "KV cache usage",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
-      "targets": [
-        { "expr": "vllm:gpu_cache_usage_perc", "legendFormat": "{{model}}" }
-      ]
-    },
-    {
-      "id": 7,
-      "type": "timeseries",
-      "title": "GPU utilization (DCGM)",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
-      "targets": [
-        { "expr": "DCGM_FI_DEV_GPU_UTIL", "legendFormat": "{{Hostname}} gpu{{gpu}}" }
-      ]
-    },
-    {
-      "id": 8,
-      "type": "timeseries",
-      "title": "Host memory used %",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
-      "fieldConfig": { "defaults": { "unit": "percent", "max": 100 }, "overrides": [] },
-      "targets": [
-        {
-          "expr": "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)",
-          "legendFormat": "{{instance}}"
-        }
-      ]
-    },
-    {
-      "id": 9,
-      "type": "stat",
-      "title": "Endpoint up",
-      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 32 },
-      "targets": [
-        { "expr": "up{job=\"vllm\"}", "legendFormat": "{{model}}" }
-      ]
+     "expr": "count(up{job=~\"vllm.*\"} == 1) or vector(0)",
+     "instant": true
     }
-  ]
+   ],
+   "datasource": null,
+   "options": {
+    "colorMode": "value",
+    "graphMode": "area"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": null,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "red",
+        "value": null
+       },
+       {
+        "color": "yellow",
+        "value": 2
+       },
+       {
+        "color": "green",
+        "value": 3
+       }
+      ]
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "stat",
+   "title": "Generations in flight",
+   "description": "",
+   "gridPos": {
+    "h": 4,
+    "w": 4,
+    "x": 4,
+    "y": 1
+   },
+   "targets": [
+    {
+     "expr": "max without (tier, instance)(vllm:num_requests_running{model=~\"rtx5090-fast|hotaisle-air|ocp-flash-next\"})",
+     "instant": true
+    }
+   ],
+   "datasource": null,
+   "options": {
+    "colorMode": "value",
+    "graphMode": "area"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": null,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "stat",
+   "title": "Queued requests",
+   "description": "",
+   "gridPos": {
+    "h": 4,
+    "w": 4,
+    "x": 8,
+    "y": 1
+   },
+   "targets": [
+    {
+     "expr": "sum(max without (tier, instance)(vllm:num_requests_waiting{model=~\"rtx5090-fast|hotaisle-air|ocp-flash-next\"}))",
+     "instant": true
+    }
+   ],
+   "datasource": null,
+   "options": {
+    "colorMode": "value",
+    "graphMode": "area"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": null,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "yellow",
+        "value": 1
+       },
+       {
+        "color": "red",
+        "value": 6
+       }
+      ]
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "stat",
+   "title": "Token throughput",
+   "description": "prompt + generated tokens/s across all models",
+   "gridPos": {
+    "h": 4,
+    "w": 4,
+    "x": 12,
+    "y": 1
+   },
+   "targets": [
+    {
+     "expr": "sum(sum by (model) (max without (tier, instance)(rate(vllm:prompt_tokens_total[5m]))) + sum by (model) (max without (tier, instance)(rate(vllm:generation_tokens_total[5m]))))",
+     "instant": true
+    }
+   ],
+   "datasource": null,
+   "options": {
+    "colorMode": "value",
+    "graphMode": "area"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "stat",
+   "title": "Gateway req/min",
+   "description": "",
+   "gridPos": {
+    "h": 4,
+    "w": 4,
+    "x": 16,
+    "y": 1
+   },
+   "targets": [
+    {
+     "expr": "sum(rate(litellm_deployment_success_responses_total[5m])) * 60",
+     "instant": true
+    }
+   ],
+   "datasource": null,
+   "options": {
+    "colorMode": "value",
+    "graphMode": "area"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": null,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "stat",
+   "title": "Notional $/hr",
+   "description": "frontier-API-equivalent per hour (x8 savings multiplier baked in)",
+   "gridPos": {
+    "h": 4,
+    "w": 4,
+    "x": 20,
+    "y": 1
+   },
+   "targets": [
+    {
+     "expr": "8 * (sum(rate(litellm_input_tokens_metric_total{requested_model=\"glm-45-air\"}[15m])) * 0.6 / 1000000 * 3600 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"glm-45-air\"}[15m])) * 2.4 / 1000000 * 3600 + sum(rate(litellm_input_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}[15m])) * 0.3 / 1000000 * 3600 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}[15m])) * 1.2 / 1000000 * 3600 + sum(rate(litellm_input_tokens_metric_total{requested_model=\"qwen38-flash-next\"}[15m])) * 0.2 / 1000000 * 3600 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"qwen38-flash-next\"}[15m])) * 1.0 / 1000000 * 3600) / 1000000",
+     "instant": true
+    }
+   ],
+   "datasource": null,
+   "options": {
+    "colorMode": "value",
+    "graphMode": "area"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "currencyUSD",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "stat",
+   "title": "Saved so far (x8)",
+   "description": "frontier-API-equivalent value delivered since gateway start",
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 0,
+    "y": 5
+   },
+   "targets": [
+    {
+     "expr": "8 * (sum(litellm_input_tokens_metric_total{requested_model=\"glm-45-air\"}) * 0.6 + sum(litellm_output_tokens_metric_total{requested_model=\"glm-45-air\"}) * 2.4 + sum(litellm_input_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}) * 0.3 + sum(litellm_output_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}) * 1.2 + sum(litellm_input_tokens_metric_total{requested_model=\"qwen38-flash-next\"}) * 0.2 + sum(litellm_output_tokens_metric_total{requested_model=\"qwen38-flash-next\"}) * 1.0) / 1000000",
+     "instant": true
+    }
+   ],
+   "datasource": null,
+   "options": {
+    "colorMode": "value",
+    "graphMode": "area"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "currencyUSD",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "stat",
+   "title": "Fallback events (capacity pressure)",
+   "description": "how often traffic had to fail over to another box",
+   "gridPos": {
+    "h": 4,
+    "w": 4,
+    "x": 6,
+    "y": 5
+   },
+   "targets": [
+    {
+     "expr": "sum(increase(litellm_deployment_successful_fallbacks_total[1h]))",
+     "instant": true
+    }
+   ],
+   "datasource": null,
+   "options": {
+    "colorMode": "value",
+    "graphMode": "area"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": null,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "stat",
+   "title": "Gateway errors/min",
+   "description": "",
+   "gridPos": {
+    "h": 4,
+    "w": 4,
+    "x": 10,
+    "y": 5
+   },
+   "targets": [
+    {
+     "expr": "sum(rate(litellm_deployment_failure_responses_total[5m])) * 60",
+     "instant": true
+    }
+   ],
+   "datasource": null,
+   "options": {
+    "colorMode": "value",
+    "graphMode": "area"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": null,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "yellow",
+        "value": 0.1
+       },
+       {
+        "color": "red",
+        "value": 2
+       }
+      ]
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "row",
+   "title": "Capacity per model",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 9
+   },
+   "panels": []
+  },
+  {
+   "type": "timeseries",
+   "title": "Requests running (seats in use)",
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 10
+   },
+   "targets": [
+    {
+     "expr": "max without (tier, instance)(vllm:num_requests_running{model=~\"rtx5090-fast|hotaisle-air|ocp-flash-next\"})",
+     "legendFormat": "{{model}}"
+    }
+   ],
+   "datasource": null,
+   "fieldConfig": {
+    "defaults": {
+     "unit": null
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Queue depth",
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 10
+   },
+   "targets": [
+    {
+     "expr": "max without (tier, instance)(vllm:num_requests_waiting{model=~\"rtx5090-fast|hotaisle-air|ocp-flash-next\"})",
+     "legendFormat": "{{model}}"
+    }
+   ],
+   "datasource": null,
+   "fieldConfig": {
+    "defaults": {
+     "unit": null
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Token throughput",
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 18
+   },
+   "targets": [
+    {
+     "expr": "sum by (model) (max without (tier, instance)(rate(vllm:prompt_tokens_total[5m])))",
+     "legendFormat": "{{model}} prompt"
+    },
+    {
+     "expr": "sum by (model) (max without (tier, instance)(rate(vllm:generation_tokens_total[5m])))",
+     "legendFormat": "{{model}} generated"
+    }
+   ],
+   "datasource": null,
+   "fieldConfig": {
+    "defaults": {
+     "unit": null
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "KV cache usage %",
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 18
+   },
+   "targets": [
+    {
+     "expr": "100 * max without (tier, instance)(vllm:kv_cache_usage_perc{model=~\"rtx5090-fast|hotaisle-air|ocp-flash-next\"})",
+     "legendFormat": "{{model}}"
+    }
+   ],
+   "datasource": null,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percent",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "yellow",
+        "value": 70
+       },
+       {
+        "color": "red",
+        "value": 90
+       }
+      ]
+     },
+     "custom": {
+      "thresholdsStyle": {
+       "mode": "line"
+      }
+     },
+     "max": 100
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "row",
+   "title": "Latency",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 26
+   },
+   "panels": []
+  },
+  {
+   "type": "timeseries",
+   "title": "Time to first token (p50/p95)",
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 27
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.95, sum by (le, model) (max without (tier, instance)(rate(vllm:time_to_first_token_seconds_bucket[5m]))))",
+     "legendFormat": "{{model}} p95"
+    },
+    {
+     "expr": "histogram_quantile(0.50, sum by (le, model) (max without (tier, instance)(rate(vllm:time_to_first_token_seconds_bucket[5m]))))",
+     "legendFormat": "{{model}} p50"
+    }
+   ],
+   "datasource": null,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "End-to-end request latency (p50/p95)",
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 27
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.95, sum by (le, model) (max without (tier, instance)(rate(vllm:e2e_request_latency_seconds_bucket[5m]))))",
+     "legendFormat": "{{model}} p95"
+    },
+    {
+     "expr": "histogram_quantile(0.50, sum by (le, model) (max without (tier, instance)(rate(vllm:e2e_request_latency_seconds_bucket[5m]))))",
+     "legendFormat": "{{model}} p50"
+    }
+   ],
+   "datasource": null,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "row",
+   "title": "Gateway & usage",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 35
+   },
+   "panels": []
+  },
+  {
+   "type": "timeseries",
+   "title": "Requests/min by model group",
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 36
+   },
+   "targets": [
+    {
+     "expr": "sum by (requested_model) (rate(litellm_deployment_success_responses_total[5m])) * 60",
+     "legendFormat": "{{requested_model}}"
+    }
+   ],
+   "datasource": null,
+   "fieldConfig": {
+    "defaults": {
+     "unit": null
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Gateway queue time p95 (waiting for a slot)",
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 36
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.95, sum by (le, requested_model) (rate(litellm_request_queue_time_seconds_bucket[5m])))",
+     "legendFormat": "{{requested_model}}"
+    }
+   ],
+   "datasource": null,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "bargauge",
+   "title": "Tokens last hour (by key alias)",
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 44
+   },
+   "targets": [
+    {
+     "expr": "topk(12, sum by (api_key_alias) (increase(litellm_input_tokens_metric_total[1h]) + increase(litellm_output_tokens_metric_total[1h])))",
+     "instant": true
+    }
+   ],
+   "datasource": null,
+   "options": {
+    "displayMode": "gradient",
+    "orientation": "horizontal",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    }
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Notional $/hr by model group",
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 44
+   },
+   "targets": [
+    {
+     "expr": "8 * (sum(rate(litellm_input_tokens_metric_total{requested_model=\"glm-45-air\"}[15m])) * 0.6 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"glm-45-air\"}[15m])) * 2.4) / 1000000 * 3600",
+     "legendFormat": "glm-45-air"
+    },
+    {
+     "expr": "8 * (sum(rate(litellm_input_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}[15m])) * 0.3 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}[15m])) * 1.2) / 1000000 * 3600",
+     "legendFormat": "qwen38-27b-fast"
+    },
+    {
+     "expr": "8 * (sum(rate(litellm_input_tokens_metric_total{requested_model=\"qwen38-flash-next\"}[15m])) * 0.2 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"qwen38-flash-next\"}[15m])) * 1.0) / 1000000 * 3600",
+     "legendFormat": "qwen38-flash-next"
+    }
+   ],
+   "datasource": null,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "currencyUSD"
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Endpoint up (1 = serving)",
+   "gridPos": {
+    "h": 6,
+    "w": 12,
+    "x": 0,
+    "y": 52
+   },
+   "targets": [
+    {
+     "expr": "up{job=~\"vllm.*\"}",
+     "legendFormat": "{{model}}"
+    },
+    {
+     "expr": "up{job=\"litellm\"}",
+     "legendFormat": "gateway"
+    }
+   ],
+   "datasource": null,
+   "fieldConfig": {
+    "defaults": {
+     "unit": null,
+     "max": 1.1
+    },
+    "overrides": []
+   }
+  }
+ ]
 }

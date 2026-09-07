@@ -49,9 +49,11 @@ hosts:
   hotaisle-1gpu:
     hardware: 1x AMD Instinct MI300X (192GB) - frontier tier, power off when idle ($3/hr)
     notes: replaces 2-GPU config 2026-09-06; 235B TP=2 demo = resize up for an afternoon
+    wake_note: "If the box is fully powered off, power it on at admin.hotaisle.app first, then click Wake again."
     compute:
-      "off": ./scripts/hotaisle.sh off
-      "on": HOTAISLE_SSH=hotaisle@23.183.40.87 HOTAISLE_MODEL=zai-org/GLM-4.5-Air-FP8 HOTAISLE_CTX=131072 ./scripts/hotaisle.sh serve && ./scripts/hotaisle.sh wait
+      "off": HOTAISLE_SSH=hotaisle@23.183.40.87 HOTAISLE_SSH_OPTS="-F /tmp/om-ssh-home/.ssh/config" ./scripts/hotaisle.sh off
+      "on": HOTAISLE_SSH=hotaisle@23.183.40.87 HOTAISLE_SSH_OPTS="-F /tmp/om-ssh-home/.ssh/config" HOTAISLE_MODEL=zai-org/GLM-4.5-Air-FP8 HOTAISLE_CTX=131072 ./scripts/hotaisle.sh serve && ./scripts/hotaisle.sh wait
+    # idle_off: true   # arm auto-poweroff only once wake needs no human (console-only wake today)
   spark2:
     hardware: DGX Spark (GB10, 128GB unified)
     notes: Lab tier - direct endpoint only (VPN). Bake-off sandbox for new candidates.
@@ -99,12 +101,14 @@ models:
     tool_call: true
     reasoning: true
     quant: nvfp4
+    seats: 10  # measured 2026-09-07: 18.8 tok/s each at 10 concurrent (173 tok/s aggregate); 14.3 at 16
     status: running
 
   - id: rtx5090-fast
     host: rtx5090
     name: "Qwen 3.8 27B NVFP4 (Core)"
     served_model: Inferact/Qwen3.8-27B-NVFP4
+    seats: 8  # measured 2026-09-07: 12.5 tok/s each to 8 concurrent (100 tok/s aggregate ceiling)
     tier: core
     group: qwen38-27b-fast
     price: {input: 0.30, output: 1.20}
@@ -175,6 +179,7 @@ models:
     host: hotaisle-1gpu
     name: "GLM-4.5-Air 106B-A12B (Frontier)"
     served_model: zai-org/GLM-4.5-Air-FP8
+    seats: 24  # measured 2026-09-07: still 34 tok/s each at 24 concurrent (813 tok/s aggregate)
     tier: frontier
     group: glm-45-air
     price: {input: 0.60, output: 2.40}  # notional $/Mtok vs public APIs

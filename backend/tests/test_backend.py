@@ -203,3 +203,43 @@ def test_setup_endpoints(client, monkeypatch):
     assert m["models"]["air-g"]["limit"] == {"context": 131072, "output": 8192}
     sh = client.get("/setup.sh")
     assert sh.status_code == 200 and "opencode" in sh.text
+
+
+def test_health_endpoint_shape(client):
+    backend.HEALTH.clear()
+    backend.HEALTH["hotaisle-air"] = {"status": "ok", "latency_ms": 90, "fails": 0,
+                                      "busy": 0, "done": 5}
+    body = client.get("/api/models/health").json()
+    assert body["hotaisle-air"]["status"] == "ok"
+    assert body["hotaisle-air"]["latency_ms"] == 90
+    backend.HEALTH.clear()
+
+
+def test_stats_spend_times_multiplier(client, monkeypatch):
+    backend._STATS.clear()
+    monkeypatch.setattr(backend, "litellm",
+                        lambda path, method="GET", body=None: {"total_spend": 12.5})
+    body = client.get("/api/stats").json()
+    assert body == {"spend_usd": 12.5, "saved_usd": 100.0}
+    backend._STATS.clear()
+
+
+def test_power_validation_and_guards(logged_in, monkeypatch):
+    assert logged_in.post("/api/power", json={"model": "hotaisle-air",
+                                              "action": "drop"}).status_code == 422
+    assert logged_in.post("/api/power", json={"model": "nope",
+                                              "action": "on"}).status_code == 404
+    monkeypatch.setattr(backend, "SSH_READY", Path("/nonexistent-key"))
+    assert logged_in.post("/api/power", json={"model": "hotaisle-air",
+                                              "action": "on"}).status_code == 503
+    models = {m["id"]: m for m in logged_in.get("/api/catalog").json()["models"]}
+    assert models["hotaisle-air"]["power"] is True
+
+
+def test_docs_routes(client):
+    pytest.importorskip("markdown")
+    idx = client.get("/guide")
+    assert idx.status_code == 200 and "/guide/user-setup" in idx.text
+    page = client.get("/guide/model-selection")
+    assert page.status_code == 200 and "<h1" in page.text or "<h2" in page.text
+    assert client.get("/guide/nope").status_code == 404

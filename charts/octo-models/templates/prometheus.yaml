@@ -6,6 +6,8 @@ metadata:
   labels:
     {{- include "octo-models.labels" . | nindent 4 }}
 data:
+  alert.rules.yml: |
+{{ .Files.Get "files/alert.rules.yml" | indent 4 }}
   prometheus.yml: |
     global:
       scrape_interval: 15s
@@ -38,8 +40,10 @@ data:
             labels: {{ .labels | toJson }}
           {{- end }}
       {{- end }}
-    # baremetal hosts unreachable from the cluster (sparks, strix) push their
-    # metrics here via remote_write from the on-prem prometheus.
+      # baremetal hosts unreachable from the cluster (sparks, strix) push their
+      # metrics here via remote_write from the on-prem prometheus.
+    rule_files:
+      - /etc/prometheus/alert.rules.yml
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -56,7 +60,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ list .Values.prometheus.vllmTargets .Values.prometheus.vllmTargetsHttps | toYaml | sha256sum }}
+        checksum/config: {{ list .Values.prometheus.vllmTargets .Values.prometheus.vllmTargetsHttps (.Files.Get "files/alert.rules.yml") .Values.secrets.promBcrypt | toYaml | sha256sum }}
       labels:
         app: prometheus
         {{- include "octo-models.labels" . | nindent 8 }}
@@ -72,6 +76,9 @@ spec:
             - --storage.tsdb.path=/prometheus
             - --web.enable-remote-write-receiver
             - --storage.tsdb.retention.time=90d
+            {{- if .Values.secrets.promBcrypt }}
+            - --web.config.file=/etc/prometheus/secrets/web-config.yml
+            {{- end }}
           ports: [{containerPort: 9090}]
           volumeMounts:
             - name: config
@@ -81,7 +88,14 @@ spec:
             - name: data
               mountPath: /prometheus
           readinessProbe:
-            httpGet: {path: /-/ready, port: 9090}
+            httpGet:
+              path: /-/ready
+              port: 9090
+              {{- if .Values.secrets.promBcrypt }}
+              httpHeaders:
+                - name: Authorization
+                  value: Basic {{ printf "%s:%s" .Values.secrets.promUser .Values.secrets.promPassword | b64enc }}
+              {{- end }}
             periodSeconds: 10
           resources:
             requests: {cpu: 100m, memory: 512Mi}
@@ -95,6 +109,10 @@ spec:
             items:
               - key: LITELLM_MASTER_KEY
                 path: llm-master-key
+              {{- if .Values.secrets.promBcrypt }}
+              - key: PROM_WEB_CONFIG
+                path: web-config.yml
+              {{- end }}
         - name: data
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-prometheus

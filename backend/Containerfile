@@ -1,12 +1,16 @@
 FROM registry.access.redhat.com/ubi9/python-312:latest
 
 WORKDIR /app
+USER root
+RUN dnf install -y openssh-clients && dnf clean all
+USER 1001
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ backend/
 COPY catalog.yaml ./
 COPY scripts/ ./scripts/
+COPY docs/ ./docs/
 
 ENV PORT=8020
 EXPOSE 8020
