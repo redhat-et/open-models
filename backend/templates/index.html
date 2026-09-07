@@ -30,13 +30,18 @@
     }
     .om-gh-btn:hover { background: #f0f0f0; }
     .om-main { max-width: 1200px; margin: 0 auto; padding: var(--pf-t--global--spacer--lg); }
-    .om-banner {
-      display: flex; align-items: center; gap: var(--pf-t--global--spacer--md);
-      background: #151515; color: #e0e0e0; border-radius: 8px;
-      padding: var(--pf-t--global--spacer--md) var(--pf-t--global--spacer--lg);
-      border-left: 6px solid #3e8cd8; flex-wrap: wrap;
-    }
-    .om-banner code { background: #2b2b2b; color: #73bcf7; padding: 4px 8px; border-radius: 6px; cursor: copy; }
+    .om-getstart { background: #151515; color: #e0e0e0; border-radius: 10px; padding: .4rem 1.4rem .7rem; margin-top: 1.25rem; }
+    .om-getstart h2 { font-size: 1.05rem; margin: .9rem 0 .1rem; color: #fff; }
+    .om-gs-row { display: flex; gap: .9rem; align-items: flex-start; padding: .7rem 0; border-bottom: 1px solid #2d2d2d; font-size: .9rem; }
+    .om-gs-row:last-child { border-bottom: none; }
+    .om-gs-row > b { flex: 0 0 auto; background: #0066cc; color: #fff; border-radius: 50%; width: 1.6rem; height: 1.6rem; text-align: center; line-height: 1.65; font-size: .85rem; margin-top: .1rem; }
+    .om-gs-row > div { min-width: 0; }
+    .om-gs-row a { color: #73bcf7; text-decoration: underline; }
+    .om-gs-row > div > code { font-family: monospace; background: #2b2b2b; color: #73bcf7; padding: .05rem .35rem; border-radius: .3rem; }
+    .om-gs-code { display: flex; align-items: center; gap: .5rem; margin-top: .45rem; }
+    .om-gs-code code { background: #2b2b2b; color: #73bcf7; padding: .4rem .7rem; border-radius: 6px; font-size: .82rem; overflow-x: auto; white-space: nowrap; flex: 1 1 auto; }
+    .om-gs-code .om-copy { border-color: #4e535a; color: #e0e0e0; flex: 0 0 auto; }
+    .om-gs-code .om-copy:hover { background: #2d2d2d; }
     .om-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--pf-t--global--spacer--lg); }
     .om-card {
       background: #fff; border-radius: 10px; border: 1px solid var(--pf-t--global--border--color--default);
@@ -49,9 +54,6 @@
     .om-card__head h3 { margin: 0 0 .5rem; font-size: 1.1rem; }
     .om-badges { display: flex; gap: .4rem; flex-wrap: wrap; }
     .om-card__body { padding: var(--pf-t--global--spacer--md) var(--pf-t--global--spacer--lg) var(--pf-t--global--spacer--lg); flex: 1 1 auto; }
-    .om-steps { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1.1rem; }
-    .om-step { background: var(--pf-t--global--background--color--secondary--default); border: 1px solid var(--pf-t--global--border--color--default); border-radius: .5rem; padding: .45rem .8rem; font-size: .84rem; }
-    .om-step b { display: inline-block; background: #0066cc; color: #fff; border-radius: 50%; width: 1.25rem; height: 1.25rem; text-align: center; line-height: 1.3; margin-right: .45rem; font-size: .78rem; }
     .om-more { margin-top: .8rem; font-size: .85rem; }
     .om-more summary { cursor: pointer; color: #0066cc; font-size: .8rem; }
     .om-copy { border: 1px solid var(--pf-t--global--border--color--default); background: transparent; border-radius: .4rem; cursor: pointer; font-size: .75rem; padding: .25rem .6rem; }
@@ -104,21 +106,14 @@
   </header>
   <main class="om-main">
 
-    <div class="om-banner">
-      <span>⚡ All metered traffic goes through the gateway — paste this anywhere vLLM/OpenAI is expected:</span>
-      <code id="gateway-url" onclick="copyText(this.textContent,'gateway URL')" title="click to copy">…</code>
-    </div>
-
-    <div class="om-banner" style="border-left-color:#12a5c4">
-      <span>🖥 New here? One paste sets up your whole machine — opencode + key prompt + live model list (<a href="/setup.sh" style="color:#73bcf7; text-decoration:underline">view script</a>):</span>
-      <code id="setup-cmd" onclick="copyText(this.textContent,'setup command')" title="click to copy">…</code>
-    </div>
-
-    <div class="om-steps">
-      <span class="om-step"><b>1</b> Create your key below</span>
-      <span class="om-step"><b>2</b> Paste the setup line above on any Linux box</span>
-      <span class="om-step"><b>3</b> opencode → <code>/models</code> → <b>octo-gateway/qwen38-flash-next</b> (already your default)</span>
-      <span class="om-step"><b>4</b> Any OpenAI-compatible code works — curl examples inside each card</span>
+    <div class="om-getstart">
+      <h2>🚀 Get started</h2>
+      <div class="om-gs-row"><b>1</b><div><a href="#keys-section">Create your personal key</a> just below — GitHub login is top right. One key per machine is fine.</div></div>
+      <div class="om-gs-row"><b>2</b><div>Paste one line on any Linux box — installs opencode, stores your key, loads the live model list (<a href="/setup.sh">view script</a>):
+        <div class="om-gs-code"><code id="setup-cmd">…</code><button class="om-copy" onclick="copyText(document.getElementById('setup-cmd').textContent, 'setup command')">copy</button></div></div></div>
+      <div class="om-gs-row"><b>3</b><div>Writing your own code? Any OpenAI-compatible client works — point it at the gateway with your key in <code>OCTO_KEY</code>:
+        <div class="om-gs-code"><code id="gateway-url">…</code><button class="om-copy" onclick="copyText(document.getElementById('gateway-url').textContent, 'gateway URL')">copy</button></div></div></div>
+      <div class="om-gs-row"><b>4</b><div>Run <code>opencode</code> → <code>/models</code> → <b>octo-gateway/qwen38-flash-next</b> is already your default; curl examples live inside each model card.</div></div>
     </div>
 
     <section id="keys-section" style="margin-top:var(--pf-t--global--spacer--xl); display:none">
