@@ -22,10 +22,17 @@ MAX_SEQS=32
 REASON_ARGS=""
 case "$MODEL" in *GLM*|*glm*|*DeepSeek*|*deepseek*) REASON_ARGS="--reasoning-parser glm45" ;; esac
 
-run() { ssh -o ConnectTimeout=10 -o BatchMode=yes ${HOTAISLE_SSH_OPTS:-} "$SSH" "$@"; }
+# -F config only when present (pod mounts /tmp/om-ssh-home; local runs use defaults)
+CFG_OPTS=()
+[ -n "${HOTAISLE_SSH_CONFIG:-}" ] && [ -f "$HOTAISLE_SSH_CONFIG" ] && CFG_OPTS=(-F "$HOTAISLE_SSH_CONFIG")
+run() { ssh -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
+  ${CFG_OPTS[@]+"${CFG_OPTS[@]}"} ${HOTAISLE_SSH_OPTS:-} "$SSH" "$@"; }
 
 case "${1:-}" in
 serve)
+  if run "curl -sf -m 3 -H 'Authorization: Bearer $API_KEY' http://localhost:$PORT/v1/models" >/dev/null 2>&1; then
+    echo "already serving - nothing to do"; exit 0
+  fi
   run "
     set -euo pipefail
     echo 0 | sudo tee /proc/sys/kernel/numa_balancing >/dev/null

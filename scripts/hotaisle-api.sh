@@ -24,6 +24,11 @@ PUBKEY="${HOTAISLE_PUBKEY:-/tmp/om-ssh-home/.ssh/id_ed25519.pub}"
 
 api() { curl -sS -m 60 -H "Authorization: Token ${HOTAISLE_API_TOKEN:?set HOTAISLE_API_TOKEN}" "$@"; }
 
+CFG_OPTS=()
+[ -n "${HOTAISLE_SSH_CONFIG:-}" ] && [ -f "$HOTAISLE_SSH_CONFIG" ] && CFG_OPTS=(-F "$HOTAISLE_SSH_CONFIG")
+sshbox() { ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
+  ${CFG_OPTS[@]+"${CFG_OPTS[@]}"} ${HOTAISLE_SSH_OPTS:-} "$HOTAISLE_SSH" "$@"; }
+
 getvm() { api "$API/teams/$TEAM/virtual_machines/$VM/" 2>/dev/null || true; }
 
 case "${1:-}" in
@@ -61,20 +66,27 @@ off)
   ;;
 up)
   [ -f "$SPECS" ] || { echo "missing $SPECS - run 'spec' while a VM exists first"; exit 1; }
-  echo "provisioning VM from $SPECS"
-  body=$(SPECS="$SPECS" python3 -c "
+  existing=$(api "$API/teams/$TEAM/virtual_machines/" | python3 -c "import json,sys; vms=json.load(sys.stdin); print(f\"{vms[0]['name']} {vms[0].get('ip_address','')}\" if vms else '')")
+  if [ -n "$existing" ]; then
+    VM=$(echo "$existing" | cut -d' ' -f1)
+    IP=$(echo "$existing" | cut -d' ' -f2)
+    echo "VM already exists: $VM ($IP) - skipping provision"
+  else
+    echo "provisioning VM from $SPECS"
+    body=$(SPECS="$SPECS" python3 -c "
 import json, os
 specs = json.load(open(os.environ['SPECS']))
 if os.environ.get('HOTAISLE_USERDATA_URL'):
     specs['user_data_url'] = os.environ['HOTAISLE_USERDATA_URL']
 print(json.dumps(specs))")
-  created=$(echo "$body" | api -X POST -H 'Content-Type: application/json' -d @- \
-    "$API/teams/$TEAM/virtual_machines/")
-  echo "$created" | python3 -c "import json,sys; vm=json.load(sys.stdin); print('vm:', vm.get('name'), '| ip:', vm.get('ip_address'))"
+    created=$(echo "$body" | api -X POST -H 'Content-Type: application/json' -d @- \
+      "$API/teams/$TEAM/virtual_machines/")
+    VM=$(echo "$created" | python3 -c "import json,sys;print(json.load(sys.stdin)['name'])")
+    echo "vm: $VM"
+  fi
   echo -n "waiting for ip "
-  IP=""
   for _ in $(seq 1 60); do
-    IP=$(getvm | python3 -c 'import json,sys;print(json.load(sys.stdin).get("ip_address") or "")' 2>/dev/null || true)
+    IP=$(api "$API/teams/$TEAM/virtual_machines/$VM/" 2>/dev/null | python3 -c 'import json,sys;print(json.load(sys.stdin).get("ip_address") or "")' 2>/dev/null || true)
     [ -n "$IP" ] && break
     echo -n .; sleep 15
   done
@@ -83,11 +95,10 @@ print(json.dumps(specs))")
   export HOTAISLE_SSH="hotaisle@$IP"
   echo -n "waiting for ssh "
   for _ in $(seq 1 40); do
-    if ssh -o ConnectTimeout=5 -o BatchMode=yes ${HOTAISLE_SSH_OPTS:-} "$HOTAISLE_SSH" true 2>/dev/null; then echo " up"; break; fi
+    if sshbox true 2>/dev/null; then echo " up"; break; fi
     echo -n .; sleep 15
   done
-  ssh -o BatchMode=yes ${HOTAISLE_SSH_OPTS:-} "$HOTAISLE_SSH" \
-    "command -v docker >/dev/null || { curl -fsSL https://get.docker.com | sudo sh; sudo usermod -aG docker \$USER; }"
+  sshbox "command -v docker >/dev/null || { curl -fsSL https://get.docker.com | sudo sh; sudo usermod -aG docker \$USER; }"
   # IP may differ from catalog api_base -> regenerate + redeploy if so:
   if [ "$IP" != "${HOTAISLE_IP:-}" ] && [ -n "${HOTAISLE_IP:-}" ]; then
     echo "NOTE: new ip $IP != catalog ip $HOTAISLE_IP - update catalog.yaml, then make gen && make deploy"
