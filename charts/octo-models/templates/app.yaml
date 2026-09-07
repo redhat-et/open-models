@@ -15,6 +15,9 @@ spec:
       app.kubernetes.io/component: app
   template:
     metadata:
+
+      annotations:
+        checksum/secrets: {{ .Values.secrets | toYaml | sha256sum }}
       labels:
         app.kubernetes.io/name: {{ include "octo-models.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}

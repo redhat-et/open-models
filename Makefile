@@ -51,6 +51,7 @@ deploy: gen
 	  --set secrets.promUser=$$PROM_USER \
 	  --set secrets.promPassword=$$PROM_PASS \
 	  --set secrets.promBcrypt=$$PROM_BCRYPT \
+	  --set secrets.slackWebhook=$$SLACK_WEBHOOK_URL \
 	  $(if $(APP),--set app.enabled=true \
 	    --set secrets.sessionSecret=$$SESSION_SECRET \
 	    --set secrets.githubClientId=$$GITHUB_CLIENT_ID \
@@ -88,6 +89,7 @@ dev:
 	  --set secrets.promUser=$$PROM_USER \
 	  --set secrets.promPassword=$$PROM_PASS \
 	  --set secrets.promBcrypt=$$PROM_BCRYPT \
+	  --set secrets.slackWebhook=$$SLACK_WEBHOOK_URL \
 	  --set secrets.sessionSecret=$$SESSION_SECRET \
 	  --set secrets.githubClientId=$$GITHUB_CLIENT_ID \
 	  --set secrets.githubClientSecret=$$GITHUB_CLIENT_SECRET \
