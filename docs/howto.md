@@ -20,8 +20,16 @@ make model-on  MODEL=rtx5090-fast   # restores previous state
 - Catalog keeps `previous_status` while paused so `model-on` restores exactly.
 
 Then stop the actual compute so you stop paying:
-- **hot-aisle box**: `./scripts/hotaisle.sh off` (power-on for the 1gpu GLM box
-  is manual at admin.hotaisle.app; the portal Wake button then starts serving).
+- **Hot Aisle rented VM** (GLM box): billing runs while the VM *exists* —
+  powering it off saves nothing; only **deleting** it stops the meter, and a
+  deleted VM loses its disk. Full lifecycle:
+  `./scripts/hotaisle-api.sh off` (delete VM) and `./scripts/hotaisle-api.sh up`
+  (re-provision from the committed `scripts/hotaisle-vm.json` specs, wait for
+  ssh, then serve — cold ~45-60 min since the vLLM image + ~27GB weights are
+  re-downloaded). One-time setup: create an API key (`ssh admin.hotaisle.app`
+  TUI -> your name -> API keys), put `HOTAISLE_API_TOKEN=...` in secrets.env,
+  `make deploy APP=1`, then record the box with `hotaisle-api.sh spec` while
+  it exists. Provider CLI alternative: github.com/hotaisle/hotaisle-cli.
 - **RTX 5090** (desk box, sshd on port **8022**): `COMPUTE=1` handles it
   (`podman stop qwen38-nvfp4`); manual:
   `ssh -p 8022 bturner@136.47.153.236 'podman stop qwen38-nvfp4'`

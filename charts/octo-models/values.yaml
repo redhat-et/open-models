@@ -14,6 +14,7 @@ secrets:
   githubOrg: ""
   # Slack incoming webhook for #octo-open-model-platform alerts
   slackWebhook: ""
+  hotaisleApiToken: ""
   # Prometheus basic auth (bcrypt hash generated with: htpasswd -nbB USER PASS | awk '{print $2}')
   promUser: ""
   promPassword: ""

@@ -67,7 +67,9 @@ status)
   "
   ;;
 off)
-  echo "stopping vLLM + powering off $SSH (gateway will fall back to the 5090)"
+  echo "stopping vLLM + powering off $SSH"
+  echo "WARNING: on rented hotaisle VMs billing runs while the VM EXISTS - power-off"
+  echo "only saves electricity; to stop the meter use: ./scripts/hotaisle-api.sh off"
   run "docker stop om-vllm >/dev/null 2>&1 || true; sudo poweroff" || true
   echo "done - bring it back later with: ./scripts/hotaisle.sh serve"
   ;;
