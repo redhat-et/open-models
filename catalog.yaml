@@ -76,7 +76,7 @@ hosts:
   openshift:
     hardware: OpenShift cluster, g6e GPU nodes (Ryan Cook's, spending plan covered)
     notes: Core tier - daily driver on covered g6e (4x L40S, TP=4, MTP spec-decode), edge route.
-      Plan: retire the 4x L40S (~$6/hr) for a single RTX Pro 6000 ($3/hr, similar VRAM).
+      Plan is to retire the 4x L40S (~$6/hr) for a single RTX Pro 6000 ($3/hr, similar VRAM).
   spark1:
     hardware: DGX Spark (GB10, 128GB unified)
     notes: Future slot.

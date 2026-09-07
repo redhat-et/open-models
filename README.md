@@ -73,15 +73,20 @@ make monitor-up      # local prometheus :9090 + grafana :3000 via podman
 - [x] 3 model instances live (g6e flash-next, RTX 5090 fast, spark2 smart [listed])
 - [ ] Hot-aisle GPU added to gateway (join `qwen38-27b-fast` group)
 - [x] Old `web/` UI retired; portal is the single UI (M4)
-- [ ] Grafana deepened: TTFT/TPOT, KV cache, queueing (Matt)
+- [x] Grafana deepened: Environment Monitor v2 - TTFT/E2E p95, KV cache, queueing, per-group usage; linked from the portal home page
 - [ ] Per-platform benchmarks recorded (harness ready)
 - [x] User how-to: `docs/user-setup.md`
 
 ## Bugs / RFEs
 
+- [ ] Contribution guide (`docs/contributing.md`): links to this repo, the
+      OpenShift cluster/console, portal, gateway, Grafana dashboard +
+      Prometheus (with creds location), hotaisle admin console, model-host
+      inventory - plus the add-a-model and deploy flows (make gen /
+      backend-image / deploy)
 - [ ] Instrument and speed up the vLLM startup process (`docs/rfe-vllm-startup.md`)
 - [ ] "Monitoring of models: best practices" how-to doc (`docs/monitoring-howto.md`)
-- [ ] On-prem metrics -> cluster Prometheus via remote_write (sparks are VPN-only)
+- [x] On-prem metrics -> cluster Prometheus via remote_write - dropped 2026-09-07: only the on-cluster scrape matters, receiver removed from the deployment
 
 ## Team
 
