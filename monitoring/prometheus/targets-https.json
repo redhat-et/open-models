@@ -5,7 +5,7 @@
     ],
     "labels": {
       "model": "ocp-flash-next",
-      "tier": "bulk"
+      "tier": "core"
     }
   }
 ]

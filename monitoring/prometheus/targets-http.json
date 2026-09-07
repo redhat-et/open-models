@@ -5,7 +5,7 @@
     ],
     "labels": {
       "model": "rtx5090-fast",
-      "tier": "core"
+      "tier": "bulk"
     }
   },
   {

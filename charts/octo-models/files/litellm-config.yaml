@@ -46,10 +46,10 @@ router_settings:
   num_retries: 1
   retry_after: 2
   fallbacks:
-  - qwen38-flash-next:
-    - qwen38-27b-fast
+  - qwen38-27b-fast:
+    - qwen38-flash-next
   - glm-45-air:
-    - qwen38-27b-fast
+    - qwen38-flash-next
 litellm_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
   drop_params: true

@@ -6,8 +6,8 @@ one key, all models — with automatic fallback and per-user budgets.
 - Web app (login + create your key): **https://octo-app-octo-models.apps.emerg.pcbk.p1.openshiftapps.com**
 - Gateway base URL: **https://litellm-octo-models.apps.emerg.pcbk.p1.openshiftapps.com/v1**
 - Models available to you (see the web app for the live list):
-  - `qwen38-flash-next` — Qwen 3.8 Flash Next, 262k context (default; falls back to fast when busy)
-  - `qwen38-27b-fast` — Qwen 3.8 27B, snappy everyday model
+  - `qwen38-flash-next` — Qwen 3.8 Flash Next, 262k context (core default; 4x L40S cluster, MTP spec-decode)
+  - `qwen38-27b-fast` — Qwen 3.8 27B (bulk; background/batch, single 5090 - falls back to flash-next when down)
 - Login: GitHub, requires membership in the `redhat-et` org.
 - Limits: 600 req/min, $20/day worth of tokens (measured at public API price —
   effectively enormous). Ask in #octo if you need more.

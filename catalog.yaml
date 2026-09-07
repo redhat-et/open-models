@@ -34,16 +34,18 @@ gateway:
   # Tiers are NAMED BY ROLE, not speed (a frontier model may be slower than
   # core - that is fine; role = what you reach for it for):
   #   frontier = hardest agentic work (GLM on MI300X)
-  #   core     = daily driver coding (27B on the 5090) - default
-  #   bulk     = high-volume background/summarize (L40S cluster, cheap)
+  #   core     = daily driver coding (Flash-Next on the 4x L40S cluster) -
+  #              default; 33 tok/s solo, 19 tok/s each at 10 concurrent
+  #   bulk     = high-volume background/summarize (27B on the 5090, cheap;
+  #              snappy solo but ~100 tok/s aggregate ceiling)
   #   lab      = sparks/strix: bake-offs + direct endpoints, no SLA, never a
   #              fallback target
   # litellm fallbacks on 5xx/timeout (acyclic; core box is the floor - it
   # never falls back, protecting it from pileups). Lab tier is deliberately
   # absent: slow, listed-only, not worth a tunnel into the serving path.
   fallbacks:
-    qwen38-flash-next: [qwen38-27b-fast]
-    glm-45-air: [qwen38-27b-fast]
+    qwen38-27b-fast: [qwen38-flash-next]
+    glm-45-air: [qwen38-flash-next]
 
 hosts:
   hotaisle-1gpu:
@@ -62,16 +64,16 @@ hosts:
     compute:
       "off": ./scripts/hotaisle.sh off
       "on": ./scripts/hotaisle.sh serve && ./scripts/hotaisle.sh wait
-    notes: enc1-gpuvm005; vLLM container auto-starts on boot; safe to power off (5090 carries the core group)
+    notes: enc1-gpuvm005; vLLM container auto-starts on boot; safe to power off (core group runs on the L40S cluster)
   rtx5090:
     hardware: RTX 5090 (32GB GDDR7)
     compute:
       "off": ssh 192.168.1.166 'podman stop qwen38-nvfp4'
       "on": ssh 192.168.1.166 'podman start qwen38-nvfp4 && sleep 45'
-    notes: Core tier daily driver - NVFP4 quant, snappy, shorter context.
+    notes: Bulk tier - background/batch work; snappy solo but ~100 tok/s aggregate ceiling.
   openshift:
     hardware: OpenShift cluster, g6e GPU nodes (Ryan Cook's, spending plan covered)
-    notes: Bulk tier - high-volume/low-cost on covered g6e cards, edge route.
+    notes: Core tier - daily driver on covered g6e (4x L40S, TP=4, MTP spec-decode), edge route.
   spark1:
     hardware: DGX Spark (GB10, 128GB unified)
     notes: Future slot.
@@ -89,9 +91,9 @@ hosts:
 models:
   - id: ocp-flash-next
     host: openshift
-    name: "Qwen 3.8 Flash Next NVFP4 (Bulk)"
+    name: "Qwen 3.8 Flash Next NVFP4 (Core)"
     served_model: Inferact/Qwen3.8-Flash-Next-NVFP4
-    tier: bulk
+    tier: core
     group: qwen38-flash-next
     price: {input: 0.20, output: 1.00}  # notional $/Mtok vs public APIs
     base_url: https://qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com/v1
@@ -106,10 +108,10 @@ models:
 
   - id: rtx5090-fast
     host: rtx5090
-    name: "Qwen 3.8 27B NVFP4 (Core)"
+    name: "Qwen 3.8 27B NVFP4 (Bulk)"
     served_model: Inferact/Qwen3.8-27B-NVFP4
     seats: 8  # measured 2026-09-07: 12.5 tok/s each to 8 concurrent (100 tok/s aggregate ceiling)
-    tier: core
+    tier: bulk
     group: qwen38-27b-fast
     price: {input: 0.30, output: 1.20}
     engine: {max_num_seqs: 32}
@@ -144,9 +146,9 @@ models:
 
   - id: hotaisle
     host: hotaisle
-    name: "Qwen 3.8 27B FP8 (Core, MI300X)"
+    name: "Qwen 3.8 27B FP8 (Bulk, MI300X)"
     served_model: Qwen/Qwen3.8-27B-FP8
-    tier: core
+    tier: bulk
     group: qwen38-27b-fast
     price: {input: 0.30, output: 1.20}
     engine: {max_num_seqs: 32}
@@ -159,7 +161,7 @@ models:
     quant: fp8
     status: paused
     previous_status: running
-    notes: 2x MI300X VF; powered off when idle - gateway falls back to the 5090 (same group).
+    notes: 2x MI300X VF; powered off when idle - same bulk group as the 5090 (resize up when revived).
 
   - id: strix-halo
     host: strix-halo

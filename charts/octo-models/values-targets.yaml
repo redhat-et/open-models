@@ -5,7 +5,7 @@ prometheus:
     - 136.47.153.236:8000
     labels:
       model: rtx5090-fast
-      tier: core
+      tier: bulk
       host: rtx5090
   - targets:
     - 23.183.40.87:8000
@@ -18,5 +18,5 @@ prometheus:
     - qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com
     labels:
       model: ocp-flash-next
-      tier: bulk
+      tier: core
       host: openshift

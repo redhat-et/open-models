@@ -10,7 +10,7 @@
       },
       "models": {
         "qwen38-flash-next": {
-          "name": "Qwen 3.8 Flash Next NVFP4 (Bulk) [gateway]",
+          "name": "Qwen 3.8 Flash Next NVFP4 (Core) [gateway]",
           "limit": {
             "context": 262144,
             "output": 8192
@@ -20,7 +20,7 @@
           "temperature": true
         },
         "qwen38-27b-fast": {
-          "name": "Qwen 3.8 27B NVFP4 (Core) [gateway]",
+          "name": "Qwen 3.8 27B NVFP4 (Bulk) [gateway]",
           "limit": {
             "context": 32768,
             "output": 8192
@@ -102,6 +102,6 @@
       }
     }
   },
-  "model": "octo-gateway/qwen38-27b-fast",
-  "small_model": "octo-gateway/qwen38-flash-next"
+  "model": "octo-gateway/qwen38-flash-next",
+  "small_model": "octo-gateway/qwen38-27b-fast"
 }
