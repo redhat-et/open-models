@@ -113,6 +113,34 @@ scheduling, smart routing.
   (ncao) `/cache` moved emptyDir -> 200Gi PVC: weights + torch-compile cache
   now survive GPU node swaps; `make gpu-off/gpu-on` lets cluster-autoscaler
   delete/provision the g6e node (replicas 0 = node gone ~10 min, back ~15 min).
+- PROVIDER/MODEL SYSTEM (design approved 2026-09-08). Three layers:
+  1. **Providers** (`providers/` dir): each GPU source implements 5 verbs
+     (`spec | list | up | down | status`) with a type: `cloud-api`
+     (hotaisle today; AWS/Vast/RunPod later), `ssh-lab` (5090, RHT lab boxes,
+     sparks), `k8s-cluster` (ncao ROSA). `spec` declares shapes: hotaisle
+     offers exactly two flavors — 1x MI300X (~$2.99/hr) and 2x MI300X
+     (~$6/hr). `up` returns the live endpoint; the VM name/IP must never be
+     hand-kept in the catalog again (reprovision changes both).
+  2. **Models**: machine-readable `requirements` (vram_gb, gpus, gpu_family,
+     ram_gb, S3 warm cache) = "what HW can it run on"; measured `placement`
+     matrix (tok_s, seats, cold_min per provider, via `make model-bench`) =
+     "where does it run best".
+  3. **Scheduler**: `model-on MODEL=x` (and later the portal Wake button) ->
+     filter providers by requirements -> **pick cheapest** (decision;
+     `PROVIDER=` pin overrides) -> `up` -> wait -> scheduler writes the
+     returned endpoint into generated catalog state -> deploy -> on.
+  Decisions: users may self-serve wakes; **cost is org-borne and watched
+  closely** — Slack alerts (existing SLACK_WEBHOOK_URL plumbing) on every
+  wake/provision event, hourly burn while any paid compute is up, and
+  balance-floor warnings. Cleanup: the stale 2x MI300X ghost entry
+  (`hosts.hotaisle`, enc1-gpuvm005) is gone from the API — remove it, or
+  re-provision through the new lifecycle as the 235B home.
+  Phases: (1) re-shelve today's scripts behind the provider contract +
+  `provider-test.sh`; (2) requirements/placement/bench + onboard 1-2 models
+  end-to-end (gpt-oss-120b -> spark, 235B -> 2x MI300X); (3) portal Wake +
+  cost alerts; (4) second cloud provider (RTX Pro 6000 replacing the 4xL40S
+  per the openshift host note). Onboarding entry points:
+  `onboard-provider.sh <name>`, `onboard-model.sh <hf-repo>`.
 - TOMORROW (Tue 2026-09-08, launch is Wed 2026-09-09):
   1. GLM box wake cycle (unattended, stop on failure): `hotaisle-api.sh up` ->
      re-provision gets a NEW VM name+IP -> update catalog `base_url` +
