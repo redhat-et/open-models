@@ -7,5 +7,14 @@
       "model": "rtx5090-fast",
       "tier": "bulk"
     }
+  },
+  {
+    "targets": [
+      "23.183.40.78:8000"
+    ],
+    "labels": {
+      "model": "hotaisle-air",
+      "tier": "frontier"
+    }
   }
 ]

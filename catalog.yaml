@@ -50,21 +50,15 @@ gateway:
 hosts:
   hotaisle-1gpu:
     hardware: 1x AMD Instinct MI300X (192GB) - frontier tier, billed while the VM exists ($3/hr) - delete when idle
-    notes: enc1-gpuvm002 (team rh-octo-emerging-tech); power-off does NOT stop billing - only delete does (hotaisle-api.sh)
+    notes: enc1-gpuvm013 (team rh-octo-emerging-tech); power-off does NOT stop billing - only delete does (hotaisle-api.sh)
     wake_note: "Wake re-provisions the VM from scratch and re-downloads ~112GB of weights from S3 - cold start ~25 min. Until it serves, glm-45-air answers from the shadow (flash-next)."
     compute:
-      "off": HOTAISLE_TEAM=rh-octo-emerging-tech HOTAISLE_VM=enc1-gpuvm002 ./scripts/hotaisle-api.sh off
-      "on": HOTAISLE_TEAM=rh-octo-emerging-tech HOTAISLE_VM=enc1-gpuvm002 HOTAISLE_IP=23.183.40.67 HOTAISLE_SSH_CONFIG=/tmp/om-ssh-home/.ssh/config HOTAISLE_MODEL=zai-org/GLM-4.5-Air-FP8 HOTAISLE_CTX=131072 HOTAISLE_S3_BUCKET=octo-models-weights-us-east-1 HOTAISLE_S3_PREFIX=glm-45-air-fp8-cache ./scripts/hotaisle-api.sh up
+      "off": HOTAISLE_TEAM=rh-octo-emerging-tech HOTAISLE_VM=enc1-gpuvm013 ./scripts/hotaisle-api.sh off
+      "on": HOTAISLE_TEAM=rh-octo-emerging-tech HOTAISLE_VM=enc1-gpuvm013 HOTAISLE_IP=23.183.40.78 HOTAISLE_SSH_CONFIG=/tmp/om-ssh-home/.ssh/config HOTAISLE_MODEL=zai-org/GLM-4.5-Air-FP8 HOTAISLE_CTX=131072 HOTAISLE_S3_BUCKET=octo-models-weights-us-east-1 HOTAISLE_S3_PREFIX=glm-45-air-fp8-cache ./scripts/hotaisle-api.sh up
     # idle_off: true   # arm auto-delete only after the up hook is proven end-to-end
   spark2:
     hardware: DGX Spark (GB10, 128GB unified)
     notes: Lab tier - direct endpoint only (VPN). Bake-off sandbox for new candidates.
-  hotaisle:
-    hardware: 2x AMD Instinct MI300X (192GB) - power off when idle
-    compute:
-      "off": ./scripts/hotaisle.sh off
-      "on": ./scripts/hotaisle.sh serve && ./scripts/hotaisle.sh wait
-    notes: enc1-gpuvm005; vLLM container auto-starts on boot; safe to power off (core group runs on the L40S cluster)
   rtx5090:
     hardware: RTX 5090 (32GB GDDR7)
     compute:
@@ -147,25 +141,6 @@ models:
     status: listed
     notes: Direct endpoint only (VPN) - slow, not metered through the gateway.
 
-  - id: hotaisle
-    host: hotaisle
-    name: "Qwen 3.8 27B FP8 (Bulk, MI300X)"
-    served_model: Qwen/Qwen3.8-27B-FP8
-    tier: bulk
-    group: qwen38-27b-fast
-    price: {input: 0.30, output: 1.20}
-    engine: {max_num_seqs: 32}
-    base_url: http://23.183.40.70:8000/v1
-    api_key: sk-local
-    context: 32768
-    max_output: 8192
-    tool_call: true
-    reasoning: true
-    quant: fp8
-    status: paused
-    previous_status: running
-    notes: 2x MI300X VF; powered off when idle - same bulk group as the 5090 (resize up when revived).
-
   - id: strix-halo
     host: strix-halo
     name: "Qwen3.8 27B (Strix Halo)"
@@ -188,14 +163,13 @@ models:
     tier: frontier
     group: glm-45-air
     price: {input: 0.60, output: 2.40}  # notional $/Mtok vs public APIs
-    base_url: http://23.183.40.67:8000/v1
+    base_url: http://23.183.40.78:8000/v1
     api_key: sk-local
     context: 131072
     tool_call: true
     reasoning: true
     quant: fp8
-    status: paused
-    previous_status: running
+    status: running
 
   - id: spark4-lab
     host: spark4

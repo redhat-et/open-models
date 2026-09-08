@@ -50,7 +50,7 @@ docker run -d --name om-vllm --restart unless-stopped \
   -e AITER_JIT_DIR=/opt/aiter-cache \
   ${HOTAISLE_AITER:+-e VLLM_ROCM_USE_AITER=1 -e VLLM_ROCM_USE_AITER_MOE=1} \
   -v "$HOME/.aiter-cache:/opt/aiter-cache" \
-  -v "$HUB:/root/.cache/huggingface" \
+  -v "$HUB:/root/.cache/huggingface/hub" \
   $HF_OFFLINE \
   "$IMAGE" \
   vllm serve "$MODEL" \
