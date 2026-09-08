@@ -25,6 +25,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata: {name: om-gpu-on, namespace: octo-models}
 spec:
+  suspend: true
   schedule: "0 4 * * 1-5"
   timeZone: America/New_York
   concurrencyPolicy: Forbid
@@ -44,6 +45,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata: {name: om-gpu-off, namespace: octo-models}
 spec:
+  suspend: true
   schedule: "0 18 * * 1-5"
   timeZone: America/New_York
   concurrencyPolicy: Forbid
