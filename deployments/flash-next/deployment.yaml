@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: '2026-09-02T16:44:09Z'
+  labels:
+    app: qwen38-flash-next
+  name: qwen38-flash-next
+  namespace: ncao
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: qwen38-flash-next
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: qwen38-flash-next
+    spec:
+      containers:
+      - command:
+        - bash
+        - -c
+        - "set -euxo pipefail\nexport HF_HOME=/cache/huggingface\nexport HOME=/cache/home\n\
+          export VLLM_PLE_CPU_OFFLOAD=1\nvllm serve Inferact/Qwen3.8-Flash-Next-NVFP4\
+          \ \\\n  --no-enable-flashinfer-autotune \\\n  --max-num-seqs 16 \\\n  --gpu-memory-utilization\
+          \ 0.90 \\\n  --max-num-batched-tokens 8192 \\\n  --enable-prefix-caching\
+          \ \\\n  --moe-backend marlin \\\n  --enable-expert-parallel \\\n  --tensor-parallel-size\
+          \ 4 \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_xml \\\
+          \n  --reasoning-parser qwen3 \\\n  --speculative-config '{\"method\":\"\
+          mtp\",\"num_speculative_tokens\":3}' \\\n  --max-model-len 262144\n"
+        env:
+        - name: HF_TOKEN
+          value: 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
+        image: vllm/vllm-openai:qwen38-flash-next
+        imagePullPolicy: IfNotPresent
+        name: qwen38-flash-next
+        ports:
+        - containerPort: 8000
+          protocol: TCP
+        resources:
+          limits:
+            ephemeral-storage: 250Gi
+            nvidia.com/gpu: '4'
+          requests:
+            ephemeral-storage: 250Gi
+            nvidia.com/gpu: '4'
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /cache
+          name: hf-cache
+        - mountPath: /dev/shm
+          name: dev-shm
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        gpu-pool-size: xlarge
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - effect: NoSchedule
+        key: nvidia.com/gpu
+        operator: Exists
+      - effect: NoSchedule
+        key: nvidia.com/gpu
+        operator: Equal
+        value: 'true'
+      volumes:
+      - name: hf-cache
+        persistentVolumeClaim:
+          claimName: flash-hf-cache
+      - emptyDir:
+          medium: Memory
+          sizeLimit: 4Gi
+        name: dev-shm
