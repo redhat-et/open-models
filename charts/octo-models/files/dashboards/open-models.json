@@ -82,7 +82,7 @@
    },
    "targets": [
     {
-     "expr": "max without (tier, instance)(vllm:num_requests_running{model=~\"rtx5090-fast|hotaisle-air|ocp-flash-next\"})",
+     "expr": "max without (tier, instance)(vllm:num_requests_running{tier=~\"frontier|core|bulk\"})",
      "instant": true
     }
    ],
@@ -119,7 +119,7 @@
    },
    "targets": [
     {
-     "expr": "sum(max without (tier, instance)(vllm:num_requests_waiting{model=~\"rtx5090-fast|hotaisle-air|ocp-flash-next\"}))",
+     "expr": "sum(max without (tier, instance)(vllm:num_requests_waiting{tier=~\"frontier|core|bulk\"}))",
      "instant": true
     }
    ],
@@ -238,7 +238,7 @@
    },
    "targets": [
     {
-     "expr": "8 * (sum(rate(litellm_input_tokens_metric_total{requested_model=\"glm-45-air\"}[15m])) * 0.6 / 1000000 * 3600 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"glm-45-air\"}[15m])) * 2.4 / 1000000 * 3600 + sum(rate(litellm_input_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}[15m])) * 0.3 / 1000000 * 3600 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}[15m])) * 1.2 / 1000000 * 3600 + sum(rate(litellm_input_tokens_metric_total{requested_model=\"qwen38-flash-next\"}[15m])) * 0.2 / 1000000 * 3600 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"qwen38-flash-next\"}[15m])) * 1.0 / 1000000 * 3600) / 1000000",
+     "expr": "8 * (sum(rate(litellm_input_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}[15m])) * 0.3 / 1000000 * 3600 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}[15m])) * 1.2 / 1000000 * 3600 + sum(rate(litellm_input_tokens_metric_total{requested_model=\"qwen38-flash-next\"}[15m])) * 0.2 / 1000000 * 3600 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"qwen38-flash-next\"}[15m])) * 1.0 / 1000000 * 3600 + sum(rate(litellm_input_tokens_metric_total{requested_model=\"qwen38-27b-frontier\"}[15m])) * 0.6 / 1000000 * 3600 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"qwen38-27b-frontier\"}[15m])) * 2.4 / 1000000 * 3600) / 1000000",
      "instant": true
     }
    ],
@@ -275,7 +275,7 @@
    },
    "targets": [
     {
-     "expr": "8 * (sum(litellm_input_tokens_metric_total{requested_model=\"glm-45-air\"}) * 0.6 + sum(litellm_output_tokens_metric_total{requested_model=\"glm-45-air\"}) * 2.4 + sum(litellm_input_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}) * 0.3 + sum(litellm_output_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}) * 1.2 + sum(litellm_input_tokens_metric_total{requested_model=\"qwen38-flash-next\"}) * 0.2 + sum(litellm_output_tokens_metric_total{requested_model=\"qwen38-flash-next\"}) * 1.0) / 1000000",
+     "expr": "8 * (sum(litellm_input_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}) * 0.3 + sum(litellm_output_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}) * 1.2 + sum(litellm_input_tokens_metric_total{requested_model=\"qwen38-flash-next\"}) * 0.2 + sum(litellm_output_tokens_metric_total{requested_model=\"qwen38-flash-next\"}) * 1.0 + sum(litellm_input_tokens_metric_total{requested_model=\"qwen38-27b-frontier\"}) * 0.6 + sum(litellm_output_tokens_metric_total{requested_model=\"qwen38-27b-frontier\"}) * 2.4) / 1000000",
      "instant": true
     }
    ],
@@ -405,7 +405,7 @@
    },
    "targets": [
     {
-     "expr": "max without (tier, instance)(vllm:num_requests_running{model=~\"rtx5090-fast|hotaisle-air|ocp-flash-next\"})",
+     "expr": "max without (tier, instance)(vllm:num_requests_running{tier=~\"frontier|core|bulk\"})",
      "legendFormat": "{{model}}"
     }
    ],
@@ -428,7 +428,7 @@
    },
    "targets": [
     {
-     "expr": "max without (tier, instance)(vllm:num_requests_waiting{model=~\"rtx5090-fast|hotaisle-air|ocp-flash-next\"})",
+     "expr": "max without (tier, instance)(vllm:num_requests_waiting{tier=~\"frontier|core|bulk\"})",
      "legendFormat": "{{model}}"
     }
    ],
@@ -478,7 +478,7 @@
    },
    "targets": [
     {
-     "expr": "100 * max without (tier, instance)(vllm:kv_cache_usage_perc{model=~\"rtx5090-fast|hotaisle-air|ocp-flash-next\"})",
+     "expr": "100 * max without (tier, instance)(vllm:kv_cache_usage_perc{tier=~\"frontier|core|bulk\"})",
      "legendFormat": "{{model}}"
     }
    ],
@@ -689,16 +689,16 @@
    },
    "targets": [
     {
-     "expr": "8 * (sum(rate(litellm_input_tokens_metric_total{requested_model=\"glm-45-air\"}[15m])) * 0.6 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"glm-45-air\"}[15m])) * 2.4) / 1000000 * 3600",
-     "legendFormat": "glm-45-air"
-    },
-    {
      "expr": "8 * (sum(rate(litellm_input_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}[15m])) * 0.3 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"qwen38-27b-fast\"}[15m])) * 1.2) / 1000000 * 3600",
      "legendFormat": "qwen38-27b-fast"
     },
     {
      "expr": "8 * (sum(rate(litellm_input_tokens_metric_total{requested_model=\"qwen38-flash-next\"}[15m])) * 0.2 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"qwen38-flash-next\"}[15m])) * 1.0) / 1000000 * 3600",
      "legendFormat": "qwen38-flash-next"
+    },
+    {
+     "expr": "8 * (sum(rate(litellm_input_tokens_metric_total{requested_model=\"qwen38-27b-frontier\"}[15m])) * 0.6 + sum(rate(litellm_output_tokens_metric_total{requested_model=\"qwen38-27b-frontier\"}[15m])) * 2.4) / 1000000 * 3600",
+     "legendFormat": "qwen38-27b-frontier"
     }
    ],
    "datasource": null,
