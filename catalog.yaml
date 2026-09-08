@@ -167,6 +167,7 @@ models:
   tool_call: true
   reasoning: true
   quant: fp8
+  seats: 32
   notes: Rented MI300X (Hot Aisle). Same weights as bulk but 192GB -> 131k context + 89% VRAM to KV. Falls
     back to core when the VM is dark.
 - id: spark3-qwen38-flash-next

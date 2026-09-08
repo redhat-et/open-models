@@ -157,6 +157,8 @@ models:
     tier: frontier
     group: qwen38-27b-frontier
     price: {input: 0.60, output: 2.40}  # notional $/Mtok vs public APIs
+    seats: 32  # measured 2026-09-08: 24.3 tok/s each at 32 concurrent (777
+      # tok/s aggregate, engine max_num_seqs); no perf knee found yet
     engine: {max_num_seqs: 32}
     base_url: http://23.183.40.80:8000/v1
     scrape_url: http://23.183.40.80:8000/v1
