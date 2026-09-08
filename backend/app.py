@@ -503,6 +503,7 @@ DOC_PAGES = {
     "user-setup": ("Setup on your machine", "Install opencode + an OCTO key in one paste"),
     "model-selection": ("Choosing a model", "Which tier for which job"),
     "howto": ("Runbook", "How the platform is operated (also useful reading)"),
+    "contributing": ("Contributing", "Open to OCTO (and beyond) — models, providers, code; all the links"),
 }
 
 
