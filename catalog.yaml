@@ -76,7 +76,7 @@ hosts:
     notes: Future slot.
   spark3:
     hardware: DGX Spark (GB10, 128GB unified)
-    notes: Lab bake-off box - serving gpt-oss-120b (MXFP4, the canonical Spark model).
+    notes: Lab bake-off box - serving RadixArk/Qwen3.8-Flash-Next-NVFP4, using https://github.com/blazux/qwen3.8-Flash-DGX.
   spark4:
     hardware: DGX Spark (GB10, 128GB unified)
     notes: Was already serving Qwen3.8-27B-NVFP4+MTP spec-decode (port 8888);
@@ -188,20 +188,19 @@ models:
     status: listed
     notes: Direct endpoint (VPN). MTP spec-decode; ~16 tok/s over VPN.
 
-  - id: spark3-gptoss
+  - id: spark3-qwen38-flash-next
     host: spark3
-    name: "gpt-oss-120b MXFP4 (Lab)"
-    served_model: openai/gpt-oss-120b
+    name: "Qwen3.8-Flash-Next NVFP4 (Lab)"
+    served_model: qwen3.8-flash-next
     tier: lab
-    group: gpt-oss-120b
+    group: qwen38-flash-next
     base_url: http://octo-et-spark-3.khw.eng.rdu2.dc.redhat.com:8000/v1
     scrape_url: http://10.6.164.125:8000/v1
     api_key: none
-    context: 131072
-    max_output: 8192
-    tool_call: false
+    context: 262144
+    max_output: 262144
+    tool_call: true
     reasoning: true
-    quant: mxfp4
+    quant: nvfp4
     status: listed
-    notes: Bake-off flagship for GB10 (5.1B active) - 33 tok/s over VPN. Needs
-      TIKTOKEN_ENCODINGS_BASE rank files mounted (box cannot reach OpenAI CDN).
+    notes: 22.2 gen/s, 71.0 tot/s single stream, run with https://github.com/blazux/qwen3.8-Flash-DGX

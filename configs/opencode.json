@@ -81,7 +81,7 @@
         }
       }
     },
-    "octo-spark3-gptoss": {
+    "octo-spark3-qwen38-flash-next": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "OCTO Open Models (DGX Spark (GB10, 128GB unified) - direct/unmetered, VPN)",
       "options": {
@@ -89,13 +89,13 @@
         "apiKey": "none"
       },
       "models": {
-        "openai/gpt-oss-120b": {
-          "name": "gpt-oss-120b MXFP4 (Lab)",
+        "qwen3.8-flash-next": {
+          "name": "Qwen3.8-Flash-Next NVFP4 (Lab)",
           "limit": {
-            "context": 131072,
-            "output": 8192
+            "context": 262144,
+            "output": 262144
           },
-          "tool_call": false,
+          "tool_call": true,
           "reasoning": true,
           "temperature": true
         }
