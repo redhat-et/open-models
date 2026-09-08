@@ -231,15 +231,15 @@ def test_stats_spend_times_multiplier(client, monkeypatch):
 
 
 def test_power_validation_and_guards(logged_in, monkeypatch):
-    assert logged_in.post("/api/power", json={"model": "hotaisle-air",
+    assert logged_in.post("/api/power", json={"model": "rtx5090-fast",
                                               "action": "drop"}).status_code == 422
     assert logged_in.post("/api/power", json={"model": "nope",
                                               "action": "on"}).status_code == 404
     monkeypatch.setattr(backend, "SSH_READY", Path("/nonexistent-key"))
-    assert logged_in.post("/api/power", json={"model": "hotaisle-air",
+    assert logged_in.post("/api/power", json={"model": "rtx5090-fast",
                                               "action": "on"}).status_code == 503
     models = {m["id"]: m for m in logged_in.get("/api/catalog").json()["models"]}
-    assert models["hotaisle-air"]["power"] is True
+    assert models["rtx5090-fast"]["power"] is True
 
 
 def test_docs_routes(client):

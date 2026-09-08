@@ -66,7 +66,7 @@ off)
   ;;
 up)
   [ -f "$SPECS" ] || { echo "missing $SPECS - run 'spec' while a VM exists first"; exit 1; }
-  existing=$(api "$API/teams/$TEAM/virtual_machines/" | python3 -c "import json,sys; vms=json.load(sys.stdin); print(f\"{vms[0]['name']} {vms[0].get('ip_address','')}\" if vms else '')")
+  existing=$(export VM_NAME="$VM"; api "$API/teams/$TEAM/virtual_machines/" | python3 -c "import json,sys,os; vms=[v for v in json.load(sys.stdin) if v['name']==os.environ['VM_NAME']]; print(f\"{vms[0]['name']} {vms[0].get('ip_address','')}\" if vms else '')")
   if [ -n "$existing" ]; then
     VM=$(echo "$existing" | cut -d' ' -f1)
     IP=$(echo "$existing" | cut -d' ' -f2)

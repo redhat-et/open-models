@@ -49,7 +49,7 @@ def main(argv: list[str]) -> int:
     if cur == "paused" and action == "off":
         print(f"{model_id}: already paused")
         return 0
-    if cur != "paused" and action == "on":
+    if cur not in {"paused", "unavailable"} and action == "on":
         print(f"{model_id}: already serving ({cur})")
         return 0
 

@@ -71,16 +71,19 @@ def test_shipped_config_groups_and_fallback_chain():
         pytest.skip("run scripts/gen_litellm_config.py first")
     cfg = yaml.safe_load(shipped_path.read_text())
     groups = {m["model_name"] for m in cfg["model_list"]}
-    assert groups == {"qwen38-flash-next", "qwen38-27b-fast", "glm-45-air"}
+    assert "qwen38-27b-fast" in groups  # core may be absent while unavailable
+    assert groups <= {"qwen38-flash-next", "qwen38-27b-fast", "qwen38-27b-frontier"}
     chain = {k: v for fb in cfg["router_settings"]["fallbacks"] for k, v in fb.items()}
     shadows = {m["model_name"] for m in cfg["model_list"]
                if str(m["model_info"].get("id", "")).startswith("shadow-")}
     # each non-core group is covered whether live (fallback chain) or
     # fully paused (shadow deployment on the core endpoint) - state-agnostic
     # so power-off testing never breaks this
-    for name in ("qwen38-27b-fast", "glm-45-air"):
+    for name in ("qwen38-27b-fast", "qwen38-27b-frontier"):
         if name in chain:
-            assert chain[name] == ["qwen38-flash-next"]
+            # empty when the core (flash-next) is itself unavailable,
+            # otherwise it must fall through to the core floor
+            assert chain[name] in ([], ["qwen38-flash-next"])
         else:
             assert name in shadows
     assert "qwen38-flash-next" not in chain  # acyclic: core is the floor

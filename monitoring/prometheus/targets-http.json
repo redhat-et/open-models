@@ -10,10 +10,10 @@
   },
   {
     "targets": [
-      "23.183.40.78:8000"
+      "23.183.40.80:8000"
     ],
     "labels": {
-      "model": "hotaisle-air",
+      "model": "hotaisle-frontier",
       "tier": "frontier"
     }
   }

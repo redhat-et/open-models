@@ -28,16 +28,16 @@ model_list:
     supported_api:
     - chat
     - completions
-- model_name: glm-45-air
+- model_name: qwen38-27b-frontier
   litellm_params:
-    model: openai/zai-org/GLM-4.5-Air-FP8
-    api_base: http://23.183.40.78:8000/v1
+    model: openai/Qwen/Qwen3.8-27B-FP8
+    api_base: http://23.183.40.80:8000/v1
     api_key: sk-local
     max_tokens: 8192
     input_cost_per_token: 6.0e-07
     output_cost_per_token: 2.4e-06
   model_info:
-    id: hotaisle-air
+    id: hotaisle-frontier
     max_input_tokens: 131072
     supported_api:
     - chat
@@ -49,7 +49,7 @@ router_settings:
   fallbacks:
   - qwen38-27b-fast:
     - qwen38-flash-next
-  - glm-45-air:
+  - qwen38-27b-frontier:
     - qwen38-flash-next
 litellm_settings:
   master_key: os.environ/LITELLM_MASTER_KEY

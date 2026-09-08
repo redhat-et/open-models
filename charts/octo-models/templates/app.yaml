@@ -29,7 +29,7 @@ spec:
         fsGroup: {{ .Values.fsGroup }}
       containers:
         - name: app
-          image: {{ .Values.app.backend.image | default (printf "%s:%s" .Values.app.backend.imageStream .Values.app.backend.imageTag) }}
+          image: {{ .Values.app.backend.image | default (printf "image-registry.openshift-image-registry.svc:5000/%s/%s:%s" .Release.Namespace .Values.app.backend.imageStream .Values.app.backend.imageTag) }}
           imagePullPolicy: Always
           ports:
             - containerPort: 8020

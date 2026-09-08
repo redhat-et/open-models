@@ -9,12 +9,12 @@ One entry per platform; update when a benchmark picks a winner. Keep
 
 | Tier | Candidates | Why |
 |------|-----------|-----|
-| smart | Qwen3.8-27B (current), Qwen3-32B-AWQ, gpt-oss-120b (MXFP4) | fits in 128GB; quality ceiling |
+| smart | Qwen3.8-27B (current), Qwen3-32B-AWQ | fits in 128GB; quality ceiling |
 | fast | Qwen3-30B-A3B (MoE, ~3B active), Qwen3-14B, gpt-oss-20b | MoE active params beat BW wall |
 | balanced | Qwen3-32B-AWQ, gpt-oss-20b | middle of both gates |
 
-gpt-oss-120b is the headline Spark play: MXFP4 fits ~61GB and NVIDIA tuned
-it for GB10. If it clears the 10 tok/s smart gate, it *is* the smart model.
+gpt-oss-120b (MXFP4, NVIDIA's tuned GB10 play) was baked off and served on
+spark3 in early 2026; retired 2026-09-08 — 27B won the lab slots.
 
 ## Strix Halo (128GB unified, ~256GB/s)
 

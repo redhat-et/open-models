@@ -11,8 +11,8 @@ CTX="${HOTAISLE_CTX:-32768}"
 MAX_SEQS="${HOTAISLE_MAX_SEQS:-32}"
 WARM_TSV="${HOTAISLE_WARM_TSV:-/tmp/warm.tsv}"
 
-REASON_ARGS=""
-case "$MODEL" in *GLM*|*glm*|*DeepSeek*|*deepseek*) REASON_ARGS="--reasoning-parser glm45" ;; esac
+REASON_ARGS="${HOTAISLE_REASON_ARGS:-}"
+TOOL_ARGS="${HOTAISLE_TOOL_ARGS:-}"
 
 M="models--${MODEL//\//--}"
 HUB="$HOME/.cache/huggingface/hub"
@@ -56,7 +56,7 @@ docker run -d --name om-vllm --restart unless-stopped \
   vllm serve "$MODEL" \
     --served-model-name "$MODEL" \
     --api-key "$API_KEY" \
-    --max-model-len "$CTX" --max-num-seqs "$MAX_SEQS" $REASON_ARGS \
+    --max-model-len "$CTX" --max-num-seqs "$MAX_SEQS" $REASON_ARGS $TOOL_ARGS \
     --gpu-memory-utilization 0.9 --kv-cache-dtype fp8 --max-num-batched-tokens 8192 \
     --host 0.0.0.0 --port "$PORT"
 echo "container started"

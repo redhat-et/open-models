@@ -13,22 +13,21 @@ make model-on  MODEL=rtx5090-fast   # restores previous state
 ```
 
 - Paused models drop out of `/v1/models` immediately and fall back normally
-  (`qwen38-27b-fast → qwen38-flash-next`, `glm-45-air → qwen38-flash-next`;
-  flash-next is the floor and never falls back). So pausing the 5090's 27B
+  (`qwen38-27b-fast → qwen38-flash-next`; flash-next is the floor and never
+  falls back). So pausing the 5090's 27B
   keeps bulk traffic alive on the core cluster, a bit slower per seat.
 - The portal shows a grey **paused** badge and hides the snippet.
 - Catalog keeps `previous_status` while paused so `model-on` restores exactly.
 
 Then stop the actual compute so you stop paying:
-- **Hot Aisle rented VM** (GLM box): billing runs while the VM *exists* —
+- **Hot Aisle rented VM**: billing runs while the VM *exists* —
   powering it off saves nothing; only **deleting** it stops the meter, and a
   deleted VM loses its disk. Full lifecycle:
   `./scripts/hotaisle-api.sh off` (delete VM) and `./scripts/hotaisle-api.sh up`
   (re-provision from the committed `scripts/hotaisle-vm.json` specs, wait for
-  ssh, then serve — cold ~25 min: provision ~2 min, image pull ~5 min,
-  ~112GB weight warm from S3 `octo-models-weights-us-east-1` 8-way parallel
-  ~14 min, load ~5 min). Weight cache was seeded 2026-09-07 via
-  `./scripts/hotaisle-seed-laptop.sh` (re-run after any model/quant change).
+  ssh, then serve — cold start is provision ~2 min + image pull ~5 min +
+  weight download/load; `HOTAISLE_S3_BUCKET` + `HOTAISLE_S3_PREFIX` warm the
+  HF cache from S3 8-way parallel when set).
   One-time setup: create an API key (`ssh admin.hotaisle.app`
   TUI -> your name -> API keys), put `HOTAISLE_API_TOKEN=...` in secrets.env,
   `make deploy APP=1`, then record the box with `hotaisle-api.sh spec` while

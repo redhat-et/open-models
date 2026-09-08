@@ -19,9 +19,6 @@ API_KEY="sk-local"
 CTX="${HOTAISLE_CTX:-32768}"
 MAX_SEQS=32
 
-REASON_ARGS=""
-case "$MODEL" in *GLM*|*glm*|*DeepSeek*|*deepseek*) REASON_ARGS="--reasoning-parser glm45" ;; esac
-
 # -F config only when present (pod mounts /tmp/om-ssh-home; local runs use defaults)
 CFG_OPTS=()
 [ -n "${HOTAISLE_SSH_CONFIG:-}" ] && [ -f "$HOTAISLE_SSH_CONFIG" ] && CFG_OPTS=(-F "$HOTAISLE_SSH_CONFIG")
@@ -36,7 +33,7 @@ serve)
   if [ -n "${HOTAISLE_S3_BUCKET:-}" ] && command -v aws >/dev/null 2>&1 \
      && [ -n "${HOTAISLE_S3_KEY_ID:-${AWS_ACCESS_KEY_ID:-}}" ]; then
     echo "building S3 warm manifest"
-    B="$HOTAISLE_S3_BUCKET" P="${HOTAISLE_S3_PREFIX:-glm-45-air-fp8-cache}"
+    B="$HOTAISLE_S3_BUCKET" P="${HOTAISLE_S3_PREFIX:?set HOTAISLE_S3_PREFIX when using S3 warm}"
     if AWS_ACCESS_KEY_ID="${HOTAISLE_S3_KEY_ID:-${AWS_ACCESS_KEY_ID:-}}" \
        AWS_SECRET_ACCESS_KEY="${HOTAISLE_S3_KEY_SECRET:-${AWS_SECRET_ACCESS_KEY:-}}" \
        aws s3 cp --region us-east-1 "s3://$B/$P/filelist.txt" /tmp/om-warm-files.txt 2>/dev/null; then
@@ -58,6 +55,8 @@ serve)
     "$(dirname "$0")/hotaisle-serve-remote.sh" "$SSH":/tmp/hotaisle-serve-remote.sh
   run "HOTAISLE_IMAGE='$IMAGE' HOTAISLE_MODEL='$MODEL' HOTAISLE_CTX='$CTX' \
        HOTAISLE_AITER='${HOTAISLE_AITER:-}' \
+       HOTAISLE_REASON_ARGS='${HOTAISLE_REASON_ARGS:-}' \
+       HOTAISLE_TOOL_ARGS='${HOTAISLE_TOOL_ARGS:-}' \
        bash /tmp/hotaisle-serve-remote.sh"
   "$0" wait
   ;;

@@ -1,46 +1,34 @@
-# Deduped (max without tier) because stale remote_write pushes duplicate
-# series with old tier labels; filtered to the live model set.
 groups:
   - name: open-models
     rules:
       - alert: ModelEndpointDown
-        expr: up{job=~"vllm.*", model=~"rtx5090-fast|hotaisle-air|ocp-flash-next"} == 0
+        expr: up{job="vllm"} == 0
         for: 5m
-        labels: {severity: page}
+        labels:
+          severity: page
         annotations:
           summary: "vLLM endpoint down for {{ $labels.model }}"
 
-      - alert: GatewayDown
-        expr: up{job="litellm"} == 0
-        for: 2m
-        labels: {severity: page}
-        annotations:
-          summary: "LiteLLM gateway scrape target is down"
-
       - alert: ModelQueueBacklog
-        expr: max without (tier, instance)(vllm:num_requests_waiting{model=~"rtx5090-fast|hotaisle-air|ocp-flash-next"}) > 5
+        expr: vllm:num_requests_waiting > 5
         for: 10m
-        labels: {severity: warn}
+        labels:
+          severity: warn
         annotations:
           summary: "Request backlog on {{ $labels.model }} (>5 waiting for 10m)"
 
       - alert: SlowTimeToFirstToken
-        expr: histogram_quantile(0.95, sum by (le, model) (max without (tier, instance)(rate(vllm:time_to_first_token_seconds_bucket[5m])))) > 5
+        expr: histogram_quantile(0.95, rate(vllm:time_to_first_token_seconds_bucket[5m])) > 5
         for: 15m
-        labels: {severity: warn}
+        labels:
+          severity: warn
         annotations:
           summary: "p95 TTFT > 5s on {{ $labels.model }}"
 
-      - alert: KVCacheSaturated
-        expr: max without (tier, instance)(vllm:kv_cache_usage_perc{model=~"rtx5090-fast|hotaisle-air|ocp-flash-next"}) > 0.95
-        for: 10m
-        labels: {severity: warn}
+      - alert: HostHighMemoryPressure
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 0.95
+        for: 15m
+        labels:
+          severity: warn
         annotations:
-          summary: "KV cache >95% on {{ $labels.model }} - requests will start preempting/queuing"
-
-      - alert: HighGatewayErrorRate
-        expr: sum(rate(litellm_deployment_failure_responses_total[5m])) > 0.05
-        for: 10m
-        labels: {severity: warn}
-        annotations:
-          summary: "Gateway seeing >3 failed requests/min for 10m"
+          summary: "{{ $labels.instance }} memory > 95% (unified memory boxes evict models)"

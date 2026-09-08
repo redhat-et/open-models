@@ -61,8 +61,9 @@ grafana:
 app:
   enabled: false
   backend:
-    # in-cluster imagestream tag (built by the om-backend BuildConfig);
-    # override for external images
+    # in-cluster imagestream tag, fully qualified against the integrated
+    # registry (unqualified names resolve to docker.io and fail pull);
+    # built by the om-backend BuildConfig, override for external images
     image: ""
     imageStream: om-backend
     imageTag: latest

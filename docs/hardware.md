@@ -4,15 +4,14 @@
 |------|----------|--------|-------------|--------|
 | spark1 | DGX Spark (GB10) | 128GB unified | one model/box; BW-limited | free candidate |
 | spark2 | DGX Spark (GB10) | 128GB unified | re-benchmark current qwen3.8 | running something |
-| spark3 | DGX Spark (GB10) | 128GB unified | re-benchmark current qwen3.8 | running something |
-| spark4 | DGX Spark (GB10) | 128GB unified | | free candidate |
+| spark3 | DGX Spark (GB10) | 128GB unified | serving qwen3.8-flash-next (vLLM) | running |
 | strix-halo | Ryzen AI Max+ (gfx1151) | 128GB unified | llama.cpp today (verify) | go grab it |
 | rtx5090 | RTX 5090 | 32GB VRAM | needs CUDA 12.8+ images (sm_120) | available |
 | openshift | g6e.12xlarge (1+) | 4x L40S 48GB | vLLM TP=4; Ryan Cook's cluster is long-term | Models Arch cluster prepped |
 
 ## Candidates to scavenge / borrow / beg
 
-- [ ] spark4 + the Strix Halo (physically)
+- [ ] the Strix Halo (physically)
 - [ ] Old workstation GPU pool (any Pascal+ box can host a 7-8B "CPU-adjacent" tier)
 - [ ] Ryan Cook: dedicated time slice or namespace on the g6e cluster
 - [ ] Retired servers with >64GB RAM for llama.cpp CPU serving (see below)

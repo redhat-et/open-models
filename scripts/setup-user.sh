@@ -60,7 +60,7 @@ fi
 log "testing gateway with your key..."
 SMOKE=$(curl -sf -m 60 "$GW_URL/chat/completions" \
   -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
-  -d '{"model":"qwen38-flash-next","messages":[{"role":"user","content":"reply with exactly: setup works"}],"max_tokens":400,"reasoning_effort":"minimal"}' \
+  -d '{"model":"qwen38-27b-fast","messages":[{"role":"user","content":"reply with exactly: setup works"}],"max_tokens":50}' \
   ) || die "gateway call failed - is the key correct / gateway up?"
 echo "$SMOKE" | grep -q "choices" || die "unexpected response: $(echo "$SMOKE" | head -c 200)"
 log "gateway OK ✓  (spend for this call shows up in the portal)"
@@ -140,14 +140,13 @@ else
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "octo-gateway/qwen38-27b-fast",
-  "small_model": "octo-gateway/qwen38-flash-next",
+  "small_model": "octo-gateway/qwen38-27b-fast",
   "provider": {
     "octo-gateway": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "OCTO Open Models gateway (metered; key from the web app)",
       "options": { "baseURL": "https://litellm-octo-models.apps.emerg.pcbk.p1.openshiftapps.com/v1", "apiKey": "{env:OCTO_KEY}" },
       "models": {
-        "qwen38-flash-next": { "name": "Qwen 3.8 Flash Next (262k ctx)", "limit": { "context": 262144, "output": 8192 }, "tool_call": true, "reasoning": true, "temperature": true },
         "qwen38-27b-fast": { "name": "Qwen 3.8 27B (fast)", "limit": { "context": 32768, "output": 8192 }, "tool_call": true, "reasoning": true, "temperature": true }
       }
     }

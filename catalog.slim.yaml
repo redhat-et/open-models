@@ -33,7 +33,8 @@ gateway:
   frontier_savings_multiplier: 8
   # Tiers are NAMED BY ROLE, not speed (a frontier model may be slower than
   # core - that is fine; role = what you reach for it for):
-  #   frontier = hardest agentic work (GLM on MI300X)
+  #   frontier = hardest agentic work (27B FP8 on a rented MI300X - 192GB
+  #              gives long-context headroom the 32GB bulk card cannot)
   #   core     = daily driver coding (Flash-Next on the 4x L40S cluster) -
   #              default; 33 tok/s solo, 19 tok/s each at 10 concurrent
   #   bulk     = high-volume background/summarize (27B on the 5090, cheap;
@@ -45,17 +46,20 @@ gateway:
   # absent: slow, listed-only, not worth a tunnel into the serving path.
   fallbacks:
     qwen38-27b-fast: [qwen38-flash-next]
-    glm-45-air: [qwen38-flash-next]
+    qwen38-27b-frontier: [qwen38-flash-next]  # floor: core covers frontier gaps
 
 hosts:
   hotaisle-1gpu:
     hardware: 1x AMD Instinct MI300X (192GB) - frontier tier, billed while the VM exists ($3/hr) - delete when idle
-    notes: enc1-gpuvm013 (team rh-octo-emerging-tech); power-off does NOT stop billing - only delete does (hotaisle-api.sh)
-    wake_note: "Wake re-provisions the VM from scratch and re-downloads ~112GB of weights from S3 - cold start ~25 min. Until it serves, glm-45-air answers from the shadow (flash-next)."
+    notes: enc1-gpuvm015 (team rh-octo-emerging-tech, was enc1-gpuvm013); power-off
+      does NOT stop billing - only delete does (hotaisle-api.sh). Matt's box
+      enc1-gpuvm024 shares the team - NEVER touch it.
+    wake_note: "Wake re-provisions from scratch and re-downloads ~28GB weights
+      from HF - cold start ~15 min. Until it serves, frontier traffic falls
+      back to core (flash-next)."
     compute:
-      "off": HOTAISLE_TEAM=rh-octo-emerging-tech HOTAISLE_VM=enc1-gpuvm013 ./scripts/hotaisle-api.sh off
-      "on": HOTAISLE_TEAM=rh-octo-emerging-tech HOTAISLE_VM=enc1-gpuvm013 HOTAISLE_IP=23.183.40.78 HOTAISLE_SSH_CONFIG=/tmp/om-ssh-home/.ssh/config HOTAISLE_MODEL=zai-org/GLM-4.5-Air-FP8 HOTAISLE_CTX=131072 HOTAISLE_S3_BUCKET=octo-models-weights-us-east-1 HOTAISLE_S3_PREFIX=glm-45-air-fp8-cache ./scripts/hotaisle-api.sh up
-    # idle_off: true   # arm auto-delete only after the up hook is proven end-to-end
+      "off": HOTAISLE_TEAM=rh-octo-emerging-tech HOTAISLE_VM=enc1-gpuvm015 ./scripts/hotaisle-api.sh off
+      "on": HOTAISLE_TEAM=rh-octo-emerging-tech HOTAISLE_VM=enc1-gpuvm015 HOTAISLE_IP=23.183.40.80 HOTAISLE_SSH_CONFIG=/tmp/om-ssh-home/.ssh/config HOTAISLE_MODEL=Qwen/Qwen3.8-27B-FP8 HOTAISLE_CTX=131072 HOTAISLE_TOOL_ARGS="--enable-auto-tool-choice --tool-call-parser qwen3_xml" HOTAISLE_REASON_ARGS="--reasoning-parser qwen3" ./scripts/hotaisle-api.sh up
   spark2:
     hardware: DGX Spark (GB10, 128GB unified)
     notes: Lab tier - direct endpoint only (VPN). Bake-off sandbox for new candidates.
@@ -68,7 +72,7 @@ hosts:
       Desk-side box; ssh moved to port 8022 (22 closed; 6999-9000 is the router-forwarded range). Wake via cluster
       works today - the range is already port-forwarded.
   openshift:
-    hardware: OpenShift cluster, g6e GPU nodes (Ryan Cook's, spending plan covered)
+    hardware: OpenShift cluster, g6e GPU nodes
     notes: Core tier - daily driver on covered g6e (4x L40S, TP=4, MTP spec-decode), edge route.
       Plan is to retire the 4x L40S (~$6/hr) for a single RTX Pro 6000 ($3/hr, similar VRAM).
   spark1:
@@ -77,10 +81,6 @@ hosts:
   spark3:
     hardware: DGX Spark (GB10, 128GB unified)
     notes: Lab bake-off box - serving RadixArk/Qwen3.8-Flash-Next-NVFP4, using https://github.com/blazux/qwen3.8-Flash-DGX.
-  spark4:
-    hardware: DGX Spark (GB10, 128GB unified)
-    notes: Was already serving Qwen3.8-27B-NVFP4+MTP spec-decode (port 8888);
-      we rebound 0.0.0.0 on 2026-09-07. Lab-tier redundancy for the 5090.
   strix-halo:
     hardware: AMD Strix Halo (Ryzen AI Max, 128GB unified)
     notes: Grab it. Has qwen 3.8 on it already (verify). Future slot.
@@ -148,38 +148,24 @@ models:
     status: planned
     notes: Verify what is actually serving on this box once we grab it.
 
-  - id: hotaisle-air
+  - id: hotaisle-frontier
     host: hotaisle-1gpu
-    name: "GLM-4.5-Air 106B-A12B (Frontier)"
-    # fallback for hydrate_catalog.py: the VM is deleted (not just powered off)
-    # while paused, so there's nothing to query - keep these so unrelated
-    # `make gen` runs don't fail while this box is torn down.
-    served_model: zai-org/GLM-4.5-Air-FP8
-    seats: 24  # measured 2026-09-07: still 34 tok/s each at 24 concurrent (813 tok/s aggregate)
+    name: "Qwen 3.8 27B FP8 (Frontier)"
+    # fallback for hydrate_catalog.py: the VM is deleted while paused, so
+    # keep served_model/context for offline `make gen` runs.
+    served_model: Qwen/Qwen3.8-27B-FP8
     tier: frontier
-    group: glm-45-air
+    group: qwen38-27b-frontier
     price: {input: 0.60, output: 2.40}  # notional $/Mtok vs public APIs
-    base_url: http://23.183.40.78:8000/v1
+    engine: {max_num_seqs: 32}
+    base_url: http://23.183.40.80:8000/v1
+    scrape_url: http://23.183.40.80:8000/v1
     api_key: sk-local
     context: 131072
     quant: fp8
     status: running
-
-  - id: spark4-lab
-    host: spark4
-    name: "Qwen 3.8 27B NVFP4 + MTP (Lab)"
-    tier: lab
-    group: qwen38-27b-smart
-    base_url: http://octo-et-spark-4.khw.eng.rdu2.dc.redhat.com:8888/v1
-    scrape_url: http://10.6.164.126:8888/v1
-    api_key: none
-    # fallback: VPN-only box, not always reachable from wherever `make gen` runs
-    served_model: qwen3.8-27b-sglang
-    context: 262144
-    max_output: 8192
-    quant: nvfp4
-    status: listed
-    notes: Direct endpoint (VPN). MTP spec-decode; ~16 tok/s over VPN.
+    notes: Rented MI300X (Hot Aisle). Same weights as bulk but 192GB -> 131k
+      context + 89% VRAM to KV. Falls back to core when the VM is dark.
 
   - id: spark3-qwen38-flash-next
     host: spark3
