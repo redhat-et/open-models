@@ -51,10 +51,10 @@ hosts:
   hotaisle-1gpu:
     hardware: 1x AMD Instinct MI300X (192GB) - frontier tier, billed while the VM exists ($3/hr) - delete when idle
     notes: enc1-gpuvm002 (team rh-octo-emerging-tech); power-off does NOT stop billing - only delete does (hotaisle-api.sh)
-    wake_note: "Wake re-provisions the VM from scratch and re-downloads ~27GB of weights - cold start ~45-60 min. Until it serves, glm-45-air answers from the shadow (flash-next)."
+    wake_note: "Wake re-provisions the VM from scratch and re-downloads ~112GB of weights from S3 - cold start ~25 min. Until it serves, glm-45-air answers from the shadow (flash-next)."
     compute:
       "off": HOTAISLE_TEAM=rh-octo-emerging-tech HOTAISLE_VM=enc1-gpuvm002 ./scripts/hotaisle-api.sh off
-      "on": HOTAISLE_TEAM=rh-octo-emerging-tech HOTAISLE_VM=enc1-gpuvm002 HOTAISLE_IP=23.183.40.67 HOTAISLE_SSH_CONFIG=/tmp/om-ssh-home/.ssh/config HOTAISLE_MODEL=zai-org/GLM-4.5-Air-FP8 HOTAISLE_CTX=131072 ./scripts/hotaisle-api.sh up
+      "on": HOTAISLE_TEAM=rh-octo-emerging-tech HOTAISLE_VM=enc1-gpuvm002 HOTAISLE_IP=23.183.40.67 HOTAISLE_SSH_CONFIG=/tmp/om-ssh-home/.ssh/config HOTAISLE_MODEL=zai-org/GLM-4.5-Air-FP8 HOTAISLE_CTX=131072 HOTAISLE_S3_BUCKET=octo-models-weights-us-east-1 HOTAISLE_S3_PREFIX=glm-45-air-fp8-cache ./scripts/hotaisle-api.sh up
     # idle_off: true   # arm auto-delete only after the up hook is proven end-to-end
   spark2:
     hardware: DGX Spark (GB10, 128GB unified)
@@ -194,8 +194,7 @@ models:
     tool_call: true
     reasoning: true
     quant: fp8
-    status: paused
-    previous_status: running
+    status: running
 
   - id: spark4-lab
     host: spark4

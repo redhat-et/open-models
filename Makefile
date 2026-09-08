@@ -53,6 +53,8 @@ deploy: gen
 	  --set secrets.promBcrypt=$$PROM_BCRYPT \
 	  --set secrets.slackWebhook=$$SLACK_WEBHOOK_URL \
 	  --set secrets.hotaisleApiToken=$$HOTAISLE_API_TOKEN \
+	  --set secrets.hotaisleS3KeyId=$$HOTAISLE_S3_KEY_ID \
+	  --set secrets.hotaisleS3KeySecret=$$HOTAISLE_S3_KEY_SECRET \
 	  $(if $(APP),--set app.enabled=true \
 	    --set secrets.sessionSecret=$$SESSION_SECRET \
 	    --set secrets.githubClientId=$$GITHUB_CLIENT_ID \
@@ -76,6 +78,27 @@ model-on:
 model-status:
 	@python3 scripts/model_toggle.py --help 2>/dev/null; for m in $$(grep -E '^  - id: ' catalog.yaml | sed 's/.*id: //'); do python3 scripts/model_toggle.py $$m status; done
 
+# GPU node cost control (ncao 4xL40S node): cluster-autoscaler manages the pool
+# (max 1). replicas=0 -> CA deletes the node in ~10 min (billing stops);
+# replicas=1 -> CA provisions a node (~7 min) + vLLM cold start (~5-10 min,
+# /cache is a PVC so weights + compile cache persist).
+# Do NOT scale the machineset directly (webhook: Red Hat-managed resource).
+FLASH_NS ?= ncao
+FLASH_DEPLOY ?= qwen38-flash-next
+
+gpu-off:
+	@oc get nodes -l nvidia.com/gpu.present=true --no-headers | awk '{print $$1}' | while read -r n; do \
+	  echo "GPU node $$n runs:"; oc get pods -n $(FLASH_NS) --field-selector spec.nodeName=$$n --no-headers | awk '{print "  " $$1 $$3}'; \
+	done
+	@oc scale deploy/$(FLASH_DEPLOY) -n $(FLASH_NS) --replicas=0
+	@echo "flash-next scaled to 0 - cluster-autoscaler deletes the GPU node in ~10 min (billing stops)."
+	@echo "restore: make gpu-on"
+
+gpu-on:
+	@oc scale deploy/$(FLASH_DEPLOY) -n $(FLASH_NS) --replicas=1
+	@echo "scaling up: CA provisions the node (~7 min) + vLLM cold start. This blocks until Ready."
+	@oc wait --for=condition=Ready pod -l app=$(FLASH_DEPLOY) -n $(FLASH_NS) --timeout=25m
+
 DEV_NS ?= octo-models-dev
 # per-namespace SCC uid range; fall back to this cluster's restricted-v2 default
 DEV_UID = $(shell oc get ns $(DEV_NS) -o jsonpath='{.metadata.annotations.openshift\\.io/sa\\.scc\\.run-as-user-range}' 2>/dev/null | cut -d/ -f1 | grep -E '^[0-9]+$$' || echo 1001490000)
@@ -92,6 +115,8 @@ dev:
 	  --set secrets.promBcrypt=$$PROM_BCRYPT \
 	  --set secrets.slackWebhook=$$SLACK_WEBHOOK_URL \
 	  --set secrets.hotaisleApiToken=$$HOTAISLE_API_TOKEN \
+	  --set secrets.hotaisleS3KeyId=$$HOTAISLE_S3_KEY_ID \
+	  --set secrets.hotaisleS3KeySecret=$$HOTAISLE_S3_KEY_SECRET \
 	  --set secrets.sessionSecret=$$SESSION_SECRET \
 	  --set secrets.githubClientId=$$GITHUB_CLIENT_ID \
 	  --set secrets.githubClientSecret=$$GITHUB_CLIENT_SECRET \

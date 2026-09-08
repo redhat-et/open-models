@@ -25,11 +25,23 @@ Then stop the actual compute so you stop paying:
   deleted VM loses its disk. Full lifecycle:
   `./scripts/hotaisle-api.sh off` (delete VM) and `./scripts/hotaisle-api.sh up`
   (re-provision from the committed `scripts/hotaisle-vm.json` specs, wait for
-  ssh, then serve — cold ~45-60 min since the vLLM image + ~27GB weights are
-  re-downloaded). One-time setup: create an API key (`ssh admin.hotaisle.app`
+  ssh, then serve — cold ~25 min: provision ~2 min, image pull ~5 min,
+  ~112GB weight warm from S3 `octo-models-weights-us-east-1` 8-way parallel
+  ~14 min, load ~5 min). Weight cache was seeded 2026-09-07 via
+  `./scripts/hotaisle-seed-laptop.sh` (re-run after any model/quant change).
+  One-time setup: create an API key (`ssh admin.hotaisle.app`
   TUI -> your name -> API keys), put `HOTAISLE_API_TOKEN=...` in secrets.env,
   `make deploy APP=1`, then record the box with `hotaisle-api.sh spec` while
   it exists. Provider CLI alternative: github.com/hotaisle/hotaisle-cli.
+- **4xL40S GPU node** (flash-next, ncao): the node pool is autoscaled by
+  cluster-autoscaler (max 1) — do NOT scale the machineset (webhook blocks
+  Red Hat-managed resources); scale the deployment instead:
+  `make gpu-off` (CA deletes the node in ~10 min, billing stops) and
+  `make gpu-on` (CA provisions a node ~7 min + vLLM cold start ~5-10 min —
+  `/cache` is a 200Gi PVC, so weights + torch-compile cache persist across
+  node swaps). Schedule it (laptop crontab, example):
+  `30 6 * * 1-5 make -C ~/Workspace/open-models gpu-on` /
+  `0 20 * * 1-5 make -C ~/Workspace/open-models gpu-off`
 - **RTX 5090** (desk box, sshd on port **8022**): `COMPUTE=1` handles it
   (`podman stop qwen38-nvfp4`); manual:
   `ssh -p 8022 bturner@136.47.153.236 'podman stop qwen38-nvfp4'`

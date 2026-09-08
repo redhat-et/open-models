@@ -2,7 +2,9 @@ FROM registry.access.redhat.com/ubi9/python-312:latest
 
 WORKDIR /app
 USER root
-RUN dnf install -y openssh-clients && dnf clean all
+RUN dnf install -y openssh-clients unzip && dnf clean all && \
+    curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip && \
+    unzip -q /tmp/awscliv2.zip -d /tmp && /tmp/aws/install && rm -rf /tmp/aws /tmp/awscliv2.zip
 USER 1001
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt

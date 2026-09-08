@@ -33,32 +33,20 @@ serve)
   if run "curl -sf -m 3 -H 'Authorization: Bearer $API_KEY' http://localhost:$PORT/v1/models" >/dev/null 2>&1; then
     echo "already serving - nothing to do"; exit 0
   fi
-  run "
-    set -euo pipefail
-    echo 0 | sudo tee /proc/sys/kernel/numa_balancing >/dev/null
-    docker rm -f om-vllm >/dev/null 2>&1 || true
-    docker images '$IMAGE' --format '{{.ID}}' | grep -q . || docker pull '$IMAGE'
-    docker run -d --name om-vllm --restart unless-stopped \
-      --network host --device /dev/kfd --device /dev/dri --group-add video \
-      --security-opt seccomp=unconfined --shm-size 16g \
-      -e HIP_VISIBLE_DEVICES=0 \
-      -e AITER_JIT_DIR=/opt/aiter-cache \
-      ${HOTAISLE_AITER:+-e VLLM_ROCM_USE_AITER=1 -e VLLM_ROCM_USE_AITER_MOE=1} \
-      -v "$HOME/.aiter-cache:/opt/aiter-cache" \
-      '$IMAGE' \
-      vllm serve '$MODEL' \
-        --served-model-name '$MODEL' \
-        --api-key '$API_KEY' \
-        --max-model-len $CTX --max-num-seqs $MAX_SEQS $REASON_ARGS \
-        --gpu-memory-utilization 0.9 --kv-cache-dtype fp8 --max-num-batched-tokens 8192 \
-        --host 0.0.0.0 --port $PORT
-    echo 'container started; weights re-download (~27GB) only if the box was re-imaged'
-  "
+  scp -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
+    ${CFG_OPTS[@]+"${CFG_OPTS[@]}"} ${HOTAISLE_SSH_OPTS:-} \
+    "$(dirname "$0")/hotaisle-serve-remote.sh" "$SSH":/tmp/hotaisle-serve-remote.sh
+  run "HOTAISLE_IMAGE='$IMAGE' HOTAISLE_MODEL='$MODEL' HOTAISLE_CTX='$CTX' \
+       HOTAISLE_S3_BUCKET='${HOTAISLE_S3_BUCKET:-}' HOTAISLE_S3_PREFIX='${HOTAISLE_S3_PREFIX:-}' \
+       HOTAISLE_AWS_KEY_ID='${HOTAISLE_AWS_KEY_ID:-${HOTAISLE_S3_KEY_ID:-${AWS_ACCESS_KEY_ID:-}}}' \
+       HOTAISLE_AWS_KEY_SECRET='${HOTAISLE_AWS_KEY_SECRET:-${HOTAISLE_S3_KEY_SECRET:-${AWS_SECRET_ACCESS_KEY:-}}}' \
+       HOTAISLE_AITER='${HOTAISLE_AITER:-}' \
+       bash /tmp/hotaisle-serve-remote.sh"
   "$0" wait
   ;;
 wait)
   echo -n "waiting for :$PORT "
-  for _ in $(seq 1 90); do
+  for _ in $(seq 1 120); do
     if run "curl -sf -m 5 -H 'Authorization: Bearer $API_KEY' http://localhost:$PORT/v1/models" >/dev/null 2>&1; then
       echo " - serving"; exit 0
     fi
