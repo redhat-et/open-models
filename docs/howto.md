@@ -69,8 +69,10 @@ Fully offline (no cluster): `make lab`, `make lab-test`, `make lab-down`.
 
 1. Get it reachable (SSH key or VPN), note vendor/VRAM.
 2. Serve with vLLM behind an OpenAI-compatible endpoint; add a local API key.
-3. Add a `hosts:` + `models:` entry to `catalog.yaml` (`status: listed` until tested,
-   then `running` for metering; set `group:` to share/duplicate an alias for redundancy).
+3. Add a `hosts:` + `models:` entry to `catalog.slim.yaml` (`status: listed` until
+   tested, then `running` for metering; set `group:` to share/duplicate an alias for
+   redundancy). Leave out `served_model`/`context` if the box is already serving -
+   `make gen` fills them in from its live `/v1/models`.
 4. `make gen && make deploy APP=1` — prometheus scrape targets come from
    `values-targets.yaml` (`make gen` writes it).
 5. Verify: `curl <gateway>/v1/models`, a chat call, then prometheus `up==1`.
@@ -90,7 +92,7 @@ python3 scripts/loadtest.py --url http://<host>:8000/v1 --model <served> [--key 
     --levels 1,2,4,8,16 --sessions 1 --min-tokens 150 --min-tps 10
 ```
 
-Put the recommended number in the model's `seats:` field in `catalog.yaml`
+Put the recommended number in the model's `seats:` field in `catalog.slim.yaml`
 (shown as "🪑 ~N seats" on the card).
 
 Idle-off: hosts with `idle_off: true` + a `compute.off` hook get powered off

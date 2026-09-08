@@ -2,7 +2,8 @@
 
 Open models to offset token spend — built by OCTO, open for OCTO today,
 built to become a community project. Everything runs from one repo,
-everything reads from `catalog.yaml`.
+everything reads from `catalog.slim.yaml` (hydrated into `catalog.yaml` by
+`make gen`).
 
 ## Links
 
@@ -26,7 +27,8 @@ served), `docs/monitoring-howto.md`, `TESTBED.md` (offline lab),
 ## The shape of the code
 
 ```
-catalog.yaml        single source of truth: models, hosts, tiers, fallbacks
+catalog.slim.yaml   single source of truth: models, hosts, tiers, fallbacks
+catalog.yaml        generated (make gen): + served_model/context from live boxes
 backend/            FastAPI portal (auth, keys, spend, /guide, compute hooks)
 charts/octo-models/ Helm chart: gateway (LiteLLM+Postgres+Redis), portal,
                     Prometheus, gpu-scheduler CronJobs
@@ -43,7 +45,7 @@ docs/               rendered at portal /guide/<name>
 ```
 make setup          # deps, secrets wiring (one time)
 make test           # backend + web test suites (CI runs these)
-make gen            # regenerate configs from catalog.yaml
+make gen            # hydrate catalog.slim.yaml -> catalog.yaml, regenerate configs
 make deploy APP=1   # helm upgrade (gateway, portal, monitoring)
 make backend-image  # rebuild portal image (Containerfile / scripts / catalog)
 make model-on MODEL=<id>          # bring a model + its compute up
@@ -79,8 +81,9 @@ about anything surprising.
 
 ## Ground rules
 
-- `catalog.yaml` is the source of truth — change it, then `make gen`, never
-  hand-edit generated deploy files.
+- `catalog.slim.yaml` is the source of truth — change it, then `make gen`.
+  `catalog.yaml` and every other generated deploy file are overwritten by
+  `make gen` - never hand-edit them.
 - Anything that bills (rented GPUs, nodes) must have a matching off path and
   a note in the runbook; cost levers live in `docs/plan.md` (COST DIAL).
 - Destructive ops (VM delete, node scale) are scripted, tested, and logged —

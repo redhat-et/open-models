@@ -33,6 +33,7 @@ model_list:
     model: openai/zai-org/GLM-4.5-Air-FP8
     api_base: http://23.183.40.78:8000/v1
     api_key: sk-local
+    max_tokens: 8192
     input_cost_per_token: 6.0e-07
     output_cost_per_token: 2.4e-06
   model_info:

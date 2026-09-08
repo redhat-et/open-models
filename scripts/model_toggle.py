@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Toggle a catalog model's serving status without reflowing catalog.yaml.
+"""Toggle a catalog model's serving status without reflowing catalog.slim.yaml.
+
+Edits catalog.slim.yaml (the hand-edited source), not the generated
+catalog.yaml - `make gen` (part of `make deploy`) regenerates catalog.yaml
+from it afterwards, so the status change survives.
 
 Usage: model_toggle.py MODEL_ID (on|off|status)
   off -> status: paused (keeps previous_status for `on` to restore)
@@ -13,7 +17,7 @@ import sys
 from pathlib import Path
 
 CATALOG = Path(
-    os.environ.get("OCTO_CATALOG", Path(__file__).resolve().parent.parent / "catalog.yaml")
+    os.environ.get("OCTO_CATALOG", Path(__file__).resolve().parent.parent / "catalog.slim.yaml")
 )
 
 

@@ -10,7 +10,7 @@ Routes (give these to your users):
 
 Run `oc get route -n {{ .Release.Namespace }}` to confirm the exact hostnames.
 
-After every change to catalog.yaml:
+After every change to catalog.slim.yaml:
   make gen && make deploy
 
 To rebuild + roll the web app after changing backend/:

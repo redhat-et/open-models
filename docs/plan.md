@@ -34,8 +34,9 @@ gateway; replaces the v1 FastAPI UI. Answers the updated mission spec.
 - LiteLLM licensing workaround: all virtual keys live under ONE litellm
   user; our Postgres maps key -> github_user. One github user may hold
   many keys.
-- `catalog.yaml` stays the source of truth: generates litellm config,
-  app config, and Grafana/Prometheus provisioning.
+- `catalog.slim.yaml` stays the source of truth; `make gen` hydrates it into
+  `catalog.yaml` (live served_model/context from each box), which generates
+  litellm config, app config, and Grafana/Prometheus provisioning.
 
 ## QoS scope
 
