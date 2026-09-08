@@ -1,0 +1,60 @@
+# Scale the flash-next GPU deployment so the paid 4xL40S node runs
+# 04:00-18:00 America/New_York Mon-Fri (cluster-autoscaler then deletes /
+# provisions the g6e node). Same lever as `make gpu-off/gpu-on`.
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: om-gpu-scheduler, namespace: octo-models}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: om-gpu-scheduler-scale, namespace: ncao}
+rules:
+  - apiGroups: [apps]
+    resources: [deployments/scale]
+    resourceNames: [qwen38-flash-next]
+    verbs: [get, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: om-gpu-scheduler-scale, namespace: ncao}
+subjects:
+  - {kind: ServiceAccount, name: om-gpu-scheduler, namespace: octo-models}
+roleRef: {kind: Role, name: om-gpu-scheduler-scale, apiGroup: rbac.authorization.k8s.io}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata: {name: om-gpu-on, namespace: octo-models}
+spec:
+  schedule: "0 4 * * 1-5"
+  timeZone: America/New_York
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          serviceAccountName: om-gpu-scheduler
+          containers:
+            - name: scale
+              image: image-registry.openshift-image-registry.svc:5000/octo-models/om-backend:latest
+              command: ["python3", "-c",
+                "import json,ssl,urllib.request as u; tok=open('/var/run/secrets/kubernetes.io/serviceaccount/token').read(); ctx=ssl.create_default_context(cafile='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'); r=u.Request('https://kubernetes.default.svc/apis/apps/v1/namespaces/ncao/deployments/qwen38-flash-next/scale',data=json.dumps({'spec':{'replicas':1}}).encode(),method='PATCH',headers={'Authorization':'Bearer '+tok,'Content-Type':'application/merge-patch+json'}); print(u.urlopen(r,context=ctx).read()[:200])"]
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata: {name: om-gpu-off, namespace: octo-models}
+spec:
+  schedule: "0 18 * * 1-5"
+  timeZone: America/New_York
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          serviceAccountName: om-gpu-scheduler
+          containers:
+            - name: scale
+              image: image-registry.openshift-image-registry.svc:5000/octo-models/om-backend:latest
+              command: ["python3", "-c",
+                "import json,ssl,urllib.request as u; tok=open('/var/run/secrets/kubernetes.io/serviceaccount/token').read(); ctx=ssl.create_default_context(cafile='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'); r=u.Request('https://kubernetes.default.svc/apis/apps/v1/namespaces/ncao/deployments/qwen38-flash-next/scale',data=json.dumps({'spec':{'replicas':0}}).encode(),method='PATCH',headers={'Authorization':'Bearer '+tok,'Content-Type':'application/merge-patch+json'}); print(u.urlopen(r,context=ctx).read()[:200])"]

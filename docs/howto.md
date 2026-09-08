@@ -39,9 +39,9 @@ Then stop the actual compute so you stop paying:
   `make gpu-off` (CA deletes the node in ~10 min, billing stops) and
   `make gpu-on` (CA provisions a node ~7 min + vLLM cold start ~5-10 min —
   `/cache` is a 200Gi PVC, so weights + torch-compile cache persist across
-  node swaps). Schedule it (laptop crontab, example):
-  `30 6 * * 1-5 make -C ~/Workspace/open-models gpu-on` /
-  `0 20 * * 1-5 make -C ~/Workspace/open-models gpu-off`
+  node swaps).   Scheduled: in-cluster CronJobs (`deployments/gpu-scheduler/gpu-scheduler.yaml`)
+  scale the deployment 04:00 on / 18:00 off, Mon-Fri America/New_York.
+  Dry-run a schedule change with `make gpu-off` / `make gpu-on` by hand.
 - **RTX 5090** (desk box, sshd on port **8022**): `COMPUTE=1` handles it
   (`podman stop qwen38-nvfp4`); manual:
   `ssh -p 8022 bturner@136.47.153.236 'podman stop qwen38-nvfp4'`

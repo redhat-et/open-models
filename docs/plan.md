@@ -121,7 +121,9 @@ scheduling, smart routing.
      verify glm-45-air fingerprint through gateway.
   2. GPU node cost cycle: `make gpu-off` -> node gone ~10 min -> `make gpu-on`
      -> flash serving <15 min from PVC -> gateway verify.
-  3. Add laptop crontab: gpu-on weekday ~06:30, gpu-off ~20:00 (times TBD).
+  3. DONE (2026-09-08): GPU schedule in-cluster — CronJobs `om-gpu-on/off`
+     scale flash-next 04:00 on / 18:00 off Mon-Fri America/New_York
+     (`deployments/gpu-scheduler/gpu-scheduler.yaml`, live + job-tested).
   4. Post launch announcement #octo-open-model-platform.
   5. Backlog: automate catalog IP update after reprovision; flash readiness
      probe; hotaisle balance alerting; shadow-vs-glm quality spot-check;
