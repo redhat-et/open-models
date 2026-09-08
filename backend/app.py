@@ -503,6 +503,8 @@ DOC_PAGES = {
     "user-setup": ("Setup on your machine", "Install opencode + an OCTO key in one paste"),
     "model-selection": ("Choosing a model", "Which tier for which job"),
     "howto": ("Runbook", "How the platform is operated (also useful reading)"),
+    "model-onboarding": ("Onboarding a model", "Hardware reqs, serving, catalog entry, verification"),
+    "monitoring-howto": ("Monitoring a model", "Scrape targets, alerts, dashboards"),
     "contributing": ("Contributing", "Open to OCTO (and beyond) — models, providers, code; all the links"),
 }
 
@@ -521,6 +523,7 @@ def docs_index():
 
 @app.get("/guide/{name}")
 def docs_page(name: str):
+    name = {"runbook": "howto"}.get(name, name)  # landing page calls it "runbook"
     if name not in DOC_PAGES or not (DOCS_DIR / f"{name}.md").exists():
         raise HTTPException(404, "no such doc")
     import markdown as md
