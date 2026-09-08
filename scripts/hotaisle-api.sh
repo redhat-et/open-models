@@ -3,7 +3,7 @@
 # Billing runs while the VM EXISTS - power-off does NOT stop the meter, only
 # DELETE does. Deleting loses the disk, so `up` re-provisions a bare VM and
 # hotaisle.sh serve re-pulls the vLLM image + re-downloads the ~27GB weights
-# on first run (~45-60 min total cold start).
+# on first run (~25 min cold start: provision + pull + S3 warm).
 #
 #   ./scripts/hotaisle-api.sh spec     # record live VM specs to hotaisle-vm.json (run once)
 #   ./scripts/hotaisle-api.sh off      # DELETE the VM - stops billing (disk gone)
@@ -62,7 +62,7 @@ off)
   fi
   echo "deleting VM $VM - billing stops, disk is destroyed"
   api -X DELETE "$API/teams/$TEAM/virtual_machines/$VM/"
-  echo "deleted. bring back with: ./scripts/hotaisle-api.sh up (cold ~45-60 min)"
+  echo "deleted. bring back with: ./scripts/hotaisle-api.sh up (cold ~25 min, warm from S3)"
   ;;
 up)
   [ -f "$SPECS" ] || { echo "missing $SPECS - run 'spec' while a VM exists first"; exit 1; }

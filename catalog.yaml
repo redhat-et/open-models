@@ -194,7 +194,8 @@ models:
     tool_call: true
     reasoning: true
     quant: fp8
-    status: running
+    status: paused
+    previous_status: running
 
   - id: spark4-lab
     host: spark4

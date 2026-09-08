@@ -30,14 +30,15 @@ model_list:
     - completions
 - model_name: glm-45-air
   litellm_params:
-    model: openai/zai-org/GLM-4.5-Air-FP8
-    api_base: http://23.183.40.67:8000/v1
+    model: openai/Inferact/Qwen3.8-Flash-Next-NVFP4
+    api_base: https://qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com/v1
     api_key: sk-local
-    input_cost_per_token: 6.0e-07
-    output_cost_per_token: 2.4e-06
+    max_tokens: 8192
+    input_cost_per_token: 2.0000000000000002e-07
+    output_cost_per_token: 1.0e-06
   model_info:
-    id: hotaisle-air
-    max_input_tokens: 131072
+    id: shadow-glm-45-air
+    max_input_tokens: 262144
     supported_api:
     - chat
     - completions
@@ -47,8 +48,6 @@ router_settings:
   retry_after: 2
   fallbacks:
   - qwen38-27b-fast:
-    - qwen38-flash-next
-  - glm-45-air:
     - qwen38-flash-next
 litellm_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
