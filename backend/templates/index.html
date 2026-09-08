@@ -153,6 +153,7 @@
       <h2 style="font-size:1.2rem; margin:0 0 var(--pf-t--global--spacer--md)">Notes &amp; help</h2>
       <div class="om-help">
         <details open><summary>🧭 Which model should I pick?</summary>
+          <p><b>frontier — Qwen 3.8 27B FP8</b>: hardest agentic work. Rented MI300X, 131k context — not always on; if it's dark or waking, the gateway routes you to core automatically.</p>
           <p><b>core — Qwen 3.8 Flash-Next</b>: your default. 4x L40S cluster, ~33 tok/s, good at everything daily, always up.</p>
           <p><b>bulk — Qwen 3.8 27B</b>: background jobs, batch runs, high volume — cheap notional rates, runs on the single 5090.</p>
           <p><b>lab — DGX Sparks</b>: experiments. Direct endpoints over VPN only (see URL on the card), no SLA, no metering.</p>
@@ -313,7 +314,7 @@ async function loadHealth() {
 
 async function powerOn(id) {
   const note = window.WAKE_NOTE?.[id] || '';
-  if (!confirm((note ? note + '\n\n' : '') + 'Wake this machine? It takes a few minutes and costs ~$3/hr while up.')) return;
+  if (!confirm((note ? note + '\n\n' : '') + 'Wake this machine? It can take a few minutes to serve.')) return;
   try { await api('/api/power', {method:'POST', body: JSON.stringify({model: id, action: 'on'})}); window.HEALTH[id] = {status:'waking'}; paintHealth(); }
   catch (e) { alert('wake failed: ' + e.message); }
 }

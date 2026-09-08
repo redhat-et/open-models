@@ -28,8 +28,9 @@ hosts:
       when idle
     notes: enc1-gpuvm015 (team rh-octo-emerging-tech, was enc1-gpuvm013); power-off does NOT stop billing
       - only delete does (hotaisle-api.sh). Matt's box enc1-gpuvm024 shares the team - NEVER touch it.
-    wake_note: Wake re-provisions from scratch and re-downloads ~28GB weights from HF - cold start ~15
-      min. Until it serves, frontier traffic falls back to core (flash-next).
+    wake_note: This MI300X bills ~$3/hr while it exists. Wake re-provisions from scratch and re-downloads
+      ~28GB weights from HF - cold start ~15 min. Until it serves, frontier traffic falls back to core
+      (flash-next).
     compute:
       'off': HOTAISLE_TEAM=rh-octo-emerging-tech HOTAISLE_VM=enc1-gpuvm015 ./scripts/hotaisle-api.sh off
       'on': HOTAISLE_TEAM=rh-octo-emerging-tech HOTAISLE_VM=enc1-gpuvm015 HOTAISLE_IP=23.183.40.80 HOTAISLE_SSH_CONFIG=/tmp/om-ssh-home/.ssh/config
