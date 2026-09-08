@@ -101,3 +101,28 @@ scheduling, smart routing.
 - SMART TIER (2026-09-06): GLM-4.5-Air-FP8 (106B-A12B) on resized 1x MI300X
   hot-aisle ($3/hr vs $6): quality/coding tier `glm-45-air` (fallback -> fast),
   27B fast stays on the free 5090, 235B TP=2 reserved for resize-for-demo-days.
+- COST DIAL v2 (2026-09-07): hot-aisle rental reality — billing runs while the
+  VM EXISTS; only DELETE stops the meter, and delete destroys the disk. Full
+  lifecycle now API-driven (`scripts/hotaisle-api.sh` list/spec/off/up wired as
+  catalog compute hooks; validated end-to-end destructive: delete -> re-provision
+  -> serve -> gateway). 112GB GLM weights mirrored to
+  `s3://octo-models-weights-us-east-1` (seed: `scripts/hotaisle-seed-laptop.sh`,
+  scoped `octo-models-s3-write` user + `aws s3 sync` — presigned PUTs 403
+  SignatureDoesNotMatch on this account, GETs work); wake warms the HF cache
+  8-way parallel from S3 (cold ~25 min vs ~50 min HF-bound). flash-next
+  (ncao) `/cache` moved emptyDir -> 200Gi PVC: weights + torch-compile cache
+  now survive GPU node swaps; `make gpu-off/gpu-on` lets cluster-autoscaler
+  delete/provision the g6e node (replicas 0 = node gone ~10 min, back ~15 min).
+- TOMORROW (Tue 2026-09-08, launch is Wed 2026-09-09):
+  1. GLM box wake cycle (unattended, stop on failure): `hotaisle-api.sh up` ->
+     re-provision gets a NEW VM name+IP -> update catalog `base_url` +
+     HOTAISLE_VM/HOTAISLE_IP -> `make deploy APP=1` -> `scripts/hotaisle.sh
+     serve` (time the S3 warm) -> `make model-on MODEL=hotaisle-air` ->
+     verify glm-45-air fingerprint through gateway.
+  2. GPU node cost cycle: `make gpu-off` -> node gone ~10 min -> `make gpu-on`
+     -> flash serving <15 min from PVC -> gateway verify.
+  3. Add laptop crontab: gpu-on weekday ~06:30, gpu-off ~20:00 (times TBD).
+  4. Post launch announcement #octo-open-model-platform.
+  5. Backlog: automate catalog IP update after reprovision; flash readiness
+     probe; hotaisle balance alerting; shadow-vs-glm quality spot-check;
+     optional 5090 as third tier.
