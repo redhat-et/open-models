@@ -27,6 +27,7 @@ backend:
 	$(PY) -m uvicorn backend.app:app --reload --host 0.0.0.0 --port 8020
 
 gen:
+	$(PY) scripts/hydrate_catalog.py
 	$(PY) scripts/gen_configs.py
 	$(PY) scripts/gen_prom_targets.py
 	$(PY) scripts/gen_litellm_config.py
@@ -76,7 +77,7 @@ model-on:
 	oc rollout status deploy/$(shell oc get deploy -n $(NAMESPACE) --no-headers | awk '/litellm/{print $$1; exit}') -n $(NAMESPACE) --timeout=180s
 
 model-status:
-	@python3 scripts/model_toggle.py --help 2>/dev/null; for m in $$(grep -E '^  - id: ' catalog.yaml | sed 's/.*id: //'); do python3 scripts/model_toggle.py $$m status; done
+	@python3 scripts/model_toggle.py --help 2>/dev/null; for m in $$(grep -E '^  - id: ' catalog.slim.yaml | sed 's/.*id: //'); do python3 scripts/model_toggle.py $$m status; done
 
 # GPU node cost control (ncao 4xL40S node): cluster-autoscaler manages the pool
 # (max 1). replicas=0 -> CA deletes the node in ~10 min (billing stops);

@@ -21,7 +21,7 @@ Rules of thumb:
 
 ## 2. Wire it up
 
-1. Add the model to `catalog.yaml` (status `candidate` until verified).
+1. Add the model to `catalog.slim.yaml` (status `candidate` until verified).
 2. Add scrape targets in `monitoring/prometheus/prometheus.yml` mirroring it.
 3. `docker compose up -d` + reload Prometheus. Confirm in `Status -> Targets`.
 4. Front end + Grafana pick it up automatically.

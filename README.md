@@ -24,15 +24,18 @@ are listed on the web app for VPN users but stay out of token accounting.
    listed only (VPN, unmetered):  vLLM @ spark2 / spark3 / strix-halo  (copy-paste URLs)
 ```
 
-`catalog.yaml` is the single source of truth: models, tiers, hosts, endpoints,
-prices, fallbacks, key defaults. The litellm config, Prometheus targets, the
-web UI catalog, and the generated user configs are all derived from it.
+`catalog.slim.yaml` is the single source of truth: models, tiers, hosts,
+endpoints, prices, fallbacks, key defaults. `make gen` hydrates it into
+`catalog.yaml` (querying each model's live `/v1/models` for served_model +
+context) and the litellm config, Prometheus targets, the web UI catalog, and
+the generated user configs are all derived from that.
 
 ## Layout
 
 | Path               | What                                                       |
 |--------------------|------------------------------------------------------------|
-| `catalog.yaml`     | Model catalog: ids, tiers, hosts, endpoints, prices         |
+| `catalog.slim.yaml`| Hand-edited catalog source: ids, tiers, hosts, prices        |
+| `catalog.yaml`     | Generated (`make gen`) full catalog: + served_model/context  |
 | `backend/`         | FastAPI app: GitHub OAuth, key self-service, spend, UI      |
 | `charts/octo-models/` | One Helm chart for the whole platform (gateway, app, monitoring) |
 | `scripts/`         | Generators: litellm config, prom targets, user configs      |
@@ -48,7 +51,7 @@ web UI catalog, and the generated user configs are all derived from it.
 make deploy              # gateway + pg + redis + prometheus + grafana
 make deploy APP=1        # + web app (needs ~/.config/octo-models/secrets.env)
 make backend-image       # rebuild + roll the app after touching backend/
-make gen                 # re-run after editing catalog.yaml (then make deploy)
+make gen                 # re-run after editing catalog.slim.yaml (then make deploy)
 ```
 
 `secrets.env` holds `PG_PASSWORD`, `RD_PASSWORD`, `LLM_MASTER_KEY`,
@@ -69,7 +72,7 @@ make monitor-up      # local prometheus :9090 + grafana :3000 via podman
 - [x] LiteLLM gateway live: model groups, fallbacks, budgets, Prometheus spend
 - [x] Web app on-cluster: GitHub login, catalog + snippets, key CRUD + spend
 - [x] Monitoring on-cluster: namespace Prometheus + Grafana dashboard
-- [x] `catalog.yaml` -> generated opencode.json / open-webui configs
+- [x] `catalog.slim.yaml` -> hydrated `catalog.yaml` -> generated opencode.json / open-webui configs
 - [x] 3 model instances live (g6e flash-next, RTX 5090 fast, spark2 smart [listed])
 - [x] Hot-aisle GPU added to gateway (in `qwen38-27b-fast` group as bulk redundancy; currently paused)
 - [x] Old `web/` UI retired; portal is the single UI (M4)

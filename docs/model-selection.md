@@ -3,7 +3,7 @@
 # Model selection
 
 One entry per platform; update when a benchmark picks a winner. Keep
-`catalog.yaml` in sync.
+`catalog.slim.yaml` in sync.
 
 ## DGX Spark (128GB unified, ~273GB/s)
 
@@ -37,4 +37,4 @@ Qwen3-14B / gpt-oss-20b as a second fast endpoint or bench rig.
 
 Fixed 30-prompt set (10 code, 10 summarize/reason, 10 agentic/tool-call),
 scored by two team members blind, plus tool-call format pass/fail. Run on
-every candidate before it enters `catalog.yaml` as `running`.
+every candidate before it enters `catalog.slim.yaml` as `running`.
