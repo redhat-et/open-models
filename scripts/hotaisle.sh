@@ -33,13 +33,30 @@ serve)
   if run "curl -sf -m 3 -H 'Authorization: Bearer $API_KEY' http://localhost:$PORT/v1/models" >/dev/null 2>&1; then
     echo "already serving - nothing to do"; exit 0
   fi
+  if [ -n "${HOTAISLE_S3_BUCKET:-}" ] && command -v aws >/dev/null 2>&1 \
+     && [ -n "${HOTAISLE_S3_KEY_ID:-${AWS_ACCESS_KEY_ID:-}}" ]; then
+    echo "building S3 warm manifest"
+    B="$HOTAISLE_S3_BUCKET" P="${HOTAISLE_S3_PREFIX:-glm-45-air-fp8-cache}"
+    if AWS_ACCESS_KEY_ID="${HOTAISLE_S3_KEY_ID:-${AWS_ACCESS_KEY_ID:-}}" \
+       AWS_SECRET_ACCESS_KEY="${HOTAISLE_S3_KEY_SECRET:-${AWS_SECRET_ACCESS_KEY:-}}" \
+       aws s3 cp --region us-east-1 "s3://$B/$P/filelist.txt" /tmp/om-warm-files.txt 2>/dev/null; then
+      { while IFS= read -r rel; do
+          printf '%s\t%s\n' "$rel" "$(AWS_ACCESS_KEY_ID="${HOTAISLE_S3_KEY_ID:-${AWS_ACCESS_KEY_ID:-}}" \
+            AWS_SECRET_ACCESS_KEY="${HOTAISLE_S3_KEY_SECRET:-${AWS_SECRET_ACCESS_KEY:-}}" \
+            aws s3 presign "s3://$B/$P/$rel" --expires-in 86400 --region us-east-1)"
+        done < /tmp/om-warm-files.txt
+        printf 'manifest.txt\t%s\n' "$(AWS_ACCESS_KEY_ID="${HOTAISLE_S3_KEY_ID:-${AWS_ACCESS_KEY_ID:-}}" \
+          AWS_SECRET_ACCESS_KEY="${HOTAISLE_S3_KEY_SECRET:-${AWS_SECRET_ACCESS_KEY:-}}" \
+          aws s3 presign "s3://$B/$P/manifest.txt" --expires-in 86400 --region us-east-1)"
+      } > /tmp/om-warm.tsv
+      scp -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
+        ${CFG_OPTS[@]+"${CFG_OPTS[@]}"} ${HOTAISLE_SSH_OPTS:-} /tmp/om-warm.tsv "$SSH":/tmp/warm.tsv
+    fi
+  fi
   scp -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
     ${CFG_OPTS[@]+"${CFG_OPTS[@]}"} ${HOTAISLE_SSH_OPTS:-} \
     "$(dirname "$0")/hotaisle-serve-remote.sh" "$SSH":/tmp/hotaisle-serve-remote.sh
   run "HOTAISLE_IMAGE='$IMAGE' HOTAISLE_MODEL='$MODEL' HOTAISLE_CTX='$CTX' \
-       HOTAISLE_S3_BUCKET='${HOTAISLE_S3_BUCKET:-}' HOTAISLE_S3_PREFIX='${HOTAISLE_S3_PREFIX:-}' \
-       HOTAISLE_AWS_KEY_ID='${HOTAISLE_AWS_KEY_ID:-${HOTAISLE_S3_KEY_ID:-${AWS_ACCESS_KEY_ID:-}}}' \
-       HOTAISLE_AWS_KEY_SECRET='${HOTAISLE_AWS_KEY_SECRET:-${HOTAISLE_S3_KEY_SECRET:-${AWS_SECRET_ACCESS_KEY:-}}}' \
        HOTAISLE_AITER='${HOTAISLE_AITER:-}' \
        bash /tmp/hotaisle-serve-remote.sh"
   "$0" wait

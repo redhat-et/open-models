@@ -9,12 +9,7 @@ PORT="${HOTAISLE_PORT:-8000}"
 API_KEY="${HOTAISLE_API_KEY:-sk-local}"
 CTX="${HOTAISLE_CTX:-32768}"
 MAX_SEQS="${HOTAISLE_MAX_SEQS:-32}"
-BUCKET="${HOTAISLE_S3_BUCKET:-}"
-PREFIX="${HOTAISLE_S3_PREFIX:-}"
-
-export AWS_ACCESS_KEY_ID="${HOTAISLE_AWS_KEY_ID:-}"
-export AWS_SECRET_ACCESS_KEY="${HOTAISLE_AWS_KEY_SECRET:-}"
-export AWS_DEFAULT_REGION=us-east-1
+WARM_TSV="${HOTAISLE_WARM_TSV:-/tmp/warm.tsv}"
 
 REASON_ARGS=""
 case "$MODEL" in *GLM*|*glm*|*DeepSeek*|*deepseek*) REASON_ARGS="--reasoning-parser glm45" ;; esac
@@ -22,25 +17,24 @@ case "$MODEL" in *GLM*|*glm*|*DeepSeek*|*deepseek*) REASON_ARGS="--reasoning-par
 M="models--${MODEL//\//--}"
 HUB="$HOME/.cache/huggingface/hub"
 
-if [ ! -d "$HUB/$M/snapshots" ] && [ -n "$PREFIX" ] && [ -n "$BUCKET" ] && [ -n "$AWS_ACCESS_KEY_ID" ]; then
-  echo "warming $M from s3://$BUCKET/$PREFIX (8-way parallel)"
-  mkdir -p "$HUB/$M" /tmp/warm
-  aws s3 cp "s3://$BUCKET/$PREFIX/filelist.txt" /tmp/warm/filelist.txt
-  while IFS= read -r rel; do
-    aws s3 presign "s3://$BUCKET/$PREFIX/$rel" --expires-in 86400
-  done < /tmp/warm/filelist.txt > /tmp/warm/urls.txt
-  paste -d'\t' /tmp/warm/filelist.txt /tmp/warm/urls.txt | xargs -P 8 -n 2 bash -c '
+# warm.tsv: relpath<TAB>presigned-GET-url rows (built by hotaisle.sh on the pod;
+# presigned PUTs are broken on this account but GETs are fine) + a manifest.txt row.
+if [ ! -d "$HUB/$M/snapshots" ] && [ -s "$WARM_TSV" ]; then
+  echo "warming $M from S3 (8-way parallel)"
+  mkdir -p "$HUB/$M"
+  export HUB M
+  grep -v '^manifest.txt' "$WARM_TSV" | xargs -P 8 -n 2 bash -c '
     rel=$0; url=$1
     mkdir -p "$HUB/$M/$(dirname "$rel")"
-    curl -sS -C - -o "$HUB/$M/$rel" "$url" || { echo "WARM FAIL $rel"; exit 1; }' _
-  aws s3 cp "s3://$BUCKET/$PREFIX/manifest.txt" /tmp/warm/manifest.txt
-  while IFS=$'\t' read -r p t; do
+    curl -sSf -C - -o "$HUB/$M/$rel" "$url" || { echo "WARM FAIL $rel"; exit 1; }'
+  grep '^manifest.txt' "$WARM_TSV" | head -1 | cut -f2 |
+  xargs curl -fsS | while IFS=$'\t' read -r p t; do
     mkdir -p "$HUB/$M/$(dirname "$p")"; ln -sf "$t" "$HUB/$M/$p"
-  done < /tmp/warm/manifest.txt
-  rm -rf /tmp/warm
+  done
+  rm -f "$WARM_TSV"
   echo "warm complete: $(du -sh "$HUB/$M" | cut -f1)"
 else
-  echo "weight cache present or S3 warm not configured - vLLM will download from HF if needed"
+  echo "weight cache present or no warm.tsv - vLLM will download from HF if needed"
 fi
 
 HF_OFFLINE=""
