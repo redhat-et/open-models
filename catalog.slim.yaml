@@ -96,13 +96,15 @@ models:
     api_key: sk-local
     max_output: 8192
     quant: nvfp4
-    seats: 10  # measured 2026-09-07: 18.8 tok/s each at 10 concurrent (173 tok/s aggregate); 14.3 at 16
+    seats: 32  # measured 2026-09-08: still scaling at full 32-way (11.4 tok/s
+      # each, 356 tok/s aggregate) - no perf knee found
     status: running
 
   - id: rtx5090-fast
     host: rtx5090
     name: "Qwen 3.8 27B NVFP4 (Bulk)"
-    seats: 8  # measured 2026-09-07: 12.5 tok/s each to 8 concurrent (100 tok/s aggregate ceiling)
+    seats: 8  # measured 2026-09-07/08: 12.5 tok/s each to 8 (100 tok/s aggregate
+      # ceiling); at 16 the worst request halves to ~6.5 - hard cap
     tier: bulk
     group: qwen38-27b-fast
     price: {input: 0.30, output: 1.20}
@@ -179,5 +181,7 @@ models:
     api_key: none
     max_output: 262144
     quant: nvfp4
+    seats: 16  # measured 2026-09-08: knee ~16 (20.8 tok/s each, 179 agg);
+      # at 32 worst drops to 5.8 while aggregate only reaches 184
     status: listed
     notes: 22.2 gen/s, 71.0 tot/s single stream, run with https://github.com/blazux/qwen3.8-Flash-DGX

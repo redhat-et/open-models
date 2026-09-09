@@ -90,7 +90,7 @@ models:
   tool_call: true
   reasoning: true
   quant: nvfp4
-  seats: 10
+  seats: 32
 - id: rtx5090-fast
   host: rtx5090
   name: Qwen 3.8 27B NVFP4 (Bulk)
@@ -185,4 +185,5 @@ models:
   tool_call: true
   reasoning: true
   quant: nvfp4
+  seats: 16
   notes: 22.2 gen/s, 71.0 tot/s single stream, run with https://github.com/blazux/qwen3.8-Flash-DGX
