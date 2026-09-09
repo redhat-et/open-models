@@ -34,11 +34,14 @@ not a vibe.
 
 | Tier | Model | Hardware | For | Notional $/Mtok in/out |
 |---|---|---|---|---|
-| core | Qwen 3.8 Flash Next NVFP4, 262k ctx | 4x L40S on OpenShift | daily driver; 33 tok/s solo, 19 tok/s each at 10 seats | 0.20 / 1.00 |
-| bulk | Qwen 3.8 27B NVFP4, 32k ctx | RTX 5090 | batch/background; ~100 tok/s aggregate | 0.30 / 1.20 |
-| lab | 27B FP8 / NVFP4+MTP | DGX Sparks, Strix Halo | bake-offs, direct endpoints over VPN, no SLA | unmetered |
+| frontier | Qwen 3.8 27B FP8, 131k ctx | rented MI300X (192GB) | hardest agentic work; 24 tok/s each at 32 seats; falls back to core when dark | 0.60 / 2.40 |
+| core | Qwen 3.8 Flash Next NVFP4, 262k ctx | 4x L40S on OpenShift | daily driver; 19 tok/s each at 10 seats; the gateway default | 0.20 / 1.00 |
+| bulk | Qwen 3.8 27B NVFP4, 32k ctx | RTX 5090 | batch/background; 12.5 tok/s each, 100 tok/s aggregate ceiling | 0.30 / 1.20 |
+| lab | 27B FP8 / Flash-Next NVFP4 | DGX Sparks | bake-offs, direct endpoints over VPN, no SLA | unmetered |
 
-Frontier tier: vacant — and that's honest, not a gap we paper over (see below).
+Seat numbers measured on the live boxes 2026-09-08. Frontier re-entered the
+day a 27B FP8 on rented MI300X beat everything we could self-host for agentic
+work — same rule as retirement: models earn their tier.
 
 ## Money: we watch it like users do
 
@@ -57,8 +60,9 @@ Frontier tier: vacant — and that's honest, not a gap we paper over (see below)
 
 ## Status today
 
-- Live now: core schedule + bulk serving through the gateway; portal, keys,
-  budgets, dashboards all up.
+- Live now: all three metered tiers serving through the gateway (frontier on
+  MI300X, core on 4xL40S, bulk on the 5090) + two lab sparks over VPN;
+  portal, keys, budgets, dashboards all up.
 - Next: provider/placement system (models pick their hardware; self-serve
   wake with cost alerts), a second GPU cloud, community onboarding docs.
 
