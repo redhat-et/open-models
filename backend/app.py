@@ -280,12 +280,27 @@ def _run_hook(cmd: str, timeout: int = 900) -> str:
         return f"error: {exc}"
 
 
+def mark_paused_sleeping(cat: dict) -> None:
+    """Paused models on power hosts get an explicit sleeping entry, else the
+    card shows 'checking…' with no Wake button (watcher skips paused)."""
+    hosts = cat.get("hosts") or {}
+    for m in cat.get("models", []):
+        if m.get("status") != "paused":
+            continue
+        if not (hosts.get(m.get("host") or "") or {}).get("compute"):
+            continue
+        if HEALTH.get(m["id"], {}).get("status") not in (None, "sleeping"):
+            continue  # a wake is in flight or an admin already marked it alive
+        HEALTH[m["id"]] = {"status": "sleeping", "latency_ms": None, "fails": 0, "busy": 0}
+
+
 def _power_poll() -> None:
     time.sleep(5)
     while True:
         try:
             cat = load_catalog()
             hosts = cat.get("hosts") or {}
+            mark_paused_sleeping(cat)
             for m in cat.get("models", []):
                 if m.get("status") not in METERED_STATUSES or not m.get("base_url"):
                     continue

@@ -270,3 +270,26 @@ def test_non_member_gets_helpful_denial(monkeypatch, client):
     assert r.status_code == 403
     assert "octo-open-model-platform" in r.text
     assert "github.com/redhat-et" in r.text
+
+
+def test_paused_power_models_get_sleeping_for_wake_button():
+    cat = {"hosts": {"h1": {"compute": {"on": "x"}}, "h2": {}},
+           "models": [{"id": "pm1", "host": "h1", "status": "paused"},
+                      {"id": "pm2", "host": "h2", "status": "paused"},
+                      {"id": "pm3", "host": "h1", "status": "running"}]}
+    bkeys = [k for k in ("pm1", "pm2", "pm3") if k in backend.HEALTH]
+    backend.HEALTH.pop("pm1", None)
+    backend.HEALTH["pm2"] = {"status": "ok"}
+    backend.HEALTH["pm3"] = {"status": "ok"}
+    try:
+        backend.mark_paused_sleeping(cat)
+        assert backend.HEALTH["pm1"]["status"] == "sleeping"
+        assert backend.HEALTH["pm2"]["status"] == "ok"
+        assert backend.HEALTH["pm3"]["status"] == "ok"
+        backend.HEALTH["pm1"]["status"] = "waking"
+        backend.mark_paused_sleeping(cat)
+        assert backend.HEALTH["pm1"]["status"] == "waking"
+    finally:
+        for k in bkeys:
+            pass
+        backend.HEALTH.pop("pm1", None)

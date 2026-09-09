@@ -225,7 +225,7 @@ function toggleLab(){
 }
 
 function snippet(m) {
-  if (m.status === 'paused') return '# this endpoint is paused — ask an admin to turn it back on';
+  if (m.status === 'paused') return m.power ? '# paused - the VM is OFF (billing stopped); hit the Wake button above to re-provision (~25 min)' : '# this endpoint is paused — ask an admin to turn it back on';
   const url = m.metered ? (window.GW + '/chat/completions') : (m.direct_url + '/chat/completions');
   const model = m.metered ? m.gateway_model : m.served_model;
   const key = m.metered ? '$OCTO_KEY' : m.byo_key ? '$MODELS_CORP_TOKEN' : 'none';
