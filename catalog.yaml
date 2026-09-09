@@ -161,7 +161,7 @@ models:
   name: Qwen 3.8 27B FP8 (Frontier)
   base_url: http://23.183.40.80:8000/v1
   tier: frontier
-  status: running
+  status: paused
   served_model: Qwen/Qwen3.8-27B-FP8
   context: 131072
   group: qwen38-27b-frontier
@@ -178,8 +178,10 @@ models:
   quant: fp8
   seats: 32
   byo_key: false
-  notes: Rented MI300X (Hot Aisle). Same weights as bulk but 192GB -> 131k context + 89% VRAM to KV. Falls
-    back to core when the VM is dark.
+  notes: Rented MI300X (Hot Aisle). Same weights as bulk but 192GB -> 131k context + 89% VRAM to KV. VM
+    deleted 2026-09-09 evening (billing off; Wake re-provisions ~25 min). Gateway serves the name via
+    shadow->core until then.
+  previous_status: running
 - id: spark3-qwen38-flash-next
   host: spark3
   name: Qwen3.8-Flash-Next NVFP4 (Lab)

@@ -28,16 +28,6 @@
           "tool_call": true,
           "reasoning": true,
           "temperature": true
-        },
-        "qwen38-27b-frontier": {
-          "name": "Qwen 3.8 27B FP8 (Frontier) [gateway]",
-          "limit": {
-            "context": 131072,
-            "output": 8192
-          },
-          "tool_call": true,
-          "reasoning": true,
-          "temperature": true
         }
       }
     },
