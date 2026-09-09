@@ -246,7 +246,7 @@ async function loadCatalog() {
       ? `<span class="pf-v6-c-label" style="opacity:.7"><span class="om-dot" style="background:#8a8d90"></span>paused</span>`
       : m.metered
       ? `<span class="pf-v6-c-label pf-m-green"><span class="om-dot" style="background:#1ec457"></span>metered</span>`
-      : `<span class="pf-v6-c-label pf-m-orange" title="${esc(m.notes)}"><span class="om-dot" style="background:#f4c145"></span>direct · VPN · unmetered</span>`;
+      : `<span class="pf-v6-c-label" title="${esc((m.notes ? m.notes + ' - ' : '') + 'reachable over VPN; the portal cannot probe it live (no cluster route), so this dot is not a health signal')}"><span class="om-dot" style="background:#1ec457"></span>direct · VPN · unmetered</span>`;
     const startHere = m.tier === 'core' && m.status !== 'paused';
     const hidden = m.status === 'paused';
     const modelId = m.metered ? m.gateway_model : m.served_model;
@@ -286,7 +286,8 @@ function paintHealth() {
     const id = el.id.slice(6);
     const total = window.SEATS?.[id] || 0;
     const d = window.HEALTH?.[id] || {};
-    let color = '#6a6e73', txt = `🪑 ${total} seats`;
+    const probed = !!window.HEALTH && id in window.HEALTH;
+    let color = probed ? '#6a6e73' : '#1ec457', txt = `🪑 ${total} seats`;
     if (d.status === 'sleeping') txt = '🪑 asleep';
     else if (d.status === 'waking') txt = '🪑 waking…';
     else if (d.running != null) {
@@ -294,7 +295,9 @@ function paintHealth() {
       color = pct >= 0.9 ? '#c9190b' : pct >= 0.5 ? '#f4c145' : '#1ec457';
       txt = `🪑 ${d.running}/${total} busy`;
     }
-    el.innerHTML = `<span class="pf-v6-c-label" title="generations running right now - at capacity requests queue briefly, nothing breaks"><span class="om-dot" style="background:${color}"></span>${txt}</span>`;
+    const tip = probed ? 'generations running right now - at capacity requests queue briefly, nothing breaks'
+      : 'lab endpoint - traffic not metered here, so live load is invisible to the portal; reachable over VPN';
+    el.innerHTML = `<span class="pf-v6-c-label" title="${tip}"><span class="om-dot" style="background:${color}"></span>${txt}</span>`;
   }
   for (const el of document.querySelectorAll('[id^="health-"]')) {
     const id = el.id.slice(7);
