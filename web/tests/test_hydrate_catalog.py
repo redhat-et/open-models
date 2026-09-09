@@ -185,3 +185,13 @@ def test_main_fails_without_writing_when_slim_is_invalid(tmp_path):
 
     assert rc == 1
     assert not out_path.exists()
+
+
+def test_byo_key_models_never_probed(monkeypatch):
+    def boom(*a, **k):
+        raise AssertionError("byo_key models must not be probed")
+    monkeypatch.setattr(hydrate_catalog, "fetch_model_info", boom)
+    catalog = {"models": [{"id": "x", "tier": "external", "byo_key": True,
+                           "base_url": "https://example.invalid/v1",
+                           "served_model": "keep/me", "context": 123}]}
+    assert hydrate_catalog.hydrate(catalog) == []

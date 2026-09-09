@@ -78,7 +78,9 @@ def hydrate(catalog: dict) -> list[str]:
     failed = []
     for model in catalog.get("models", []):
         base_url = model.get("base_url")
-        if not base_url:
+        if not base_url or model.get("byo_key"):
+            # byo_key (external) endpoints reject keyless probes (401/403);
+            # slim holds the authoritative served_model/context for them
             continue
         try:
             info = fetch_model_info(base_url, model.get("api_key"))

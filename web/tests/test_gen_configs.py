@@ -107,3 +107,11 @@ def test_generated_configs_match_shipped_catalog():
     shipped = json.loads(cfg_path.read_text())
     expected = gen_configs.opencode_config(gen_configs.load_catalog(root / "catalog.yaml"))
     assert shipped == expected
+
+
+def test_byo_key_models_stay_out_of_shipped_configs():
+    root = Path(__file__).resolve().parents[2]
+    oc = (root / "configs" / "opencode.json").read_text()
+    env = (root / "configs" / "open-webui.env").read_text()
+    assert "mc-qwen38-27b" not in oc and "models-corp" not in oc
+    assert "mc-qwen38-27b" not in env and "apicast" not in env

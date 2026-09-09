@@ -52,6 +52,10 @@ class ModelEntry(BaseModel):
     reasoning: bool = True
     quant: str | None = None
     seats: int | None = None
+    # external tier: the serving side hands out its own tokens - we link, never store
+    byo_key: bool = False
+    signup_url: str | None = None
+    docs_url: str | None = None
     notes: str | None = None
     previous_status: str | None = None
 

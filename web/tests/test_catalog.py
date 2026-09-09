@@ -29,3 +29,12 @@ def test_validate_catalog_flags_bad_host():
     catalog["models"][0]["host"] = "nonexistent-host"
     errors = validate_catalog(catalog)
     assert any("unknown host" in e for e in errors)
+
+
+def test_external_byo_entry_shape():
+    cat = load_catalog()
+    ext = [m for m in cat["models"] if m.get("tier") == "external"]
+    assert ext, "at least one external model expected"
+    for m in ext:
+        assert m.get("byo_key") and m.get("signup_url") and m.get("docs_url")
+        assert m["status"] == "listed" and not m.get("price")

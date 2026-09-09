@@ -72,6 +72,10 @@ hosts:
     hardware: AMD Strix Halo (Ryzen AI Max, 128GB unified)
     notes: Grab it. Has qwen 3.8 on it already (verify). Future slot.
     idle_off: false
+  models-corp:
+    hardware: hosted by models-corp (IT) - not OCTO infra
+    notes: External tier. Users bring their own models-corp token; support goes to models-corp, not
+    idle_off: false
 models:
 - id: ocp-flash-next
   host: openshift
@@ -91,6 +95,7 @@ models:
   reasoning: true
   quant: nvfp4
   seats: 10
+  byo_key: false
 - id: rtx5090-fast
   host: rtx5090
   name: Qwen 3.8 27B NVFP4 (Bulk)
@@ -111,6 +116,7 @@ models:
   reasoning: true
   quant: nvfp4
   seats: 8
+  byo_key: false
   notes: Default daily driver; 32k context keeps KV small on 32GB.
 - id: spark2-smart
   host: spark2
@@ -133,6 +139,7 @@ models:
   reasoning: true
   quant: fp8
   seats: 16
+  byo_key: false
   notes: Direct endpoint only (VPN) - slow, not metered through the gateway.
 - id: strix-halo
   host: strix-halo
@@ -147,6 +154,7 @@ models:
   tool_call: true
   reasoning: true
   quant: tbd
+  byo_key: false
   notes: Verify what is actually serving on this box once we grab it.
 - id: hotaisle-frontier
   host: hotaisle-1gpu
@@ -169,6 +177,7 @@ models:
   reasoning: true
   quant: fp8
   seats: 32
+  byo_key: false
   notes: Rented MI300X (Hot Aisle). Same weights as bulk but 192GB -> 131k context + 89% VRAM to KV. Falls
     back to core when the VM is dark.
 - id: spark3-qwen38-flash-next
@@ -187,4 +196,24 @@ models:
   reasoning: true
   quant: nvfp4
   seats: 16
+  byo_key: false
   notes: 22.2 gen/s, 71.0 tot/s single stream, run with https://github.com/blazux/qwen3.8-Flash-DGX
+- id: mc-qwen38-27b
+  host: models-corp
+  name: Qwen 3.8 27B FP8 (IT-hosted)
+  base_url: https://qwen3-8-27b-fp8--apicast-production.apps.int.stc.ai.prod.us-east-1.aws.paas.redhat.com/v1
+  tier: external
+  status: listed
+  served_model: Qwen/Qwen3.8-27B-FP8
+  context: 262144
+  group: mc-qwen38-27b
+  max_output: 8192
+  tool_call: true
+  reasoning: true
+  quant: fp8
+  byo_key: true
+  signup_url: https://developer.models.corp.redhat.com/admin/applications
+  docs_url: https://gitlab.cee.redhat.com/models-corp/user-documentation/-/blob/main/how-to-guides/integration/use-claude-code-with-models-corp.md
+  notes: Served by models-corp (IT), not OCTO infra - same weights as frontier but 262k context (2x).
+    Bring your own models-corp token (link below); nothing routes through the OCTO gateway or your key's
+    budget.

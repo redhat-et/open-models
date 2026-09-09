@@ -489,9 +489,12 @@ def catalog():
             "gateway_model": m.get("group") if m.get("status") in METERED_STATUSES else None,
             "direct_url": None if m.get("status") in METERED_STATUSES or m.get("status") == "paused" else m.get("base_url"),
             "notes": m.get("notes", ""),
+            "byo_key": bool(m.get("byo_key")),
+            "signup_url": m.get("signup_url"),
+            "docs_url": m.get("docs_url"),
             "power": bool(((cat.get("hosts") or {}).get(m.get("host") or "") or {}).get("compute")),
         })
-    order = {"frontier": 0, "core": 1, "bulk": 2, "lab": 3}
+    order = {"frontier": 0, "core": 1, "bulk": 2, "lab": 3, "external": 4}
     models.sort(key=lambda m: order.get(m.get("tier"), 9))
     hosts = {k: {"hardware": v.get("hardware", ""), "wake_note": v.get("wake_note", "")}
              for k, v in (cat.get("hosts") or {}).items()}

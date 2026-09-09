@@ -41,6 +41,8 @@ gateway:
   #              snappy solo but ~100 tok/s aggregate ceiling)
   #   lab      = sparks/strix: bake-offs + direct endpoints, no SLA, never a
   #              fallback target
+  #   external = someone else serves it (e.g. IT/models-corp): BYO token,
+  #              no metering, no gateway, we just point at it
   # litellm fallbacks on 5xx/timeout (acyclic; core box is the floor - it
   # never falls back, protecting it from pileups). Lab tier is deliberately
   # absent: slow, listed-only, not worth a tunnel into the serving path.
@@ -84,6 +86,10 @@ hosts:
   strix-halo:
     hardware: AMD Strix Halo (Ryzen AI Max, 128GB unified)
     notes: Grab it. Has qwen 3.8 on it already (verify). Future slot.
+  models-corp:
+    hardware: hosted by models-corp (IT) - not OCTO infra
+    notes: External tier. Users bring their own models-corp token; support goes
+      to models-corp, not #octo-open-model-platform.
 
 models:
   - id: ocp-flash-next
@@ -186,3 +192,20 @@ models:
       # at 32 worst drops to 5.8 while aggregate only reaches 184
     status: listed
     notes: 22.2 gen/s, 71.0 tot/s single stream, run with https://github.com/blazux/qwen3.8-Flash-DGX
+
+  - id: mc-qwen38-27b
+    host: models-corp
+    name: "Qwen 3.8 27B FP8 (IT-hosted)"
+    tier: external
+    base_url: https://qwen3-8-27b-fp8--apicast-production.apps.int.stc.ai.prod.us-east-1.aws.paas.redhat.com/v1
+    served_model: Qwen/Qwen3.8-27B-FP8
+    context: 262144
+    max_output: 8192
+    quant: fp8
+    status: listed
+    byo_key: true
+    signup_url: https://developer.models.corp.redhat.com/admin/applications
+    docs_url: https://gitlab.cee.redhat.com/models-corp/user-documentation/-/blob/main/how-to-guides/integration/use-claude-code-with-models-corp.md
+    notes: Served by models-corp (IT), not OCTO infra - same weights as frontier
+      but 262k context (2x). Bring your own models-corp token (link below);
+      nothing routes through the OCTO gateway or your key's budget.

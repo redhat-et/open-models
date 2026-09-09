@@ -70,7 +70,9 @@ def opencode_config(catalog: dict) -> dict:
         }
 
     for model in catalog.get("models", []):
-        if model.get("status") not in LISTED_STATUSES:
+        if model.get("status") not in LISTED_STATUSES or model.get("byo_key"):
+            # byo_key (external) needs a third-party token we cannot ship in
+            # everyone's config - it is card-only in the portal, see index.html
             continue
         host_cfg = hosts.get(model["host"], {})
         prov_id = f"octo-{model['id'].replace('_', '-')}"
@@ -120,7 +122,7 @@ def open_webui_env(catalog: dict) -> str:
     lines.append("#")
     lines.append("# Direct endpoints (VPN, unmetered) - one connection each:")
     for model in catalog.get("models", []):
-        if model.get("status") not in LISTED_STATUSES:
+        if model.get("status") not in LISTED_STATUSES or model.get("byo_key"):
             continue
         lines.append(f"# {model['name']}  [{model['tier']} @ {model['host']}]  [DIRECT/UNMETERED - VPN]")
         lines.append(f"#   API Base URL : {model['base_url']}")
