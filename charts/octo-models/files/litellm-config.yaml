@@ -57,6 +57,7 @@ litellm_settings:
   set_verbose: false
   callbacks:
   - prometheus
+  - octo_plugin.proxy_handler_instance
 general_settings:
   database_url: os.environ/DATABASE_URL
   store_model_in_db: false

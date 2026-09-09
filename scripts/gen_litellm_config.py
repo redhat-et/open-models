@@ -97,7 +97,7 @@ def litellm_config(catalog: dict) -> dict:
             "master_key": "os.environ/LITELLM_MASTER_KEY",
             "drop_params": True,
             "set_verbose": False,
-            "callbacks": ["prometheus"],
+            "callbacks": ["prometheus", "octo_plugin.proxy_handler_instance"],
         },
         "general_settings": {
             "database_url": "os.environ/DATABASE_URL",

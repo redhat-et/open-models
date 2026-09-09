@@ -7,6 +7,8 @@ metadata:
 data:
   config.yaml: |
 {{ (.Values.litellm.configOverride | default (.Files.Get "files/litellm-config.yaml")) | indent 4 }}
+  octo_plugin.py: |
+{{ .Files.Get "files/litellm-plugin.py" | indent 4 }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -23,6 +25,7 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ (.Values.litellm.configOverride | default (.Files.Get "files/litellm-config.yaml")) | sha256sum }}
+        checksum/plugin: {{ .Files.Get "files/litellm-plugin.py" | sha256sum }}
       labels:
         app: litellm
         {{- include "octo-models.labels" . | nindent 8 }}
@@ -50,6 +53,8 @@ spec:
               value: redis://:$(REDIS_PASSWORD)@{{ .Release.Name }}-redis:6379/0
             - name: REDIS_PASSWORD
               valueFrom: {secretKeyRef: {name: {{ .Release.Name }}-secrets, key: REDIS_PASSWORD}}
+            - name: PYTHONPATH
+              value: /etc/litellm
           volumeMounts:
             - name: config
               mountPath: /etc/litellm

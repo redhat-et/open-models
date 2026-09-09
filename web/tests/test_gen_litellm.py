@@ -112,3 +112,13 @@ def test_live_group_gets_no_shadow():
     cfg = gen.litellm_config(CATALOG)
     ids = [m["model_info"]["id"] for m in cfg["model_list"]]
     assert "shadow-smart" not in ids and "shadow-fast" not in ids
+
+
+def test_plugin_registered_and_shipped():
+    root = Path(__file__).resolve().parents[2]
+    shipped_path = root / "deployments" / "gateway" / "litellm-config.yaml"
+    if not shipped_path.exists():
+        pytest.skip("run scripts/gen_litellm_config.py first")
+    cfg = yaml.safe_load(shipped_path.read_text())
+    assert "octo_plugin.proxy_handler_instance" in cfg["litellm_settings"]["callbacks"]
+    assert (root / "charts" / "octo-models" / "files" / "litellm-plugin.py").exists()

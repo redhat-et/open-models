@@ -32,6 +32,7 @@ gen:
 	$(PY) scripts/gen_prom_targets.py
 	$(PY) scripts/gen_litellm_config.py
 	cp deployments/gateway/litellm-config.yaml charts/octo-models/files/litellm-config.yaml
+	cp scripts/litellm_plugin.py charts/octo-models/files/litellm-plugin.py
 	cp monitoring/grafana/dashboards/open-models.json charts/octo-models/files/dashboards/open-models.json
 
 # cluster deploy: needs oc logged in + octo-models namespace; secrets in
