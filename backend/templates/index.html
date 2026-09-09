@@ -291,7 +291,7 @@ function paintHealth() {
     else if (d.status === 'waking') txt = '🪑 waking…';
     else if (d.running != null) {
       const pct = total ? d.running / total : 0;
-      color = pct >= 0.9 ? '#c9190b' : pct >= 0.5 ? '#f4c145' : '#6a6e73';
+      color = pct >= 0.9 ? '#c9190b' : pct >= 0.5 ? '#f4c145' : '#1ec457';
       txt = `🪑 ${d.running}/${total} busy`;
     }
     el.innerHTML = `<span class="pf-v6-c-label" title="generations running right now - at capacity requests queue briefly, nothing breaks"><span class="om-dot" style="background:${color}"></span>${txt}</span>`;

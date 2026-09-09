@@ -90,7 +90,7 @@ models:
   tool_call: true
   reasoning: true
   quant: nvfp4
-  seats: 32
+  seats: 10
 - id: rtx5090-fast
   host: rtx5090
   name: Qwen 3.8 27B NVFP4 (Bulk)
@@ -132,6 +132,7 @@ models:
   tool_call: true
   reasoning: true
   quant: fp8
+  seats: 16
   notes: Direct endpoint only (VPN) - slow, not metered through the gateway.
 - id: strix-halo
   host: strix-halo
