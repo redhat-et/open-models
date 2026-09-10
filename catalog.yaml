@@ -11,9 +11,9 @@ gateway:
   base_url: https://litellm-octo-models.apps.emerg.pcbk.p1.openshiftapps.com/v1
   shared_litellm_user: octo-shared
   key_defaults:
-    rpm: 600
-    tpm: 250000
-    max_parallel_requests: 8
+    rpm: 1200
+    tpm: 600000
+    max_parallel_requests: 16
     max_budget: 100
     budget_duration: 1d
   frontier_savings_multiplier: 8
