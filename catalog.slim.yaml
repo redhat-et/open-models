@@ -23,9 +23,9 @@ gateway:
   shared_litellm_user: octo-shared
   # defaults applied when the backend mints a virtual key
   key_defaults:
-    rpm: 600
-    tpm: 250000
-    max_parallel_requests: 8
+    rpm: 1200
+    tpm: 600000          # agent harnesses resend big contexts per turn; 250k
+    max_parallel_requests: 16  # tripped real users 2026-09-09 - raised
     max_budget: 100       # notional USD/day - abuse guard only, never
     budget_duration: 1d   # surfaced in the UI; we show SAVINGS, not bills
   # notional $/Mtok are priced off frontier APIs; users see "saved vs frontier
