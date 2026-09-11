@@ -8,6 +8,7 @@ Usage: python scripts/gen_litellm_config.py [catalog.yaml] [out.yaml]
 """
 from __future__ import annotations
 
+import copy
 import sys
 from pathlib import Path
 
@@ -71,8 +72,6 @@ def litellm_config(catalog: dict) -> dict:
             continue
         for target in targets:
             if target in by_group:
-                import copy
-
                 shadow = copy.deepcopy(by_group[target])
                 shadow["model_name"] = group
                 shadow["model_info"]["id"] = f"shadow-{group}"

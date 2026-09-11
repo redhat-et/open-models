@@ -11,7 +11,11 @@
 # covers the qwen38-27b-fast group while it is dark.
 set -euo pipefail
 
-SSH="${HOTAISLE_SSH:-hotaisle@23.183.40.70}"
+SSH="${HOTAISLE_SSH:-}"
+if [ -z "$SSH" ]; then
+  echo "error: HOTAISLE_SSH is not set (e.g. HOTAISLE_SSH=hotaisle@<ip>)" >&2
+  exit 1
+fi
 IMAGE="rocm/vllm:rocm7.13.0_gfx94X-dcgpu_ubuntu24.04_py3.13_pytorch_2.10.0_vllm_0.19.1"
 MODEL="${HOTAISLE_MODEL:-Qwen/Qwen3.8-27B-FP8}"
 PORT=8000
