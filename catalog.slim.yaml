@@ -110,6 +110,39 @@ models:
     quant: nvfp4
     seats: 10  # measured 2026-09-07: 18.8 tok/s each at 10 concurrent (173 tok/s aggregate); 14.3 at 16
     status: running
+    # re-power block: after the node is deleted, provision a g6e.12xlarge
+    # again, then `deploy_model.py ocp-flash-next --context <emerg> --wait`
+    # re-creates the core in ncao/ (weights re-download ~20 min).
+    deploy:
+      name: qwen38-flash-next
+      namespace: ncao
+      image: vllm/vllm-openai:qwen38-flash-next
+      gpus: 4
+      ports: [8000]
+      node_selector: {gpu-pool-size: xlarge}
+      pvc: {name: flash-hf-cache, size: 200Gi, storage_class: gp3, mount: /cache}
+      tolerations:
+        - {key: nvidia.com/gpu, operator: Exists, effect: NoSchedule}
+        - {key: nvidia.com/gpu, operator: Equal, value: "true", effect: NoSchedule}
+      command: |
+        set -euxo pipefail
+        export HF_HOME=/cache/huggingface
+        export HOME=/cache/home
+        export VLLM_PLE_CPU_OFFLOAD=1
+        vllm serve Inferact/Qwen3.8-Flash-Next-NVFP4 \
+          --no-enable-flashinfer-autotune \
+          --max-num-seqs 10 \
+          --gpu-memory-utilization 0.90 \
+          --max-num-batched-tokens 8192 \
+          --enable-prefix-caching \
+          --moe-backend marlin \
+          --enable-expert-parallel \
+          --tensor-parallel-size 4 \
+          --enable-auto-tool-choice \
+          --tool-call-parser qwen3_xml \
+          --reasoning-parser qwen3 \
+          --speculative-config '{"method":"mtp","num_speculative_tokens":3}' \
+          --max-model-len 262144
 
   - id: arch-flash-next
     host: models-arch

@@ -25,7 +25,7 @@ from pathlib import Path
 
 import yaml
 
-NS = "octo-models-compute"
+DEFAULT_NS = "octo-models-compute"
 
 
 def sh(*args: str, check: bool = True) -> str:
@@ -41,6 +41,7 @@ def oc(ctx: str, *args: str) -> str:
 
 def render(model: dict) -> list[tuple[str, dict]]:
     d = model["deploy"]
+    ns = d.get("namespace", DEFAULT_NS)
     host_env = model.get("host", "unknown")
     name = d.get("name") or model["id"]
     pvc = d.get("pvc") or {}
@@ -51,7 +52,7 @@ def render(model: dict) -> list[tuple[str, dict]]:
 
     pvc_obj = {
         "apiVersion": "v1", "kind": "PersistentVolumeClaim",
-        "metadata": {"name": pvc.get("name", f"{name}-hf-cache"), "namespace": NS,
+        "metadata": {"name": pvc.get("name", f"{name}-hf-cache"), "namespace": ns,
                      "labels": {"app": name}},
         "spec": {"accessModes": ["ReadWriteOnce"],
                  "storageClassName": pvc.get("storage_class", "gp3-csi"),
@@ -59,7 +60,7 @@ def render(model: dict) -> list[tuple[str, dict]]:
     }
     secret = {
         "apiVersion": "v1", "kind": "Secret",
-        "metadata": {"name": "hf-token", "namespace": NS},
+        "metadata": {"name": "hf-token", "namespace": ns},
         "type": "Opaque",
         "stringData": {"token": os.environ.get("HF_TOKEN", "")},
     }
@@ -93,7 +94,7 @@ def render(model: dict) -> list[tuple[str, dict]]:
         spec["nodeSelector"] = d["node_selector"]
     deploy = {
         "apiVersion": "apps/v1", "kind": "Deployment",
-        "metadata": {"name": name, "namespace": NS,
+        "metadata": {"name": name, "namespace": ns,
                      "labels": {"app": name, "octo.io/env": host_env}},
         "spec": {
             "replicas": 1, "revisionHistoryLimit": 1,
@@ -107,13 +108,13 @@ def render(model: dict) -> list[tuple[str, dict]]:
     }
     svc = {
         "apiVersion": "v1", "kind": "Service",
-        "metadata": {"name": name, "namespace": NS, "labels": {"app": name}},
+        "metadata": {"name": name, "namespace": ns, "labels": {"app": name}},
         "spec": {"selector": {"app": name},
                  "ports": [{"port": p, "targetPort": p} for p in d.get("ports", [8000])]},
     }
     route = {
         "apiVersion": "route.openshift.io/v1", "kind": "Route",
-        "metadata": {"name": name, "namespace": NS, "labels": {"app": name}},
+        "metadata": {"name": name, "namespace": ns, "labels": {"app": name}},
         "spec": {"to": {"kind": "Service", "name": name},
                  "port": {"targetPort": d.get("ports", [8000])[0]},
                  "tls": {"termination": "edge",
@@ -123,15 +124,15 @@ def render(model: dict) -> list[tuple[str, dict]]:
             ("service", svc), ("route", route)]
 
 
-def wait_ready(ctx: str, name: str, timeout_s: int) -> None:
+def wait_ready(ctx: str, name: str, timeout_s: int, ns: str = DEFAULT_NS) -> None:
     sh("oc", f"--context={ctx}", "rollout", "status",
-       f"deploy/{name}", "-n", NS, f"--timeout={timeout_s}s")
+       f"deploy/{name}", "-n", ns, f"--timeout={timeout_s}s")
 
 
-def wait_serving(ctx: str, name: str, model: dict, timeout_s: int) -> str:
+def wait_serving(ctx: str, name: str, model: dict, timeout_s: int, ns: str = DEFAULT_NS) -> str:
     """Pod is Running but vLLM may take 15-25 min (weights + graphs). Poll
     the in-cluster service /health until it answers 200."""
-    route = oc(ctx, "get", "route", name, "-n", NS, "-o",
+    route = oc(ctx, "get", "route", name, "-n", ns, "-o",
                "jsonpath={.spec.host}")
     deadline = time.time() + timeout_s
     while time.time() < deadline:
@@ -167,12 +168,14 @@ def main() -> int:
         print(docs)
         return 0
 
-    if not sh("oc", f"--context={args.context}", "get", "ns", NS, check=False).strip():
-        oc(args.context, "create", "ns", NS)
+    ns = model["deploy"].get("namespace", DEFAULT_NS)
+    if not sh("oc", f"--context={args.context}", "get", "ns", ns, check=False).strip():
+        oc(args.context, "create", "ns", ns)
     # apply each object separately so a pre-existing PVC with a different
     # claim name errors out loudly instead of binding a surprise new EBS
     for kind, obj in objs:
-        p = subprocess.run(["oc", f"--context={args.context}", "apply", "-f", "-"],
+        if kind not in ("namespace",):
+            p = subprocess.run(["oc", f"--context={args.context}", "apply", "-f", "-"],
                            input=yaml.safe_dump(obj), text=True, capture_output=True)
         if p.returncode != 0 and kind == "pvc":
             sys.exit(f"PVC issue (existing EBS won't auto-resize/rename): {p.stderr.strip()}")
@@ -181,14 +184,14 @@ def main() -> int:
 
     name = objs[2][1]["metadata"]["name"]
     if args.wait:
-        wait_ready(args.context, name, 300)
-        url = wait_serving(args.context, name, model, 3600)
+        wait_ready(args.context, name, 300, ns)
+        url = wait_serving(args.context, name, model, 3600, ns)
         print(f"\n{model['id']} serving at: {url}")
         print("Next: set base_url in catalog.slim.yaml to this URL, then "
               "`make gen && make deploy APP=1`.")
     else:
         print(f"applied pvc/secret/deployment/service/route for {name} "
-              f"(ns {NS}); re-run with --wait to block until it serves")
+              f"(ns {ns}); re-run with --wait to block until it serves")
     return 0
 
 
