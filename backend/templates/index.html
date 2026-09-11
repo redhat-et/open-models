@@ -154,7 +154,7 @@
       <div class="om-help">
         <details open><summary>🧭 Which model should I pick?</summary>
           <p><b>frontier — Qwen 3.8 27B FP8</b>: hardest agentic work. Rented MI300X, 131k context — not always on; if it's dark or waking, the gateway routes you to core automatically.</p>
-          <p><b>core — Qwen 3.8 Flash-Next</b>: your default. 4x L40S cluster, ~33 tok/s, good at everything daily, always up.</p>
+          <p><b>core — Qwen 3.8 Flash-Next</b>: your default. Two boxes share one name: 4x L40S cluster (high fan-out, ~19 tok/s each at 10 users) and a single RTX PRO 6000 Blackwell (fast solo, ~36 tok/s). Want the Blackwell card exclusively — fastest single-stream, agent loops? Set model to <b>qwen38-flash-next-pro</b> (see the 📌 pin on its card).</p>
           <p><b>bulk — Qwen 3.8 27B</b>: background jobs, batch runs, high volume — cheap notional rates, runs on the single 5090.</p>
           <p><b>lab — DGX Sparks</b>: experiments. Direct endpoints over VPN only (see URL on the card), no SLA, no metering.</p>
           <p><b>external — IT-hosted</b>: models served by other teams (e.g. models-corp). Not our infra, not through our gateway: you bring your own token (links on the card) and support goes to them.</p>
@@ -271,6 +271,7 @@ async function loadCatalog() {
         <details class="om-more"><summary>curl example &amp; hardware details</summary>
           <p class="om-meta" style="margin:.6rem 0 .4rem">🖥 ${esc(hw)} · 📏 ctx ${m.context?m.context.toLocaleString():'?'} · 🔬 ${esc(m.quant||'n/a')} · 💰 ${esc(price)}</p>
           <pre class="om-snippet" title="click to copy" onclick="copyText(this.textContent, 'curl example')">${esc(snippet(m))}</pre>
+          ${m.dedicated_model ? `<p class="om-meta" style="margin:.6rem 0 0">📌 Pin traffic to just this card: model <code>${esc(m.dedicated_model)}</code> <button class="om-copy" title="click to copy" onclick="copyText('${esc(m.dedicated_model)}', 'pin model id')">📋</button></p>` : ''}
           ${m.direct_url ? `<p class="om-meta" style="margin:.6rem 0 0">direct: <code style="font-size:.75rem">${esc(m.direct_url)}</code></p>` : ''}
           ${m.notes ? `<p class="om-meta" style="margin:.5rem 0 0; font-size:.78rem">${esc(m.notes)}</p>` : ''}
         </details>

@@ -501,6 +501,7 @@ def catalog():
             "status": m.get("status"),
             "metered": m.get("status") in METERED_STATUSES,
             "gateway_model": m.get("group") if m.get("status") in METERED_STATUSES else None,
+            "dedicated_model": m.get("dedicated_name") if m.get("status") in METERED_STATUSES else None,
             "direct_url": None if m.get("status") in METERED_STATUSES or m.get("status") == "paused" else m.get("base_url"),
             "notes": m.get("notes", ""),
             "byo_key": bool(m.get("byo_key")),
