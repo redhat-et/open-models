@@ -90,6 +90,12 @@ hosts:
     hardware: hosted by models-corp (IT) - not OCTO infra
     notes: External tier. Users bring their own models-corp token; support goes
       to models-corp, not #octo-open-model-platform.
+  models-arch:
+    hardware: OpenShift (models-arch cluster), 1x RTX PRO 6000 Blackwell (96GB)
+    notes: Core-tier capacity (added 2026-09-10) in ns octo-models-compute. NVFP4
+      is native on Blackwell (sm_120). Needs --distributed-executor-backend mp -
+      the uni-proc CUDA-graph warmup hangs on sm_120. Route has no auth; keep
+      keys at the gateway, never expose this URL to users.
 
 models:
   - id: ocp-flash-next
@@ -104,6 +110,21 @@ models:
     quant: nvfp4
     seats: 10  # measured 2026-09-07: 18.8 tok/s each at 10 concurrent (173 tok/s aggregate); 14.3 at 16
     status: running
+
+  - id: arch-flash-next
+    host: models-arch
+    name: "Qwen 3.8 Flash Next NVFP4 (Core, RTX Pro)"
+    tier: core
+    group: qwen38-flash-next  # same group as ocp-flash-next - gateway load-balances both
+    price: {input: 0.20, output: 1.00}
+    base_url: https://qwen38-flash-next-octo-models-compute.apps.rosa.models-arch-ocp.ijxt.p3.openshiftapps.com/v1
+    api_key: sk-local
+    max_output: 8192
+    quant: nvfp4
+    seats: 4  # seqs=4 by Nick's config; measure like the others before raising
+    status: running
+    notes: Single 96GB Blackwell card on the models-arch cluster; KV fits 262k
+      with 1.46x headroom. Cross-cluster hop adds ~0 traffic cost from emerg.
 
   - id: rtx5090-fast
     host: rtx5090

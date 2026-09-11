@@ -1,0 +1,134 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: octo-models-compute
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: flash-hf-cache
+  namespace: octo-models-compute
+  labels:
+    app: qwen38-flash-next
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: gp3-csi
+  resources:
+    requests:
+      storage: 200Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qwen38-flash-next
+  namespace: octo-models-compute
+  labels:
+    app: qwen38-flash-next
+    octo.io/env: models-arch
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  progressDeadlineSeconds: 3600
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: qwen38-flash-next
+  template:
+    metadata:
+      labels:
+        app: qwen38-flash-next
+        octo.io/env: models-arch
+    spec:
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: qwen38-flash-next
+        image: vllm/vllm-openai:qwen38-flash-next
+        imagePullPolicy: IfNotPresent
+        command:
+        - bash
+        - -c
+        - |
+          set -euxo pipefail
+          export HF_HOME=/cache/huggingface
+          export HOME=/cache/home
+          export VLLM_PLE_CPU_OFFLOAD=1
+          vllm serve Inferact/Qwen3.8-Flash-Next-NVFP4 \
+            --no-enable-flashinfer-autotune \
+            --max-num-seqs 4 \
+            --gpu-memory-utilization 0.95 \
+            --max-num-batched-tokens 8192 \
+            --enable-prefix-caching \
+            --moe-backend marlin \
+            --enable-expert-parallel \
+            --tensor-parallel-size 1 \
+            --enable-auto-tool-choice \
+            --tool-call-parser qwen3_xml \
+            --reasoning-parser qwen3 \
+            --speculative-config '{"method":"mtp","num_speculative_tokens":3}' \
+            --max-model-len 262144 \
+            --distributed-executor-backend mp
+        env:
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-token
+              key: token
+        ports:
+        - containerPort: 8000
+          protocol: TCP
+        resources:
+          limits:
+            nvidia.com/gpu: "1"
+            ephemeral-storage: 250Gi
+          requests:
+            nvidia.com/gpu: "1"
+            ephemeral-storage: 250Gi
+        volumeMounts:
+        - mountPath: /cache
+          name: hf-cache
+        - mountPath: /dev/shm
+          name: dev-shm
+      volumes:
+      - name: hf-cache
+        persistentVolumeClaim:
+          claimName: flash-hf-cache
+      - name: dev-shm
+        emptyDir:
+          medium: Memory
+          sizeLimit: 4Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qwen38-flash-next
+  namespace: octo-models-compute
+  labels:
+    app: qwen38-flash-next
+spec:
+  selector:
+    app: qwen38-flash-next
+  ports:
+  - port: 8000
+    targetPort: 8000
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: qwen38-flash-next
+  namespace: octo-models-compute
+  labels:
+    app: qwen38-flash-next
+spec:
+  to:
+    kind: Service
+    name: qwen38-flash-next
+  port:
+    targetPort: 8000
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
