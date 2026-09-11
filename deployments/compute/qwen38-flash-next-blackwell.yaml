@@ -40,6 +40,7 @@ spec:
         app: qwen38-flash-next
         octo.io/env: models-arch
     spec:
+      restartPolicy: Always
       terminationGracePeriodSeconds: 30
       tolerations:
       - key: nvidia.com/gpu

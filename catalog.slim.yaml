@@ -121,8 +121,38 @@ models:
     api_key: sk-local
     max_output: 8192
     quant: nvfp4
-    seats: 4  # seqs=4 by Nick's config; measure like the others before raising
+    seats: 2  # measured 2026-09-10: 36 tok/s solo, 32.2 at 2; plateaus ~120
+      # tok/s aggregate (seqs=4 cap queues beyond 2 concurrent). L40S core is
+      # 18.8 each to 10 (173 agg) - this card is ~2x faster solo, weaker fanned.
     status: running
+    deploy:
+      name: qwen38-flash-next  # keep the deployment name = model name on every cluster
+      image: vllm/vllm-openai:qwen38-flash-next
+      gpus: 1
+      ports: [8000]
+      pvc: {name: flash-hf-cache, size: 200Gi, storage_class: gp3-csi, mount: /cache}
+      tolerations:
+        - {key: nvidia.com/gpu, operator: Exists, effect: NoSchedule}
+      command: |
+        set -euxo pipefail
+        export HF_HOME=/cache/huggingface
+        export HOME=/cache/home
+        export VLLM_PLE_CPU_OFFLOAD=1
+        vllm serve Inferact/Qwen3.8-Flash-Next-NVFP4 \
+          --no-enable-flashinfer-autotune \
+          --max-num-seqs 4 \
+          --gpu-memory-utilization 0.95 \
+          --max-num-batched-tokens 8192 \
+          --enable-prefix-caching \
+          --moe-backend marlin \
+          --enable-expert-parallel \
+          --tensor-parallel-size 1 \
+          --enable-auto-tool-choice \
+          --tool-call-parser qwen3_xml \
+          --reasoning-parser qwen3 \
+          --speculative-config '{"method":"mtp","num_speculative_tokens":3}' \
+          --max-model-len 262144 \
+          --distributed-executor-backend mp
     notes: Single 96GB Blackwell card on the models-arch cluster; KV fits 262k
       with 1.46x headroom. Cross-cluster hop adds ~0 traffic cost from emerg.
 

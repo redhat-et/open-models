@@ -58,6 +58,10 @@ class ModelEntry(BaseModel):
     docs_url: str | None = None
     notes: str | None = None
     previous_status: str | None = None
+    # scripts/deploy_model.py renders a Deployment/PVC/Service/Route from this
+    # so "deploy a model to a cluster" is data, not a copy-paste of yaml.
+    # `hf_token` is never stored here - the deployer reads $HF_TOKEN from env.
+    deploy: dict[str, Any] | None = None
 
     @model_validator(mode="after")
     def _group_defaults_to_id(self) -> ModelEntry:
