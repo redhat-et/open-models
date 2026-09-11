@@ -140,6 +140,7 @@ models:
   served_model: Inferact/Qwen3.8-Flash-Next-NVFP4
   context: 262144
   group: qwen38-flash-next
+  dedicated_name: qwen38-flash-next-pro
   price:
     input: 0.2
     output: 1.0

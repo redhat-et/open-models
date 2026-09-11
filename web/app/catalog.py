@@ -42,6 +42,10 @@ class ModelEntry(BaseModel):
     served_model: str
     context: int
     group: str | None = None
+    # if set, the deployment is ALSO reachable via this gateway model name,
+    # hitting only this deployment (the shared group + redundancy still apply
+    # under `group`). Lets callers pin a specific box (e.g. the RTX Pro).
+    dedicated_name: str | None = None
     price: dict[str, float] | None = None
     engine: dict[str, Any] | None = None
     api_key: str | None = None

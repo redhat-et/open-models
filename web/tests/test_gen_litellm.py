@@ -72,7 +72,8 @@ def test_shipped_config_groups_and_fallback_chain():
     cfg = yaml.safe_load(shipped_path.read_text())
     groups = {m["model_name"] for m in cfg["model_list"]}
     assert "qwen38-27b-fast" in groups  # core may be absent while unavailable
-    assert groups <= {"qwen38-flash-next", "qwen38-27b-fast", "qwen38-27b-frontier"}
+    assert groups <= {"qwen38-flash-next", "qwen38-flash-next-pro",
+                      "qwen38-27b-fast", "qwen38-27b-frontier"}
     chain = {k: v for fb in cfg["router_settings"]["fallbacks"] for k, v in fb.items()}
     shadows = {m["model_name"] for m in cfg["model_list"]
                if str(m["model_info"].get("id", "")).startswith("shadow-")}

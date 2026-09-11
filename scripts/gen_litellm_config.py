@@ -58,6 +58,13 @@ def litellm_config(catalog: dict) -> dict:
                 },
             }
         )
+        if model.get("dedicated_name"):
+            solo = copy.deepcopy(model_list[-1])
+            solo["model_name"] = model["dedicated_name"]
+            solo["model_info"]["id"] = f"dedicated-{model['id']}"
+            model_list.append(solo)
+            if model["dedicated_name"] not in groups:
+                groups.append(model["dedicated_name"])
 
     fallback_map = gw.get("fallbacks") or {}
     # a group with zero live deployments would otherwise vanish from
