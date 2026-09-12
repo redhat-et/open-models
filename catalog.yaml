@@ -88,7 +88,7 @@ models:
   name: Qwen 3.8 Flash Next NVFP4 (Core)
   base_url: https://qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com/v1
   tier: core
-  status: running
+  status: paused
   served_model: Inferact/Qwen3.8-Flash-Next-NVFP4
   context: 262144
   group: qwen38-flash-next
@@ -102,6 +102,7 @@ models:
   quant: nvfp4
   seats: 10
   byo_key: false
+  previous_status: running
   deploy:
     name: qwen38-flash-next
     namespace: ncao

@@ -3,20 +3,6 @@ model_list:
 - model_name: qwen38-flash-next
   litellm_params:
     model: openai/Inferact/Qwen3.8-Flash-Next-NVFP4
-    api_base: https://qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com/v1
-    api_key: sk-local
-    max_tokens: 8192
-    input_cost_per_token: 2.0000000000000002e-07
-    output_cost_per_token: 1.0e-06
-  model_info:
-    id: ocp-flash-next
-    max_input_tokens: 262144
-    supported_api:
-    - chat
-    - completions
-- model_name: qwen38-flash-next
-  litellm_params:
-    model: openai/Inferact/Qwen3.8-Flash-Next-NVFP4
     api_base: https://qwen38-flash-next-octo-models-compute.apps.rosa.models-arch-ocp.ijxt.p3.openshiftapps.com/v1
     api_key: sk-local
     max_tokens: 8192
@@ -59,7 +45,7 @@ model_list:
 - model_name: qwen38-27b-frontier
   litellm_params:
     model: openai/Inferact/Qwen3.8-Flash-Next-NVFP4
-    api_base: https://qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com/v1
+    api_base: https://qwen38-flash-next-octo-models-compute.apps.rosa.models-arch-ocp.ijxt.p3.openshiftapps.com/v1
     api_key: sk-local
     max_tokens: 8192
     input_cost_per_token: 2.0000000000000002e-07

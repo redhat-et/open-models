@@ -62,6 +62,24 @@ def load(path: Path) -> dict:
         return yaml.safe_load(fh)
 
 
+def seed_from_previous(catalog: dict, out_path: Path) -> None:
+    """Keep last-known served_model/context when this run's probe failed
+    (paused/off-box models 503; VPN-only lab hosts are unreachable from
+    laptops). Without this, a temporarily unreachable box hard-fails
+    `make gen` and blocks unrelated changes."""
+    if not out_path.exists():
+        return
+    try:
+        prev = {m.get("id"): m for m in load(out_path).get("models") or []}
+    except yaml.YAMLError:
+        return
+    for model in catalog.get("models", []):
+        old = prev.get(model.get("id")) or {}
+        for field in ("served_model", "context"):
+            if not model.get(field) and old.get(field):
+                model[field] = old[field]
+
+
 def fetch_model_info(base_url: str, api_key: str | None) -> dict:
     req = urllib.request.Request(base_url.rstrip("/") + "/models")
     if api_key and api_key != "none":
@@ -99,6 +117,7 @@ def main(argv: list[str]) -> int:
     out_path = Path(argv[2]) if len(argv) > 2 else root / "catalog.yaml"
     catalog = load(slim_path)
     failed = hydrate(catalog)
+    seed_from_previous(catalog, out_path)
 
     try:
         validated = Catalog.model_validate(catalog)
