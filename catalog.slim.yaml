@@ -47,8 +47,9 @@ gateway:
   # never falls back, protecting it from pileups). Lab tier is deliberately
   # absent: slow, listed-only, not worth a tunnel into the serving path.
   fallbacks:
+    qwen38-flash-next: [qwen38-27b-fast]  # weekend 2026-09-12: both core boxes off - name resolves on bulk
     qwen38-27b-fast: [qwen38-flash-next]
-    qwen38-27b-frontier: [qwen38-flash-next]  # floor: core covers frontier gaps
+    qwen38-27b-frontier: [qwen38-27b-fast]  # weekend: direct to bulk (frontier's normal floor is off)
 
 hosts:
   hotaisle-1gpu:
@@ -159,7 +160,8 @@ models:
     seats: 2  # measured 2026-09-10: 36 tok/s solo, 32.2 at 2; plateaus ~120
       # tok/s aggregate (seqs=4 cap queues beyond 2 concurrent). L40S core is
       # 18.8 each to 10 (173 agg) - this card is ~2x faster solo, weaker fanned.
-    status: running
+    status: paused
+    previous_status: running  # weekend shutdown 2026-09-12; re-power Mon 2026-09-14 06:00 ET: rosa-nodepool.sh 1 --wait then deploy_model.py arch-flash-next --wait (PVC dies with the node - weights re-download ~15 min)
     deploy:
       name: qwen38-flash-next  # keep the deployment name = model name on every cluster
       image: vllm/vllm-openai:qwen38-flash-next
@@ -206,7 +208,10 @@ models:
     # enough for max_num_seqs=32 on 32GB; hydrate_catalog.py never raises this
     # automatically. Also doubles as the fallback while the box is paused
     # (compute.off stops the container).
-    context: 32768
+    # WEEKEND 2026-09-12: raised to the engine's native 75264 (it already runs
+    # with that max_model_len) so long agent sessions fit while the big boxes
+    # are off. Revert to 32768 Monday - long contexts eat KV at max_num_seqs=32.
+    context: 75264
     max_output: 8192
     quant: nvfp4
     status: running
