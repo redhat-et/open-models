@@ -9,6 +9,16 @@
         "apiKey": "{env:OCTO_KEY}"
       },
       "models": {
+        "qwen38-flash-next": {
+          "name": "Qwen 3.8 Flash Next NVFP4 (Core, RTX Pro) [gateway]",
+          "limit": {
+            "context": 262144,
+            "output": 8192
+          },
+          "tool_call": true,
+          "reasoning": true,
+          "temperature": true
+        },
         "qwen38-27b-fast": {
           "name": "Qwen 3.8 27B NVFP4 (Bulk) [gateway]",
           "limit": {
@@ -62,5 +72,6 @@
       }
     }
   },
+  "model": "octo-gateway/qwen38-flash-next",
   "small_model": "octo-gateway/qwen38-27b-fast"
 }

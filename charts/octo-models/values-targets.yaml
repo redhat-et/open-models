@@ -7,4 +7,10 @@ prometheus:
       model: rtx5090-fast
       tier: bulk
       host: rtx5090
-  vllmTargetsHttps: []
+  vllmTargetsHttps:
+  - targets:
+    - qwen38-flash-next-octo-models-compute.apps.rosa.models-arch-ocp.ijxt.p3.openshiftapps.com
+    labels:
+      model: arch-flash-next
+      tier: core
+      host: models-arch
