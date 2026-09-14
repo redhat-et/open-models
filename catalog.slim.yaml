@@ -196,22 +196,28 @@ models:
   - id: rtx5090-fast
     host: rtx5090
     name: "Qwen 3.8 27B NVFP4 (Bulk)"
-    seats: 8  # measured 2026-09-07/08: 12.5 tok/s each to 8 (100 tok/s aggregate
-      # ceiling); at 16 the worst request halves to ~6.5 - hard cap
+    seats: 4  # WEEKEND config (offloaded, 262k). Original 8-seat measurement was
+      # at 32k/no-offload: 12.5 tok/s each to 8, 100 tok/s aggregate ceiling.
     tier: bulk
     group: qwen38-27b-fast
     price: {input: 0.30, output: 1.20}
-    engine: {max_num_seqs: 32}
+    engine: {gpu_memory_utilization: 0.95, cpu_offload_gb: 8, kv_cache_dtype: fp8}
     base_url: http://136.47.153.236:8000/v1
     api_key: sk-local
-    # deliberate cap, not the box's native max (75264) - keeps KV cache small
-    # enough for max_num_seqs=32 on 32GB; hydrate_catalog.py never raises this
-    # automatically. Also doubles as the fallback while the box is paused
-    # (compute.off stops the container).
-    # WEEKEND 2026-09-12: raised to the engine's native 75264 (it already runs
-    # with that max_model_len) so long agent sessions fit while the big boxes
-    # are off. Revert to 32768 Monday - long contexts eat KV at max_num_seqs=32.
-    context: 75264
+    # The model natively supports 262144 (hybrid: 48/64 layers linear-attention,
+    # only 16 full-attn layers grow per token -> 32KB/token fp8). The 24.6GiB
+    # NVFP4 weights leave 2.6GiB KV on 32GB, so 262k needs --cpu-offload-gb 8
+    # (weights parked in the box's 53GiB RAM) + gmu 0.95 -> 11.8GiB KV pool.
+    # Trade: ~1.5-2x slower solo (PCIe weight shuffles), ~15min boot.
+    # WEEKEND 2026-09-12: container runs 262144 + offload so big agent sessions
+    # fit while the big boxes are off.
+    # MONDAY REVERT (one line on the 5090, weights are baked in the image):
+    #   podman stop qwen38-nvfp4 && podman rm -f qwen38-nvfp4 && \
+    #   podman rename qwen38-nvfp4-75k-backup qwen38-nvfp4 && \
+    #   podman start qwen38-nvfp4
+    # ...and flip this entry back: context: 32768, seats: 8,
+    # engine: {max_num_seqs: 32}. The 75k backup config is the fast one.
+    context: 262144
     max_output: 8192
     quant: nvfp4
     status: running
