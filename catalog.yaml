@@ -136,7 +136,7 @@ models:
   name: Qwen 3.8 Flash Next NVFP4 (Core, RTX Pro)
   base_url: https://qwen38-flash-next-octo-models-compute.apps.rosa.models-arch-ocp.ijxt.p3.openshiftapps.com/v1
   tier: core
-  status: running
+  status: paused
   served_model: Inferact/Qwen3.8-Flash-Next-NVFP4
   context: 262144
   group: qwen38-flash-next
@@ -153,6 +153,7 @@ models:
   byo_key: false
   notes: Single 96GB Blackwell card on the models-arch cluster; KV fits 262k with 1.46x headroom. Cross-cluster
     hop adds ~0 traffic cost from emerg.
+  previous_status: running
   deploy:
     name: qwen38-flash-next
     image: vllm/vllm-openai:qwen38-flash-next
