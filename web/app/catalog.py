@@ -51,6 +51,10 @@ class ModelEntry(BaseModel):
     api_key: str | None = None
     scrape_url: str | None = None
     max_output: int = 8192
+    # Qwen's chat template 400s if a system message appears anywhere but
+    # first (Claude Code sends mid-conversation ones). False makes litellm
+    # merge them into the following user message before calling vLLM.
+    supports_system_message: bool = True
     # all recent models support these - only set False for one that doesn't.
     tool_call: bool = True
     reasoning: bool = True

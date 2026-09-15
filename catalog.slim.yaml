@@ -107,6 +107,7 @@ models:
     base_url: https://qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com/v1
     api_key: sk-local
     max_output: 8192
+    supports_system_message: false
     quant: nvfp4
     seats: 10  # measured 2026-09-07: 18.8 tok/s each at 10 concurrent (173 tok/s aggregate); 14.3 at 16
     status: running  # re-powered 2026-09-15: fresh g6e.12xlarge (ip-10-0-65-122),
@@ -155,6 +156,7 @@ models:
     base_url: https://qwen38-flash-next-octo-models-compute.apps.rosa.models-arch-ocp.ijxt.p3.openshiftapps.com/v1
     api_key: sk-local
     max_output: 8192
+    supports_system_message: false
     quant: nvfp4
     seats: 2  # stale 4xlarge numbers (36 tok/s solo, ~120 agg). On the
       # g7e.12xlarge (48 vCPU, 500GB RAM, 2nd GPU idle) measured 2026-09-15:
@@ -222,6 +224,7 @@ models:
     # engine: {max_num_seqs: 32}. The 75k backup config is the fast one.
     context: 262144
     max_output: 8192
+    supports_system_message: false
     quant: nvfp4
     status: running
     notes: Default daily driver; 32k context keeps KV small on 32GB.
@@ -237,6 +240,7 @@ models:
     scrape_url: http://10.6.164.118:8000/v1  # IP: internal name won't resolve in containers
     api_key: sk-local
     max_output: 8192
+    supports_system_message: false
     seats: 16  # measured 2026-09-08: 15.9 tok/s each at engine cap (16),
       # 254 tok/s aggregate; queueing beyond 16 adds no usable seats
     quant: fp8
@@ -290,6 +294,7 @@ models:
     scrape_url: http://10.6.164.125:8000/v1
     api_key: none
     max_output: 262144
+    supports_system_message: false
     quant: nvfp4
     seats: 16  # measured 2026-09-08: knee ~16 (20.8 tok/s each, 179 agg);
       # at 32 worst drops to 5.8 while aggregate only reaches 184
@@ -304,6 +309,7 @@ models:
     served_model: Qwen/Qwen3.8-27B-FP8
     context: 262144
     max_output: 8192
+    supports_system_message: false  # strict Qwen template (PriceTag/Claude Code need litellm to merge mid-chat system msgs)
     quant: fp8
     status: listed
     byo_key: true

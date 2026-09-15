@@ -97,6 +97,7 @@ models:
     output: 1.0
   api_key: sk-local
   max_output: 8192
+  supports_system_message: false
   tool_call: true
   reasoning: true
   quant: nvfp4
@@ -146,6 +147,7 @@ models:
     output: 1.0
   api_key: sk-local
   max_output: 8192
+  supports_system_message: false
   tool_call: true
   reasoning: true
   quant: nvfp4
@@ -194,6 +196,7 @@ models:
     kv_cache_dtype: fp8
   api_key: sk-local
   max_output: 8192
+  supports_system_message: false
   tool_call: true
   reasoning: true
   quant: nvfp4
@@ -217,6 +220,7 @@ models:
   api_key: sk-local
   scrape_url: http://10.6.164.118:8000/v1
   max_output: 8192
+  supports_system_message: false
   tool_call: true
   reasoning: true
   quant: fp8
@@ -233,6 +237,7 @@ models:
   context: 131072
   group: qwen38-27b-fast
   max_output: 8192
+  supports_system_message: true
   tool_call: true
   reasoning: true
   quant: tbd
@@ -255,6 +260,7 @@ models:
   api_key: sk-local
   scrape_url: http://23.183.40.80:8000/v1
   max_output: 8192
+  supports_system_message: true
   tool_call: true
   reasoning: true
   quant: fp8
@@ -276,6 +282,7 @@ models:
   api_key: none
   scrape_url: http://10.6.164.125:8000/v1
   max_output: 262144
+  supports_system_message: false
   tool_call: true
   reasoning: true
   quant: nvfp4
@@ -292,6 +299,7 @@ models:
   context: 262144
   group: mc-qwen38-27b
   max_output: 8192
+  supports_system_message: false
   tool_call: true
   reasoning: true
   quant: fp8

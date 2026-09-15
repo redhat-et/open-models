@@ -40,6 +40,8 @@ def litellm_config(catalog: dict) -> dict:
         }
         if model.get("max_output"):
             params["max_tokens"] = model["max_output"]
+        if model.get("supports_system_message") is False:
+            params["supports_system_message"] = False
         price = model.get("price") or {}
         if price.get("input"):
             params["input_cost_per_token"] = price["input"] / 1_000_000
