@@ -39,7 +39,7 @@ litellm:
   route: litellm
   resources:
     requests: {cpu: 500m, memory: 2Gi}
-    limits: {cpu: "2", memory: 6Gi}
+    limits: {cpu: "4", memory: 6Gi}
 
 prometheus:
   enabled: true

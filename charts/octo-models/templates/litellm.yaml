@@ -63,9 +63,15 @@ spec:
             httpGet: {path: /health/liveliness, port: {{ .Values.litellm.port }}}
             periodSeconds: 5
             failureThreshold: 60
+          livenessProbe:
+            httpGet: {path: /health/liveliness, port: {{ .Values.litellm.port }}}
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 4
           readinessProbe:
             httpGet: {path: /health/readiness, port: {{ .Values.litellm.port }}}
             periodSeconds: 15
+            timeoutSeconds: 5
           resources:
             {{- toYaml .Values.litellm.resources | nindent 12 }}
       volumes:
