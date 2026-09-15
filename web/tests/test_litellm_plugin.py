@@ -93,3 +93,39 @@ def test_pre_call_hook_anthropic_leaves_clean_request_untouched():
     out = asyncio.run(handler.async_pre_call_hook(None, None, data, "anthropic_messages"))
     assert out["system"] == "You are terse."
     assert [m["role"] for m in out["messages"]] == ["user"]
+
+
+def test_pre_call_hook_responses_folds_system_into_instructions():
+    handler = plugin.proxy_handler_instance
+    data = {
+        "model": "qwen38-flash-next",
+        "instructions": "You are Claude Code.",
+        "input": [
+            {"role": "user", "type": "message", "content": [{"type": "input_text", "text": "what dir?"}]},
+            {"role": "system", "type": "message", "content": [{"type": "input_text", "text": "You are in /tmp."}]},
+        ],
+    }
+    out = asyncio.run(handler.async_pre_call_hook(None, None, data, "aresponses"))
+    assert not any(i.get("role") == "system" for i in out["input"])
+    assert "Claude Code" in out["instructions"] and "/tmp" in out["instructions"]
+
+
+def test_pre_call_hook_responses_string_content_item():
+    handler = plugin.proxy_handler_instance
+    data = {
+        "model": "m",
+        "input": [
+            {"role": "user", "content": "say ok"},
+            {"role": "system", "content": "just the number"},
+        ],
+    }
+    out = asyncio.run(handler.async_pre_call_hook(None, None, data, "aresponses"))
+    assert [i["role"] for i in out["input"]] == ["user"]
+    assert out["instructions"] == "just the number"
+
+
+def test_pre_call_hook_responses_noop_without_system():
+    handler = plugin.proxy_handler_instance
+    data = {"model": "m", "instructions": "terse", "input": "Say OK"}
+    out = asyncio.run(handler.async_pre_call_hook(None, None, data, "aresponses"))
+    assert out == data
