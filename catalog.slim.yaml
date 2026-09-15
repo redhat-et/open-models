@@ -109,8 +109,8 @@ models:
     max_output: 8192
     quant: nvfp4
     seats: 10  # measured 2026-09-07: 18.8 tok/s each at 10 concurrent (173 tok/s aggregate); 14.3 at 16
-    status: paused
-    previous_status: running  # weekend shutdown 2026-09-12: node off to save ~$32/day; traffic now on arch-flash-next
+    status: running  # re-powered 2026-09-15: fresh g6e.12xlarge (ip-10-0-65-122),
+      # weights from survived PVC, engine now boots at native 262144
     # re-power block: after the node is deleted, provision a g6e.12xlarge
     # again, then `deploy_model.py ocp-flash-next --context <emerg> --wait`
     # re-creates the core in ncao/ (weights re-download ~20 min).

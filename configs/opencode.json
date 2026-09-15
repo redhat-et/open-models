@@ -10,7 +10,7 @@
       },
       "models": {
         "qwen38-flash-next": {
-          "name": "Qwen 3.8 Flash Next NVFP4 (Core, RTX Pro) [gateway]",
+          "name": "Qwen 3.8 Flash Next NVFP4 (Core) [gateway]",
           "limit": {
             "context": 262144,
             "output": 8192
