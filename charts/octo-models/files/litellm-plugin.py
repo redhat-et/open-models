@@ -48,7 +48,27 @@ def hoist_system_messages(messages: list) -> list:
 class ProxyHandler(CustomLogger):
     async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
         if isinstance(data.get("messages"), list):
-            data["messages"] = hoist_system_messages(data["messages"])
+            if call_type == "anthropic_messages":
+                # For the Anthropic dialect on an openai-style backend,
+                # litellm converts messages->openai at send time and lands
+                # system entries AFTER the user turn - hoisting inside
+                # `messages` does not survive that hop. Fold system blocks
+                # into the top-level `system` field instead, which converts
+                # to a leading system message and is where Qwen's template
+                # wants them.
+                mid = hoist_system_messages(data["messages"])
+                leading = [m for m in mid if m.get("role") == "system"]
+                if leading:
+                    texts = [_system_text(m) for m in leading]
+                    existing = data.get("system")
+                    if isinstance(existing, str) and existing:
+                        texts.insert(0, existing)
+                    elif isinstance(existing, list):
+                        texts.insert(0, _system_text({"content": existing}))
+                    data["system"] = "\n\n".join(t for t in texts if t)
+                    data["messages"] = [m for m in mid if m.get("role") != "system"]
+            else:
+                data["messages"] = hoist_system_messages(data["messages"])
         return data
 
 

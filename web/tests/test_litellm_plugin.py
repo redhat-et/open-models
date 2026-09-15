@@ -63,3 +63,33 @@ def test_pre_call_hook_passthrough_non_chat():
     data = {"model": "embed", "input": "hi"}
     out = asyncio.run(plugin.proxy_handler_instance.async_pre_call_hook(None, None, data, "embedding"))
     assert out == data
+
+
+def test_pre_call_hook_anthropic_folds_system_into_top_level():
+    # PriceTag/Claude Code repro: system-role blocks mid `messages` on the
+    # /v1/messages route must not reach vLLM as messages at all - litellm's
+    # anthropic->openai conversion re-orders them back past the user turn.
+    handler = plugin.proxy_handler_instance
+    data = {
+        "model": "qwen38-flash-next",
+        "system": [{"type": "text", "text": "You are Claude Code."}],
+        "messages": [
+            {"role": "user", "content": [{"type": "text", "text": "hello"}]},
+            {"role": "system", "content": [{"type": "text", "text": "# Environment in /tmp"}]},
+        ],
+    }
+    out = asyncio.run(handler.async_pre_call_hook(None, None, data, "anthropic_messages"))
+    assert not any(m["role"] == "system" for m in out["messages"])
+    assert "Claude Code" in out["system"] and "/tmp" in out["system"]
+
+
+def test_pre_call_hook_anthropic_leaves_clean_request_untouched():
+    handler = plugin.proxy_handler_instance
+    data = {
+        "model": "m",
+        "system": "You are terse.",
+        "messages": [{"role": "user", "content": [{"type": "text", "text": "hi"}]}],
+    }
+    out = asyncio.run(handler.async_pre_call_hook(None, None, data, "anthropic_messages"))
+    assert out["system"] == "You are terse."
+    assert [m["role"] for m in out["messages"]] == ["user"]
