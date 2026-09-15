@@ -33,11 +33,15 @@ CATALOG = {
 def test_live_models_only_and_group_aliasing():
     cfg = gen.litellm_config(CATALOG)
     names = [m["model_name"] for m in cfg["model_list"]]
-    assert names == ["smart", "fast", "fast", "gone", "off-g"]  # last two = shadows
+    expected = ["smart", "T/A", "fast", "T/B", "fast", "T/C", "gone", "off-g"]
+    assert names == expected  # T/* = exact served-id aliases; last two = shadows
     first = cfg["model_list"][0]["litellm_params"]
     assert first["model"] == "openai/T/A"
     assert first["api_base"] == "http://a/v1"
     assert first["max_tokens"] == 8192
+    # each alias must front its OWN deployment, not the group's first one
+    by_alias = {m["model_name"]: m["litellm_params"]["api_base"] for m in cfg["model_list"]}
+    assert by_alias["T/B"] == "http://b/v1" and by_alias["T/C"] == "http://c/v1"
 
 
 def test_fallbacks_only_reference_existing_groups():
@@ -73,7 +77,11 @@ def test_shipped_config_groups_and_fallback_chain():
     groups = {m["model_name"] for m in cfg["model_list"]}
     assert "qwen38-27b-fast" in groups  # core may be absent while unavailable
     assert groups <= {"qwen38-flash-next", "qwen38-flash-next-pro",
-                      "qwen38-27b-fast", "qwen38-27b-frontier"}
+                      "qwen38-27b-fast", "qwen38-27b-frontier",
+                      # exact served-id aliases (verbatim ids for callers like
+                      # PriceTag's Claude Code that must address models exactly)
+                      "Inferact/Qwen3.8-Flash-Next-NVFP4",
+                      "Inferact/Qwen3.8-27B-NVFP4"}
     chain = {k: v for fb in cfg["router_settings"]["fallbacks"] for k, v in fb.items()}
     shadows = {m["model_name"] for m in cfg["model_list"]
                if str(m["model_info"].get("id", "")).startswith("shadow-")}

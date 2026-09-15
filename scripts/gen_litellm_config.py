@@ -67,6 +67,18 @@ def litellm_config(catalog: dict) -> dict:
             model_list.append(solo)
             if model["dedicated_name"] not in groups:
                 groups.append(model["dedicated_name"])
+        # expose the box's exact served id as a gateway alias too - callers
+        # like PriceTag's Claude Code path must address models verbatim.
+        exact = model.get("served_model")
+        if exact and exact not in (group, model.get("dedicated_name")):
+            alias = copy.deepcopy(
+                model_list[-1 - bool(model.get("dedicated_name"))]
+            )
+            alias["model_name"] = exact
+            alias["model_info"]["id"] = f"alias-{model['id']}"
+            model_list.append(alias)
+            if exact not in groups:
+                groups.append(exact)
 
     fallback_map = gw.get("fallbacks") or {}
     # a group with zero live deployments would otherwise vanish from
