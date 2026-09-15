@@ -38,8 +38,8 @@ litellm:
   port: 4000
   route: litellm
   resources:
-    requests: {cpu: 250m, memory: 512Mi}
-    limits: {cpu: "2", memory: 2Gi}
+    requests: {cpu: 500m, memory: 2Gi}
+    limits: {cpu: "2", memory: 4Gi}
 
 prometheus:
   enabled: true
