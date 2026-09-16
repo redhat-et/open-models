@@ -82,6 +82,8 @@ router_settings:
   fallbacks: &id001
   - qwen38-27b-fast:
     - qwen38-flash-next
+  - qwen38-flash-next:
+    - qwen38-27b-fast
   context_window_fallbacks: *id001
 litellm_settings:
   master_key: os.environ/LITELLM_MASTER_KEY

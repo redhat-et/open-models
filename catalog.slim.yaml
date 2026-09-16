@@ -49,6 +49,10 @@ gateway:
   fallbacks:
     qwen38-27b-fast: [qwen38-flash-next]
     qwen38-27b-frontier: [qwen38-flash-next]  # floor: core covers frontier gaps
+    qwen38-flash-next: [qwen38-27b-fast]      # core down => bulk box catches
+      # daily-driver traffic (75k cap: sessions past it fail regardless - no
+      # other box fits them while core is out). Cycles with fast->core above
+      # are safe: litellm skips already-tried targets.
 
 hosts:
   hotaisle-1gpu:

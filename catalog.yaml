@@ -22,6 +22,8 @@ gateway:
     - qwen38-flash-next
     qwen38-27b-frontier:
     - qwen38-flash-next
+    qwen38-flash-next:
+    - qwen38-27b-fast
 hosts:
   hotaisle-1gpu:
     hardware: 1x AMD Instinct MI300X (192GB) - frontier tier, billed while the VM exists ($3/hr) - delete
