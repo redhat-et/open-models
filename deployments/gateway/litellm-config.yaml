@@ -79,9 +79,10 @@ router_settings:
   routing_strategy: least-busy
   num_retries: 1
   retry_after: 2
-  fallbacks:
+  fallbacks: &id001
   - qwen38-27b-fast:
     - qwen38-flash-next
+  context_window_fallbacks: *id001
 litellm_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
   drop_params: true

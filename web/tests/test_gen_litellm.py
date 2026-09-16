@@ -52,6 +52,13 @@ def test_fallbacks_only_reference_existing_groups():
     assert {"smart": ["fast"]} in fb
 
 
+def test_context_window_fallbacks_mirror_fallbacks():
+    # long agent sessions switching to a smaller-context lane must be
+    # re-routed to the big-context target, not rejected mid-conversation
+    cfg = gen.litellm_config(CATALOG)
+    assert cfg["router_settings"]["context_window_fallbacks"] == cfg["router_settings"]["fallbacks"]
+
+
 def test_master_key_from_env():
     cfg = gen.litellm_config(CATALOG)
     assert cfg["litellm_settings"]["master_key"] == "os.environ/LITELLM_MASTER_KEY"

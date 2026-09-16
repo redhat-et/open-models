@@ -185,14 +185,13 @@ models:
   tier: bulk
   status: running
   served_model: Inferact/Qwen3.8-27B-NVFP4
-  context: 262144
+  context: 75264
   group: qwen38-27b-fast
   price:
     input: 0.3
     output: 1.2
   engine:
     gpu_memory_utilization: 0.95
-    cpu_offload_gb: 8
     kv_cache_dtype: fp8
   api_key: sk-local
   max_output: 8192
@@ -200,9 +199,9 @@ models:
   tool_call: true
   reasoning: true
   quant: nvfp4
-  seats: 4
+  seats: 8
   byo_key: false
-  notes: Default daily driver; 32k context keeps KV small on 32GB.
+  notes: Default daily driver; 75k context fits 32GB without CPU offload.
 - id: spark2-smart
   host: spark2
   name: Qwen 3.8 27B FP8 (Lab)

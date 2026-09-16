@@ -112,6 +112,9 @@ def litellm_config(catalog: dict) -> dict:
             "num_retries": 1,
             "retry_after": 2,
             **({"fallbacks": fallbacks} if fallbacks else {}),
+            # over-long prompts (e.g. agent sessions past the 5090's 75k cap)
+            # route to the fallback target instead of failing mid-switch
+            **({"context_window_fallbacks": fallbacks} if fallbacks else {}),
         },
         "litellm_settings": {
             "master_key": "os.environ/LITELLM_MASTER_KEY",

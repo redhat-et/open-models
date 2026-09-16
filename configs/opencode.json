@@ -22,7 +22,7 @@
         "qwen38-27b-fast": {
           "name": "Qwen 3.8 27B NVFP4 (Bulk) [gateway]",
           "limit": {
-            "context": 262144,
+            "context": 75264,
             "output": 8192
           },
           "tool_call": true,
