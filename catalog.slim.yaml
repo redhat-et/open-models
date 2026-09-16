@@ -201,33 +201,29 @@ models:
   - id: rtx5090-fast
     host: rtx5090
     name: "Qwen 3.8 27B NVFP4 (Bulk)"
-    seats: 4  # WEEKEND config (offloaded, 262k). Original 8-seat measurement was
-      # at 32k/no-offload: 12.5 tok/s each to 8, 100 tok/s aggregate ceiling.
+    seats: 8  # 32k-era measurement: 12.5 tok/s each to 8, 100 tok/s aggregate.
+      # 2026-09-16 solo re-measure at 75k/fp8/eager: 12.2 tok/s.
     tier: bulk
     group: qwen38-27b-fast
     price: {input: 0.30, output: 1.20}
-    engine: {gpu_memory_utilization: 0.95, cpu_offload_gb: 8, kv_cache_dtype: fp8}
+    engine: {gpu_memory_utilization: 0.95, kv_cache_dtype: fp8}
     base_url: http://136.47.153.236:8000/v1
     api_key: sk-local
-    # The model natively supports 262144 (hybrid: 48/64 layers linear-attention,
-    # only 16 full-attn layers grow per token -> 32KB/token fp8). The 24.6GiB
-    # NVFP4 weights leave 2.6GiB KV on 32GB, so 262k needs --cpu-offload-gb 8
-    # (weights parked in the box's 53GiB RAM) + gmu 0.95 -> 11.8GiB KV pool.
-    # Trade: ~1.5-2x slower solo (PCIe weight shuffles), ~15min boot.
-    # WEEKEND 2026-09-12: container runs 262144 + offload so big agent sessions
-    # fit while the big boxes are off.
-    # MONDAY REVERT (one line on the 5090, weights are baked in the image):
-    #   podman stop qwen38-nvfp4 && podman rm -f qwen38-nvfp4 && \
-    #   podman rename qwen38-nvfp4-75k-backup qwen38-nvfp4 && \
-    #   podman start qwen38-nvfp4
-    # ...and flip this entry back: context: 32768, seats: 8,
-    # engine: {max_num_seqs: 32}. The 75k backup config is the fast one.
-    context: 262144
+    # 2026-09-16 rebuild: the 262144+--cpu-offload-gb 8 weekend config paged
+    # weights per token and ran at 2.5 tok/s; offload is gone and context is
+    # capped at 75264, which fits natively (70k-token fp8 KV pool, 2.15x
+    # concurrency) at 12.2 tok/s solo. --enforce-eager is REQUIRED: CUDA graph
+    # capture hard-locked the kernel (driver 610.43.03 + kernel 7.1.fc44,
+    # screen lockup, power-cycled). Retry graphs after a Fedora/driver update.
+    # Container: stock vllm/vllm-openai:v0.25.0, --restart unless-stopped,
+    # weights mounted from ~/hf-cache/hub on the box (survives rm), old config
+    # kept as podman container qwen38-nvfp4-262k-crawl-backup.
+    context: 75264
     max_output: 8192
     supports_system_message: false
     quant: nvfp4
     status: running
-    notes: Default daily driver; 32k context keeps KV small on 32GB.
+    notes: Default daily driver; 75k context fits 32GB without CPU offload.
 
   - id: spark2-smart
     host: spark2

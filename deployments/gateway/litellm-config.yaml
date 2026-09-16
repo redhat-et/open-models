@@ -41,7 +41,7 @@ model_list:
     output_cost_per_token: 1.2e-06
   model_info:
     id: rtx5090-fast
-    max_input_tokens: 262144
+    max_input_tokens: 75264
     supported_api:
     - chat
     - completions
@@ -56,7 +56,7 @@ model_list:
     output_cost_per_token: 1.2e-06
   model_info:
     id: alias-rtx5090-fast
-    max_input_tokens: 262144
+    max_input_tokens: 75264
     supported_api:
     - chat
     - completions
