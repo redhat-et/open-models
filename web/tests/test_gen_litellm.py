@@ -102,7 +102,14 @@ def test_shipped_config_groups_and_fallback_chain():
             assert chain[name] in ([], ["qwen38-flash-next"])
         else:
             assert name in shadows
-    assert "qwen38-flash-next" not in chain  # acyclic: core is the floor
+    # core may catch-out to the bulk box when it is itself down (2026-09-16);
+    # the fast<->core cycle is safe because litellm never retries a target
+    # it already tried. What must not happen: a target outside these two,
+    # or a lab/external group ever appearing as a fallback target.
+    if "qwen38-flash-next" in chain:
+        assert chain["qwen38-flash-next"] in ([], ["qwen38-27b-fast"])
+    targets = {t for v in chain.values() for t in v}
+    assert targets <= {"qwen38-flash-next", "qwen38-27b-fast"}
 
 
 def test_paused_models_excluded():
