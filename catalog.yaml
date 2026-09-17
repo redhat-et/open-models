@@ -109,6 +109,7 @@ models:
   deploy:
     name: qwen38-flash-next
     namespace: ncao
+    host: qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com
     image: vllm/vllm-openai:qwen38-flash-next
     gpus: 4
     ports:
@@ -162,6 +163,7 @@ models:
   previous_status: running
   deploy:
     name: qwen38-flash-next
+    host: qwen38-flash-next-octo-models-compute.apps.rosa.models-arch-ocp.ijxt.p3.openshiftapps.com
     image: vllm/vllm-openai:qwen38-flash-next
     gpus: 1
     ports:

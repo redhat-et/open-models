@@ -122,6 +122,7 @@ models:
     deploy:
       name: qwen38-flash-next
       namespace: ncao
+      host: qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com
       image: vllm/vllm-openai:qwen38-flash-next
       gpus: 4
       ports: [8000]
@@ -174,6 +175,7 @@ models:
       # the EBS volume with it, expect a ~20 min re-download.
     deploy:
       name: qwen38-flash-next  # keep the deployment name = model name on every cluster
+      host: qwen38-flash-next-octo-models-compute.apps.rosa.models-arch-ocp.ijxt.p3.openshiftapps.com
       image: vllm/vllm-openai:qwen38-flash-next
       gpus: 1
       ports: [8000]

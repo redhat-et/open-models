@@ -120,6 +120,10 @@ def render(model: dict) -> list[tuple[str, dict]]:
                  "tls": {"termination": "edge",
                          "insecureEdgeTerminationPolicy": "Redirect"}},
     }
+    if d.get("host"):
+        # pin the stable host (the catalog base_url) - without it the ingress
+        # controller may leave the route hostless and the known URL 503s
+        route["spec"]["host"] = d["host"]
     return [("pvc", pvc_obj), ("secret", secret), ("deployment", deploy),
             ("service", svc), ("route", route)]
 
