@@ -64,6 +64,7 @@ spec:
             --gpu-memory-utilization 0.95 \
             --max-num-batched-tokens 8192 \
             --enable-prefix-caching \
+            --enable-prompt-tokens-details \
             --moe-backend marlin \
             --enable-expert-parallel \
             --tensor-parallel-size 1 \

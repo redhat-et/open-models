@@ -9,6 +9,7 @@ model_list:
     supports_system_message: false
     input_cost_per_token: 2.0000000000000002e-07
     output_cost_per_token: 1.0e-06
+    cache_read_input_token_cost: 1.6e-08
   model_info:
     id: ocp-flash-next
     max_input_tokens: 262144
@@ -24,6 +25,7 @@ model_list:
     supports_system_message: false
     input_cost_per_token: 2.0000000000000002e-07
     output_cost_per_token: 1.0e-06
+    cache_read_input_token_cost: 1.6e-08
   model_info:
     id: alias-ocp-flash-next
     max_input_tokens: 262144
@@ -69,6 +71,7 @@ model_list:
     supports_system_message: false
     input_cost_per_token: 2.0000000000000002e-07
     output_cost_per_token: 1.0e-06
+    cache_read_input_token_cost: 1.6e-08
   model_info:
     id: shadow-qwen38-27b-frontier
     max_input_tokens: 262144

@@ -47,6 +47,11 @@ def litellm_config(catalog: dict) -> dict:
             params["input_cost_per_token"] = price["input"] / 1_000_000
         if price.get("output"):
             params["output_cost_per_token"] = price["output"] / 1_000_000
+        # vLLM reports cached tokens via usage.prompt_tokens_details.cached_tokens
+        # (needs --enable-prompt-tokens-details); litellm otherwise bills cached
+        # tokens at the FULL input rate for custom-priced models.
+        if price.get("cache_read"):
+            params["cache_read_input_token_cost"] = price["cache_read"] / 1_000_000
         if model.get("rate"):
             params.update(model["rate"])
         model_list.append(

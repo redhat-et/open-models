@@ -1,3 +1,4 @@
+import copy
 import importlib.util
 from pathlib import Path
 
@@ -42,6 +43,22 @@ def test_live_models_only_and_group_aliasing():
     # each alias must front its OWN deployment, not the group's first one
     by_alias = {m["model_name"]: m["litellm_params"]["api_base"] for m in cfg["model_list"]}
     assert by_alias["T/B"] == "http://b/v1" and by_alias["T/C"] == "http://c/v1"
+
+
+def test_cache_read_rate_emitted_when_priced():
+    # litellm's cost calc (cost_calculator._cost_per_token_custom_pricing_helper)
+    # defaults cache-read cost to the FULL input rate when the field is absent, so
+    # a prefix-cached box would still bill full input. Emit the field so the
+    # gateway applies the discounted cache-read rate once vLLM reports cached tokens.
+    catalog = copy.deepcopy(CATALOG)
+    catalog["models"][0]["price"] = {"input": 0.20, "output": 1.00, "cache_read": 0.016}
+    params = gen.litellm_config(catalog)["model_list"][0]["litellm_params"]
+    assert params["input_cost_per_token"] == 0.20 / 1e6
+    assert params["cache_read_input_token_cost"] == 0.016 / 1e6
+    assert params["output_cost_per_token"] == 1.00 / 1e6
+    catalog["models"][0].pop("price")
+    params = gen.litellm_config(catalog)["model_list"][0]["litellm_params"]
+    assert "cache_read_input_token_cost" not in params
 
 
 def test_fallbacks_only_reference_existing_groups():

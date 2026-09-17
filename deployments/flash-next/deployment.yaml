@@ -28,8 +28,8 @@ spec:
           export VLLM_PLE_CPU_OFFLOAD=1\nvllm serve Inferact/Qwen3.8-Flash-Next-NVFP4\
           \ \\\n  --no-enable-flashinfer-autotune \\\n  --max-num-seqs 16 \\\n  --gpu-memory-utilization\
           \ 0.90 \\\n  --max-num-batched-tokens 8192 \\\n  --enable-prefix-caching\
-          \ \\\n  --moe-backend marlin \\\n  --enable-expert-parallel \\\n  --tensor-parallel-size\
-          \ 4 \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_xml \\\
+          \ \\\n  --enable-prompt-tokens-details \\\n  --moe-backend marlin \\\n  --enable-expert-parallel\
+          \ \\\n  --tensor-parallel-size 4 \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_xml \\\
           \n  --reasoning-parser qwen3 \\\n  --speculative-config '{\"method\":\"\
           mtp\",\"num_speculative_tokens\":3}' \\\n  --max-model-len 262144\n"
         env:

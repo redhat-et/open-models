@@ -97,6 +97,7 @@ models:
   price:
     input: 0.2
     output: 1.0
+    cache_read: 0.016
   api_key: sk-local
   max_output: 8192
   supports_system_message: false
@@ -130,10 +131,10 @@ models:
     command: "set -euxo pipefail\nexport HF_HOME=/cache/huggingface\nexport HOME=/cache/home\nexport VLLM_PLE_CPU_OFFLOAD=1\n\
       vllm serve Inferact/Qwen3.8-Flash-Next-NVFP4 \\\n  --no-enable-flashinfer-autotune \\\n  --max-num-seqs\
       \ 10 \\\n  --gpu-memory-utilization 0.90 \\\n  --max-num-batched-tokens 8192 \\\n  --enable-prefix-caching\
-      \ \\\n  --moe-backend marlin \\\n  --enable-expert-parallel \\\n  --tensor-parallel-size 4 \\\n\
-      \  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_xml \\\n  --reasoning-parser qwen3 \\\
-      \n  --speculative-config '{\"method\":\"mtp\",\"num_speculative_tokens\":3}' \\\n  --max-model-len\
-      \ 262144\n"
+      \ \\\n  --enable-prompt-tokens-details \\\n  --moe-backend marlin \\\n  --enable-expert-parallel\
+      \ \\\n  --tensor-parallel-size 4 \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_xml\
+      \ \\\n  --reasoning-parser qwen3 \\\n  --speculative-config '{\"method\":\"mtp\",\"num_speculative_tokens\"\
+      :3}' \\\n  --max-model-len 262144\n"
 - id: arch-flash-next
   host: models-arch
   name: Qwen 3.8 Flash Next NVFP4 (Core, RTX Pro)
@@ -147,6 +148,7 @@ models:
   price:
     input: 0.2
     output: 1.0
+    cache_read: 0.016
   api_key: sk-local
   max_output: 8192
   supports_system_message: false
@@ -176,10 +178,10 @@ models:
     command: "set -euxo pipefail\nexport HF_HOME=/cache/huggingface\nexport HOME=/cache/home\nexport VLLM_PLE_CPU_OFFLOAD=1\n\
       vllm serve Inferact/Qwen3.8-Flash-Next-NVFP4 \\\n  --no-enable-flashinfer-autotune \\\n  --max-num-seqs\
       \ 4 \\\n  --gpu-memory-utilization 0.95 \\\n  --max-num-batched-tokens 8192 \\\n  --enable-prefix-caching\
-      \ \\\n  --moe-backend marlin \\\n  --enable-expert-parallel \\\n  --tensor-parallel-size 1 \\\n\
-      \  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_xml \\\n  --reasoning-parser qwen3 \\\
-      \n  --speculative-config '{\"method\":\"mtp\",\"num_speculative_tokens\":3}' \\\n  --max-model-len\
-      \ 262144 \\\n  --distributed-executor-backend mp\n"
+      \ \\\n  --enable-prompt-tokens-details \\\n  --moe-backend marlin \\\n  --enable-expert-parallel\
+      \ \\\n  --tensor-parallel-size 1 \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_xml\
+      \ \\\n  --reasoning-parser qwen3 \\\n  --speculative-config '{\"method\":\"mtp\",\"num_speculative_tokens\"\
+      :3}' \\\n  --max-model-len 262144 \\\n  --distributed-executor-backend mp\n"
 - id: rtx5090-fast
   host: rtx5090
   name: Qwen 3.8 27B NVFP4 (Bulk)

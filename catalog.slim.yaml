@@ -107,7 +107,7 @@ models:
     name: "Qwen 3.8 Flash Next NVFP4 (Core)"
     tier: core
     group: qwen38-flash-next
-    price: {input: 0.20, output: 1.00}  # notional $/Mtok vs public APIs
+    price: {input: 0.20, output: 1.00, cache_read: 0.016}  # notional $/Mtok vs public APIs
     base_url: https://qwen38-flash-next-d57178e0-2037-479e-9a33-217f81dd6f5e.apps.emerg.pcbk.p1.openshiftapps.com/v1
     api_key: sk-local
     max_output: 8192
@@ -141,6 +141,7 @@ models:
           --gpu-memory-utilization 0.90 \
           --max-num-batched-tokens 8192 \
           --enable-prefix-caching \
+          --enable-prompt-tokens-details \
           --moe-backend marlin \
           --enable-expert-parallel \
           --tensor-parallel-size 4 \
@@ -156,7 +157,7 @@ models:
     tier: core
     group: qwen38-flash-next  # same group as ocp-flash-next - gateway load-balances both
     dedicated_name: qwen38-flash-next-pro  # pro-only gateway model for callers that want the Blackwell card
-    price: {input: 0.20, output: 1.00}
+    price: {input: 0.20, output: 1.00, cache_read: 0.016}
     base_url: https://qwen38-flash-next-octo-models-compute.apps.rosa.models-arch-ocp.ijxt.p3.openshiftapps.com/v1
     api_key: sk-local
     max_output: 8192
@@ -190,6 +191,7 @@ models:
           --gpu-memory-utilization 0.95 \
           --max-num-batched-tokens 8192 \
           --enable-prefix-caching \
+          --enable-prompt-tokens-details \
           --moe-backend marlin \
           --enable-expert-parallel \
           --tensor-parallel-size 1 \
