@@ -1,0 +1,3 @@
+GRAFANA_ROUTE_HOST=grafana-enmaas-monitoring.apps.rosa.enmaas-prod.187f.p3.openshiftapps.com
+STORAGE_CLASS=gp3-csi
+GRAFANA_STORAGE_GB=5

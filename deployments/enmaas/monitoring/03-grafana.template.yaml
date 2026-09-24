@@ -1,0 +1,220 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: monitoring-grafana
+  namespace: enmaas-monitoring
+message: "Grafana deployed - route https://${GRAFANA_ROUTE_HOST} (basic auth in front of grafana login)"
+parameters:
+  - name: GRAFANA_ROUTE_HOST
+    required: true
+  - name: GRAFANA_IMAGE
+    value: "docker.io/grafana/grafana:12.4.11"
+  - name: OAUTH_IMAGE
+    value: "quay.io/openshift/origin-oauth-proxy:4.22"
+  - name: STORAGE_CLASS
+    value: "gp3-csi"
+  - name: GRAFANA_STORAGE_GB
+    value: "5"
+  - name: GRAFANA_CPU
+    value: "500m"
+  - name: GRAFANA_MEM
+    value: "1Gi"
+objects:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: grafana-datasources
+      namespace: enmaas-monitoring
+      labels:
+        app.kubernetes.io/name: grafana
+    data:
+      datasources.yaml: |
+        apiVersion: 1
+        datasources:
+          - name: Prometheus
+            type: prometheus
+            access: proxy
+            url: http://prometheus:9090
+            isDefault: true
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: grafana-data
+      namespace: enmaas-monitoring
+    spec:
+      accessModes: [ReadWriteOnce]
+      storageClassName: ${STORAGE_CLASS}
+      resources:
+        requests:
+          storage: ${GRAFANA_STORAGE_GB}Gi
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: grafana
+      namespace: enmaas-monitoring
+      labels:
+        app.kubernetes.io/name: grafana
+    spec:
+      replicas: 1
+      strategy:
+        type: Recreate
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: grafana
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: grafana
+        spec:
+          serviceAccountName: grafana
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: grafana
+              image: ${GRAFANA_IMAGE}
+              env:
+                - name: GF_SERVER_ROOT_URL
+                  value: "https://${GRAFANA_ROUTE_HOST}"
+                - name: GF_SERVER_HTTP_ADDR
+                  value: "0.0.0.0"
+                - name: GF_ANALYTICS_REPORTING_ENABLED
+                  value: "false"
+                - name: GF_ANALYTICS_CHECK_FOR_UPDATES
+                  value: "false"
+                - name: GF_SECURITY_ADMIN_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: grafana-admin
+                      key: admin-user
+                - name: GF_SECURITY_ADMIN_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: grafana-admin
+                      key: admin-password
+              ports:
+                - name: http
+                  containerPort: 3000
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: ${GRAFANA_CPU}
+                  memory: ${GRAFANA_MEM}
+              livenessProbe:
+                httpGet: { path: /api/health, port: 3000 }
+              readinessProbe:
+                httpGet: { path: /api/health, port: 3000 }
+              volumeMounts:
+                - name: data
+                  mountPath: /var/lib/grafana
+                - name: datasources
+                  mountPath: /etc/grafana/provisioning/datasources
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: [ALL]
+            - name: oauth-proxy
+              image: ${OAUTH_IMAGE}
+              args:
+                - --provider=openshift
+                - --client-id=grafana
+                - --upstream=http://127.0.0.1:3000/
+                - --cookie-secret-file=/etc/proxy/session/cookie-secret
+                - --client-secret-file=/etc/proxy/client/client-secret
+                - --openshift-service-account=grafana
+                - --tls-cert=/etc/tls/tls.crt
+                - --tls-key=/etc/tls/tls.key
+                - --https-address=:8443
+                - --http-address=
+                - --email-domain=*
+                - --skip-provider-button=true
+              ports:
+                - name: proxy
+                  containerPort: 8443
+              resources:
+                requests:
+                  cpu: 20m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 256Mi
+              livenessProbe:
+                tcpSocket: { port: 8443 }
+              volumeMounts:
+                - name: session
+                  mountPath: /etc/proxy/session
+                  readOnly: true
+                - name: client
+                  mountPath: /etc/proxy/client
+                  readOnly: true
+                - name: tls
+                  mountPath: /etc/tls
+                  readOnly: true
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: [ALL]
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: grafana-data
+            - name: datasources
+              configMap:
+                name: grafana-datasources
+            - name: session
+              secret:
+                secretName: proxy-cookie
+            - name: client
+              secret:
+                secretName: proxy-client
+            - name: tls
+              secret:
+                secretName: grafana-proxy-tls
+
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: grafana
+      namespace: enmaas-monitoring
+      annotations:
+        service.beta.openshift.io/serving-cert-secret-name: grafana-proxy-tls
+      labels:
+        app.kubernetes.io/name: grafana
+    spec:
+      selector:
+        app.kubernetes.io/name: grafana
+      ports:
+        - name: proxy
+          port: 8443
+          targetPort: proxy
+        - name: http
+          port: 3000
+          targetPort: http
+  - apiVersion: route.openshift.io/v1
+    kind: Route
+    metadata:
+      name: grafana
+      namespace: enmaas-monitoring
+    spec:
+      host: ${GRAFANA_ROUTE_HOST}
+      to:
+        kind: Service
+        name: grafana
+        weight: 100
+      port:
+        targetPort: proxy
+      tls:
+        termination: reencrypt
+        insecureEdgeTerminationPolicy: Redirect
+  - apiVersion: oauth.openshift.io/v1
+    kind: OAuthClient
+    metadata:
+      name: grafana
+      namespace: enmaas-monitoring
+    redirectURIs:
+      - "https://${GRAFANA_ROUTE_HOST}/oauth2/callback"
+    grantMethod: auto
+    redirectReferenceMethod: exact

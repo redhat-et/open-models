@@ -1,0 +1,196 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: monitoring-alertmanager
+  namespace: enmaas-monitoring
+message: "Alertmanager deployed - route https://${AM_ROUTE_HOST} (basic auth)"
+parameters:
+  - name: AM_ROUTE_HOST
+    required: true
+  - name: AM_IMAGE
+    value: "quay.io/prometheus/alertmanager:v0.28.1"
+  - name: OAUTH_IMAGE
+    value: "quay.io/openshift/origin-oauth-proxy:4.22"
+  - name: AM_CPU
+    value: "200m"
+  - name: AM_MEM
+    value: "512Mi"
+objects:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: alertmanager-config
+      namespace: enmaas-monitoring
+      labels:
+        app.kubernetes.io/name: alertmanager
+    data:
+      alertmanager.yml: |
+        route:
+          receiver: default
+          group_by: ["alertname"]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 4h
+        receivers:
+          - name: default
+        inhibit_rules:
+          - source_matchers:
+              - severity = critical
+            target_matchers:
+              - severity = warning
+            equal: ["alertname"]
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: alertmanager
+      namespace: enmaas-monitoring
+      labels:
+        app.kubernetes.io/name: alertmanager
+    spec:
+      replicas: 1
+      strategy:
+        type: Recreate
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: alertmanager
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: alertmanager
+        spec:
+          serviceAccountName: alertmanager
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: alertmanager
+              image: ${AM_IMAGE}
+              args:
+                - --config.file=/etc/alertmanager/alertmanager.yml
+                - --storage.path=/alertmanager
+                - --web.listen-address=0.0.0.0:9093
+              ports:
+                - name: http
+                  containerPort: 9093
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  cpu: ${AM_CPU}
+                  memory: ${AM_MEM}
+              livenessProbe:
+                httpGet: { path: /-/healthy, port: 9093 }
+              readinessProbe:
+                httpGet: { path: /-/ready, port: 9093 }
+              volumeMounts:
+                - name: config
+                  mountPath: /etc/alertmanager
+                - name: data
+                  mountPath: /alertmanager
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: [ALL]
+            - name: oauth-proxy
+              image: ${OAUTH_IMAGE}
+              args:
+                - --provider=openshift
+                - --client-id=alertmanager
+                - --upstream=http://127.0.0.1:9093/
+                - --cookie-secret-file=/etc/proxy/session/cookie-secret
+                - --client-secret-file=/etc/proxy/client/client-secret
+                - --openshift-service-account=alertmanager
+                - --tls-cert=/etc/tls/tls.crt
+                - --tls-key=/etc/tls/tls.key
+                - --https-address=:8443
+                - --http-address=
+                - --email-domain=*
+                - --skip-provider-button=true
+              ports:
+                - name: proxy
+                  containerPort: 8443
+              resources:
+                requests:
+                  cpu: 20m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 256Mi
+              livenessProbe:
+                tcpSocket: { port: 8443 }
+              volumeMounts:
+                - name: session
+                  mountPath: /etc/proxy/session
+                  readOnly: true
+                - name: client
+                  mountPath: /etc/proxy/client
+                  readOnly: true
+                - name: tls
+                  mountPath: /etc/tls
+                  readOnly: true
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: [ALL]
+          volumes:
+            - name: config
+              configMap:
+                name: alertmanager-config
+            - name: data
+              emptyDir: {}
+            - name: session
+              secret:
+                secretName: proxy-cookie
+            - name: client
+              secret:
+                secretName: proxy-client
+            - name: tls
+              secret:
+                secretName: alertmanager-proxy-tls
+
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: alertmanager
+      namespace: enmaas-monitoring
+      annotations:
+        service.beta.openshift.io/serving-cert-secret-name: alertmanager-proxy-tls
+      labels:
+        app.kubernetes.io/name: alertmanager
+    spec:
+      selector:
+        app.kubernetes.io/name: alertmanager
+      ports:
+        - name: proxy
+          port: 8443
+          targetPort: proxy
+        - name: http
+          port: 9093
+          targetPort: http
+  - apiVersion: route.openshift.io/v1
+    kind: Route
+    metadata:
+      name: alertmanager
+      namespace: enmaas-monitoring
+    spec:
+      host: ${AM_ROUTE_HOST}
+      to:
+        kind: Service
+        name: alertmanager
+        weight: 100
+      port:
+        targetPort: proxy
+      tls:
+        termination: reencrypt
+        insecureEdgeTerminationPolicy: Redirect
+  - apiVersion: oauth.openshift.io/v1
+    kind: OAuthClient
+    metadata:
+      name: alertmanager
+      namespace: enmaas-monitoring
+    redirectURIs:
+      - "https://${AM_ROUTE_HOST}/oauth2/callback"
+    grantMethod: auto
+    redirectReferenceMethod: exact

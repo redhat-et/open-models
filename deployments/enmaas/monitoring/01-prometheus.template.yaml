@@ -1,0 +1,242 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: monitoring-prometheus
+  namespace: enmaas-monitoring
+message: "Prometheus deployed - route https://${PROM_ROUTE_HOST} (basic auth)"
+parameters:
+  - name: PROM_ROUTE_HOST
+    required: true
+    description: "Full pinned route host (catalog pattern: never let the router guess)"
+  - name: PROM_IMAGE
+    value: "quay.io/prometheus/prometheus:v3.5.1"
+  - name: OAUTH_IMAGE
+    value: "quay.io/openshift/origin-oauth-proxy:4.22"
+  - name: STORAGE_CLASS
+    value: "gp3-csi"
+  - name: PROM_STORAGE_GB
+    value: "20"
+  - name: RETENTION
+    value: "30d"
+  - name: PROM_CPU
+    value: "500m"
+  - name: PROM_MEM
+    value: "1Gi"
+objects:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: prometheus-config
+      namespace: enmaas-monitoring
+      labels:
+        app.kubernetes.io/name: prometheus
+    data:
+      prometheus.yml: |
+        global:
+          scrape_interval: 30s
+          external_labels:
+            env: enmaas-prod
+            cluster: enmaas-prod
+        alerting:
+          alertmanagers:
+            - static_configs:
+                - targets: ["alertmanager:9093"]
+        rule_files:
+          - /etc/prometheus/rules/*.yml
+        scrape_configs:
+          - job_name: prometheus
+            static_configs:
+              - targets: ["127.0.0.1:9090"]
+          - job_name: alertmanager
+            static_configs:
+              - targets: ["alertmanager:9093"]
+          - job_name: grafana
+            static_configs:
+              - targets: ["grafana:3000"]
+      rules-alerts.yml: |
+        groups:
+          - name: monitoring-self
+            rules:
+              - alert: MonitoringComponentDown
+                expr: up{job=~"prometheus|alertmanager|grafana"} == 0
+                for: 5m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "{{ $labels.job} scrape target is down"
+                  description: "Prometheus cannot scrape {{ $labels.instance} (job {{ $labels.job}) for 5m."
+              - alert: PrometheusConfigReloadFailed
+                expr: prometheus_config_last_reload_successful == 0
+                for: 5m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Prometheus config reload failing"
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: prometheus-data
+      namespace: enmaas-monitoring
+    spec:
+      accessModes: [ReadWriteOnce]
+      storageClassName: ${STORAGE_CLASS}
+      resources:
+        requests:
+          storage: ${PROM_STORAGE_GB}Gi
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: prometheus
+      namespace: enmaas-monitoring
+      labels:
+        app.kubernetes.io/name: prometheus
+    spec:
+      replicas: 1
+      strategy:
+        type: Recreate
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: prometheus
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: prometheus
+        spec:
+          serviceAccountName: prometheus
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: prometheus
+              image: ${PROM_IMAGE}
+              args:
+                - --config.file=/etc/prometheus/prometheus.yml
+                - --storage.tsdb.path=/prometheus
+                - --storage.tsdb.retention.time=${RETENTION}
+                - --web.listen-address=0.0.0.0:9090
+              ports:
+                - name: metrics
+                  containerPort: 9090
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: ${PROM_CPU}
+                  memory: ${PROM_MEM}
+              livenessProbe:
+                httpGet: { path: /-/healthy, port: 9090 }
+              readinessProbe:
+                httpGet: { path: /-/ready, port: 9090 }
+              volumeMounts:
+                - name: config
+                  mountPath: /etc/prometheus
+                - name: data
+                  mountPath: /prometheus
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: [ALL]
+            - name: oauth-proxy
+              image: ${OAUTH_IMAGE}
+              args:
+                - --provider=openshift
+                - --client-id=prometheus
+                - --upstream=http://127.0.0.1:9090/
+                - --cookie-secret-file=/etc/proxy/session/cookie-secret
+                - --client-secret-file=/etc/proxy/client/client-secret
+                - --openshift-service-account=prometheus
+                - --tls-cert=/etc/tls/tls.crt
+                - --tls-key=/etc/tls/tls.key
+                - --https-address=:8443
+                - --http-address=
+                - --email-domain=*
+                - --skip-provider-button=true
+              ports:
+                - name: proxy
+                  containerPort: 8443
+              resources:
+                requests:
+                  cpu: 20m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 256Mi
+              livenessProbe:
+                tcpSocket: { port: 8443 }
+              volumeMounts:
+                - name: session
+                  mountPath: /etc/proxy/session
+                  readOnly: true
+                - name: client
+                  mountPath: /etc/proxy/client
+                  readOnly: true
+                - name: tls
+                  mountPath: /etc/tls
+                  readOnly: true
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: [ALL]
+          volumes:
+            - name: config
+              configMap:
+                name: prometheus-config
+            - name: data
+              persistentVolumeClaim:
+                claimName: prometheus-data
+            - name: session
+              secret:
+                secretName: proxy-cookie
+            - name: client
+              secret:
+                secretName: proxy-client
+            - name: tls
+              secret:
+                secretName: prometheus-proxy-tls
+
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: prometheus
+      namespace: enmaas-monitoring
+      annotations:
+        service.beta.openshift.io/serving-cert-secret-name: prometheus-proxy-tls
+      labels:
+        app.kubernetes.io/name: prometheus
+    spec:
+      selector:
+        app.kubernetes.io/name: prometheus
+      ports:
+        - name: proxy
+          port: 8443
+          targetPort: proxy
+        - name: metrics
+          port: 9090
+          targetPort: metrics
+  - apiVersion: route.openshift.io/v1
+    kind: Route
+    metadata:
+      name: prometheus
+      namespace: enmaas-monitoring
+    spec:
+      host: ${PROM_ROUTE_HOST}
+      to:
+        kind: Service
+        name: prometheus
+        weight: 100
+      port:
+        targetPort: proxy
+      tls:
+        termination: reencrypt
+        insecureEdgeTerminationPolicy: Redirect
+  - apiVersion: oauth.openshift.io/v1
+    kind: OAuthClient
+    metadata:
+      name: prometheus
+      namespace: enmaas-monitoring
+    redirectURIs:
+      - "https://${PROM_ROUTE_HOST}/oauth2/callback"
+    grantMethod: auto
+    redirectReferenceMethod: exact
