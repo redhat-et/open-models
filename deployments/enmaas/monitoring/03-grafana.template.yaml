@@ -9,8 +9,8 @@ parameters:
     required: true
   - name: GRAFANA_IMAGE
     value: "docker.io/grafana/grafana:12.4.11"
-  - name: OAUTH_IMAGE
-    value: "quay.io/openshift/origin-oauth-proxy:4.22"
+  - name: NGINX_IMAGE
+    value: "docker.io/nginxinc/nginx-unprivileged:1.28-alpine"
   - name: STORAGE_CLASS
     value: "gp3-csi"
   - name: GRAFANA_STORAGE_GB
@@ -116,42 +116,27 @@ objects:
                 allowPrivilegeEscalation: false
                 capabilities:
                   drop: [ALL]
-            - name: oauth-proxy
-              image: ${OAUTH_IMAGE}
-              args:
-                - --provider=openshift
-                - --client-id=grafana
-                - --upstream=http://127.0.0.1:3000/
-                - --cookie-secret-file=/etc/proxy/session/cookie-secret
-                - --client-secret-file=/etc/proxy/client/client-secret
-                - --openshift-service-account=grafana
-                - --tls-cert=/etc/tls/tls.crt
-                - --tls-key=/etc/tls/tls.key
-                - --https-address=:8443
-                - --http-address=
-                - --email-domain=*
-                - --skip-provider-button=true
+            - name: nginx-auth
+              image: ${NGINX_IMAGE}
               ports:
                 - name: proxy
                   containerPort: 8443
               resources:
                 requests:
-                  cpu: 20m
-                  memory: 64Mi
+                  cpu: 10m
+                  memory: 32Mi
                 limits:
-                  cpu: 200m
-                  memory: 256Mi
+                  cpu: 100m
+                  memory: 64Mi
               livenessProbe:
                 tcpSocket: { port: 8443 }
               volumeMounts:
-                - name: session
-                  mountPath: /etc/proxy/session
+                - name: nginx-config
+                  mountPath: /etc/nginx/conf.d/default.conf
+                  subPath: default.conf
                   readOnly: true
-                - name: client
-                  mountPath: /etc/proxy/client
-                  readOnly: true
-                - name: tls
-                  mountPath: /etc/tls
+                - name: basicauth
+                  mountPath: /etc/nginx/secrets
                   readOnly: true
               securityContext:
                 allowPrivilegeEscalation: false
@@ -164,15 +149,12 @@ objects:
             - name: datasources
               configMap:
                 name: grafana-datasources
-            - name: session
+            - name: nginx-config
+              configMap:
+                name: grafana-nginx-auth
+            - name: basicauth
               secret:
-                secretName: proxy-cookie
-            - name: client
-              secret:
-                secretName: proxy-client
-            - name: tls
-              secret:
-                secretName: grafana-proxy-tls
+                secretName: monitoring-basic
 
   - apiVersion: v1
     kind: Service
@@ -207,7 +189,7 @@ objects:
       port:
         targetPort: proxy
       tls:
-        termination: reencrypt
+        termination: edge
         insecureEdgeTerminationPolicy: Redirect
   - apiVersion: oauth.openshift.io/v1
     kind: OAuthClient
@@ -218,3 +200,20 @@ objects:
       - "https://${GRAFANA_ROUTE_HOST}/oauth2/callback"
     grantMethod: auto
     redirectReferenceMethod: exact
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: grafana-nginx-auth
+      namespace: enmaas-monitoring
+    data:
+      default.conf: |
+        server {
+          listen 8443;
+          location / {
+            auth_basic "enmaas";
+            auth_basic_user_file /etc/nginx/secrets/htpasswd;
+            proxy_pass http://127.0.0.1:3000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-User $remote_user;
+          }
+        }

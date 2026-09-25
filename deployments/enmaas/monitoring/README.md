@@ -1,33 +1,41 @@
 # EnMaaS monitoring stack
 
 Prometheus + Alertmanager + Grafana in the `enmaas-monitoring` namespace,
-delivered as OCP templates (no Helm). Every route sits behind an oauth-proxy
-sidecar using the **openshift provider** — access is gated by cluster SSO
-(Red Hat login), no passwords to manage. No cluster-scoped RBAC: this stack
-monitors EnMaaS services; platform monitoring stays in `openshift-monitoring`.
+delivered as OCP templates (no Helm). Each route is fronted by an **nginx
+basic-auth sidecar**. No cluster-scoped RBAC: this stack monitors EnMaaS
+services; platform monitoring stays in `openshift-monitoring`.
+
+> **Why basic auth and not SSO:** the templates originally used oauth-proxy
+> with the openshift provider (cluster SSO). On 2026-09-24 a `rosa create idp`
+> wedged the enmaas-prod hosted control plane: the API NLB stopped accepting
+> TCP for ~15h and the OAuth server still cannot create login sessions
+> (`/authorize` → login page returns HTTP 400), which locked everyone out of
+> all three UIs. Red Hat case is open. nginx basic auth has zero dependency on
+> cluster OAuth. **Revert to SSO once Red Hat resolves the case** — the
+> oauth-proxy version is in git history (see "revert to SSO" below).
+
+Credentials live in `~/.config/octo-models/enmaas-monitoring.cred` (chmod 600).
 
 ## One-time bootstrap per cluster (secrets are never in templates)
 
 ```bash
 NS=enmaas-monitoring
-oc create ns $NS   # or apply 00-namespace.yaml first
-oc -n $NS create secret generic proxy-cookie \
-  --from-literal=cookie-secret="$(head -c 24 /dev/urandom | base64 -w0)"   # exactly 32 chars
-CS="$(head -c 24 /dev/urandom | base64 -w0 | cut -c1-32)"
-oc -n $NS create secret generic proxy-client --from-literal=client-secret="$CS"
-# OAuthClients are created by the templates without a secret; inject it out-of-band:
-for s in prometheus alertmanager grafana; do
-  oc patch oauthclient $s -p "{\"secret\":\"$CS\"}" --type merge
-done
+oc apply -f 00-namespace.yaml
+# route basic auth (bcrypt; nginx supports $2y$)
+PASS="$(/usr/bin/openssl rand -base64 15 | tr -d '\n' | cut -c1-20)"
+oc -n $NS create secret generic monitoring-basic \
+  --from-literal=htpasswd="$(htpasswd -Bnb prom "$PASS")"
+# grafana app login
+GPASS="$(/usr/bin/openssl rand -base64 15 | tr -d '\n' | cut -c1-20)"
 oc -n $NS create secret generic grafana-admin \
-  --from-literal=admin-user=admin \
-  --from-literal=admin-password="$(/usr/bin/openssl rand -base64 15)"
+  --from-literal=admin-user=admin --from-literal=admin-password="$GPASS"
+# record BOTH passwords in ~/.config/octo-models/enmaas-monitoring.cred
 ```
 
 ## Deploy / update
 
-HCP data planes do NOT serve the `Template` API kind, and `oc process
---local` drops object namespaces — so rendering is always:
+HCP data planes do NOT serve the `Template` API kind, and `oc process --local`
+drops object namespaces — so rendering is always `--local` + `apply -n`:
 
 ```bash
 cd deployments/enmaas/monitoring
@@ -38,38 +46,50 @@ oc process --local -f 03-grafana.template.yaml      --param-file=params/enmaas-p
 ```
 
 Never pipe `oc apply` through `head`/`tail` (SIGPIPE truncates the apply
-mid-stream). Config changes: apply the ConfigMap, then
-`oc -n enmaas-monitoring rollout restart deploy/<name>`.
+mid-stream — this silently skipped half of 00-namespace.yaml once). Config
+changes: apply the ConfigMap, then `oc -n enmaas-monitoring rollout restart
+deploy/<name>`.
 
 ## Verify
 
 ```bash
-oc -n enmaas-monitoring get pods    # 3x 2/2 Running
-# each route must 302 to https://oauth.enmaas-prod.../oauth/authorize
-curl -skI https://prometheus-enmaas-monitoring.apps.rosa.enmaas-prod.187f.p3.openshiftapps.com/ | grep -i location
+. ~/.config/octo-models/enmaas-monitoring.cred
+B=apps.rosa.enmaas-prod.187f.p3.openshiftapps.com
+oc -n enmaas-monitoring get pods                      # 3x 2/2 Running
+curl -sk -o /dev/null -w '%{http_code}\n' https://prometheus-enmaas-monitoring.$B/            # 401
+curl -sk -u "$BASIC_USER:$BASIC_PASS" "https://prometheus-enmaas-monitoring.$B/api/v1/targets" \
+  | python3 -c "import json,sys;[print(t['labels']['job'],t['health']) for t in json.load(sys.stdin)['data']['activeTargets']]"
 ```
 
-Open the Grafana route in a browser; complete SSO; default datasource
-(Prometheus) is provisioned. Grafana admin login (emergency/direct DB) is
-`admin` + the grafana-admin secret — change it in the UI after first use.
+Grafana: basic auth prompt first, then Grafana's own login
+(`$GRAFANA_USER`/`$GRAFANA_PASS`). Prometheus is provisioned as the default
+datasource.
+
+## Revert to SSO (after Red Hat fixes OAuth)
+
+`git log --oneline -- deployments/enmaas/monitoring` → revert the "nginx
+basic-auth" commit, re-run the oauth bootstrap (proxy-cookie + proxy-client
+secrets, patch the three OAuthClients with the client secret), re-apply.
+Validate with `curl -skI <route>` → expect 302 to `/oauth/authorize`.
 
 ## Hard-won notes (enmaas-prod, 2026-09)
-- `restricted-v2` SCC: do NOT pin `runAsUser`/`fsGroup`; the namespace is
-  assigned a uid range (e.g. 1000850000-…) and fixed values are rejected.
+- **NetworkPolicy must match the sidecar port.** The policy admits external
+  traffic on 8443 only; nginx first listened on 8080 and every route returned
+  503 with healthy pods. Sidecars must listen on 8443.
+- `restricted-v2` SCC: do NOT pin `runAsUser`/`fsGroup`; the namespace gets an
+  assigned uid range (e.g. 1000850000-…) and fixed values are rejected.
+- Grafana only reads `GF_SECURITY_ADMIN_PASSWORD` when it initialises its DB.
+  Changing the secret later does nothing — use
+  `grafana cli --homepath /usr/share/grafana admin reset-admin-password <p>`.
 - oauth2-proxy v7 removed standalone password providers; origin-oauth-proxy
-  4.22 has no htpasswd provider either — openshift-provider SSO is the only
-  supported no-IdP-login path.
-- origin-oauth-proxy flags that do NOT exist: `--user-id-header`,
-  standalone htpasswd. Does exist: `--client-secret-file`,
-  `--cookie-secret-file`, `--openshift-service-account`.
-- Proxy TLS: service annotation
-  `service.beta.openshift.io/serving-cert-secret-name: <svc>-proxy-tls`
-  auto-provisions the cert the router trusts (route uses `reencrypt`).
-- Let oauth-proxy auto-detect the cluster CA —
-  `/var/run/secrets/openshift/serviceaccount/ca.crt` is not always present.
-- grafana image is on docker.io; mirror to our quay org if pulls get rate
-  limited, then flip GRAFANA_IMAGE param.
-- Alertmanager `default` receiver is a blackhole; wire Slack/PagerDuty in a
-  follow-up PR (secret-backed creds, same bootstrap pattern).
+  4.22 has no htpasswd provider either (and no `--user-id-header`). Its
+  openshift provider needs `--client-secret-file`, `--cookie-secret-file`,
+  `--openshift-service-account`, and the service annotation
+  `service.beta.openshift.io/serving-cert-secret-name` with a reencrypt route.
+- grafana + nginx images come from docker.io; mirror to our quay org before
+  rate limits bite, then flip the *_IMAGE params.
+- Alertmanager `default` receiver is a blackhole; wire Slack/PagerDuty next.
+- Prometheus currently scrapes only itself, Alertmanager and Grafana — real
+  EnMaaS scrape configs and platform federation are still TODO.
 - Recovery drill (rule 1): delete namespace, rerun bootstrap + deploy;
   dashboards live in the grafana-data PVC (export to git once stable).
