@@ -154,8 +154,17 @@ when a `sed`-style awk parse turned the admin password into `/`.
 ## What it looks like now
 
 ```
-7/7 targets up, rules loaded, SLOs recording, Slack wired.
+8/8 targets up, rules loaded, SLOs recording, Slack wired, node metrics in.
 ```
+
+Platform metrics arrive by **federation** from the in-cluster
+`openshift-monitoring` Prometheus: a `platform-federation` job hits
+`prometheus-k8s...:9091/federate` with the prometheus SA's own token and the
+namespace's injected `openshift-service-ca.crt` as the trust bundle (the SA's
+`ca.crt` does not include the service CA — that mismatch was the whole 403 →
+TLS-error saga, plus one `roleRef` is immutable surprise). `cluster-monitoring-view`
+is the role that unlocks `/federate` — there is no `monitoring-view` on this
+platform. Nodes row on the Overview dashboard, 4,600 node series flowing.
 
 A test alert posted to Alertmanager's API showed up in `#enmaas-alerts`
 before we'd even finished the coffee. The whole thing is `oc process --local |

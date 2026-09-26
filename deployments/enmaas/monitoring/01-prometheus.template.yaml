@@ -54,6 +54,23 @@ objects:
           - job_name: grafana
             static_configs:
               - targets: ["grafana:3000"]
+          # Platform metrics (node/kubelet) federated from the in-cluster
+          # openshift-monitoring Prometheus. RBAC: 08-platform-federation-rbac.yaml
+          # (cluster-monitoring-view on our SA). honor_labels keeps origin labels.
+          - job_name: platform-federation
+            honor_labels: true
+            metrics_path: /federate
+            scheme: https
+            authorization:
+              type: Bearer
+              credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+            tls_config:
+              ca_file: /etc/prometheus/service-ca/service-ca.crt
+            params:
+              match[]:
+                - '{__name__=~"node_.+"}'
+            static_configs:
+              - targets: ["prometheus-k8s.openshift-monitoring.svc:9091"]
           # EnMaaS workload metrics: any Service in these namespaces tagged
           # prometheus.io/scrape="true" is discovered automatically. Adding a
           # new component to monitoring = annotate its Service, no config change.
@@ -212,6 +229,9 @@ objects:
               volumeMounts:
                 - name: config
                   mountPath: /etc/prometheus
+                - name: service-ca
+                  mountPath: /etc/prometheus/service-ca
+                  readOnly: true
                 - name: data
                   mountPath: /prometheus
               securityContext:
@@ -248,6 +268,9 @@ objects:
             - name: config
               configMap:
                 name: prometheus-config
+            - name: service-ca
+              configMap:
+                name: openshift-service-ca.crt
             - name: data
               persistentVolumeClaim:
                 claimName: prometheus-data

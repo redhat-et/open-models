@@ -136,16 +136,55 @@ data:
     \"maas-api\\\"}\",\n          \"legendFormat\": \"goroutines\",\n          \"\
     datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
     ${DS_PROMETHEUS}\"\n          },\n          \"range\": true,\n          \"instant\"\
-    : false\n        }\n      ]\n    }\n  ],\n  \"refresh\": \"30s\",\n  \"schemaVersion\"\
-    : 39,\n  \"tags\": [\n    \"enmaas\"\n  ],\n  \"templating\": {\n    \"list\"\
-    : [\n      {\n        \"name\": \"DS_PROMETHEUS\",\n        \"type\": \"datasource\"\
-    ,\n        \"query\": \"prometheus\",\n        \"current\": {\n          \"name\"\
-    : \"Prometheus\",\n          \"type\": \"prometheus\",\n          \"uid\": \"\
-    prometheus\"\n        },\n        \"hide\": 2,\n        \"label\": \"Prometheus\"\
-    ,\n        \"options\": [],\n        \"skipUrlSync\": false\n      }\n    ]\n\
-    \  },\n  \"time\": {\n    \"from\": \"now-6h\",\n    \"to\": \"now\"\n  },\n \
-    \ \"timezone\": \"browser\",\n  \"title\": \"EnMaaS Overview\",\n  \"uid\": \"\
-    enmaas-overview\",\n  \"version\": 1\n}"
+    : false\n        }\n      ]\n    },\n    {\n      \"type\": \"row\",\n      \"\
+    title\": \"Nodes (platform federation)\",\n      \"gridPos\": {\n        \"h\"\
+    : 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 11\n      },\n   \
+    \   \"collapsed\": false,\n      \"panels\": []\n    },\n    {\n      \"type\"\
+    : \"timeseries\",\n      \"title\": \"Node CPU utilization\",\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"${DS_PROMETHEUS}\"\n\
+    \      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 8,\n      \
+    \  \"x\": 8,\n        \"y\": 33\n      },\n      \"fieldConfig\": {\n        \"\
+    defaults\": {\n          \"unit\": \"percentunit\",\n          \"custom\": {\n\
+    \            \"fillOpacity\": 20\n          }\n        },\n        \"overrides\"\
+    : []\n      },\n      \"targets\": [\n        {\n          \"refId\": \"A\",\n\
+    \          \"expr\": \"1 - avg by(instance) (rate(node_cpu_seconds_total{mode=\\\
+    \"idle\\\"}[5m]))\",\n          \"legendFormat\": \"{{instance}}\",\n        \
+    \  \"datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\"\
+    : \"${DS_PROMETHEUS}\"\n          },\n          \"range\": true,\n          \"\
+    instant\": false\n        }\n      ]\n    },\n    {\n      \"type\": \"timeseries\"\
+    ,\n      \"title\": \"Node memory utilization\",\n      \"datasource\": {\n  \
+    \      \"type\": \"prometheus\",\n        \"uid\": \"${DS_PROMETHEUS}\"\n    \
+    \  },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 8,\n        \"\
+    x\": 16,\n        \"y\": 33\n      },\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"unit\": \"percentunit\",\n          \"custom\": {\n         \
+    \   \"fillOpacity\": 20\n          }\n        },\n        \"overrides\": []\n\
+    \      },\n      \"targets\": [\n        {\n          \"refId\": \"A\",\n    \
+    \      \"expr\": \"1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)\"\
+    ,\n          \"legendFormat\": \"{{instance}}\",\n          \"datasource\": {\n\
+    \            \"type\": \"prometheus\",\n            \"uid\": \"${DS_PROMETHEUS}\"\
+    \n          },\n          \"range\": true,\n          \"instant\": false\n   \
+    \     }\n      ]\n    },\n    {\n      \"type\": \"timeseries\",\n      \"title\"\
+    : \"Node filesystem usage\",\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"${DS_PROMETHEUS}\"\n      },\n      \"gridPos\": {\n   \
+    \     \"h\": 8,\n        \"w\": 8,\n        \"x\": 0,\n        \"y\": 41\n   \
+    \   },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\"\
+    : \"percentunit\",\n          \"custom\": {\n            \"fillOpacity\": 20\n\
+    \          }\n        },\n        \"overrides\": []\n      },\n      \"targets\"\
+    : [\n        {\n          \"refId\": \"A\",\n          \"expr\": \"1 - (node_filesystem_avail_bytes{fstype!~\\\
+    \"tmpfs|overlay\\\"} / node_filesystem_size_bytes{fstype!~\\\"tmpfs|overlay\\\"\
+    })\",\n          \"legendFormat\": \"{{instance}} {{mountpoint}}\",\n        \
+    \  \"datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\"\
+    : \"${DS_PROMETHEUS}\"\n          },\n          \"range\": true,\n          \"\
+    instant\": false\n        }\n      ]\n    }\n  ],\n  \"refresh\": \"30s\",\n \
+    \ \"schemaVersion\": 39,\n  \"tags\": [\n    \"enmaas\"\n  ],\n  \"templating\"\
+    : {\n    \"list\": [\n      {\n        \"name\": \"DS_PROMETHEUS\",\n        \"\
+    type\": \"datasource\",\n        \"query\": \"prometheus\",\n        \"current\"\
+    : {\n          \"name\": \"Prometheus\",\n          \"type\": \"prometheus\",\n\
+    \          \"uid\": \"prometheus\"\n        },\n        \"hide\": 2,\n       \
+    \ \"label\": \"Prometheus\",\n        \"options\": [],\n        \"skipUrlSync\"\
+    : false\n      }\n    ]\n  },\n  \"time\": {\n    \"from\": \"now-6h\",\n    \"\
+    to\": \"now\"\n  },\n  \"timezone\": \"browser\",\n  \"title\": \"EnMaaS Overview\"\
+    ,\n  \"uid\": \"enmaas-overview\",\n  \"version\": 1\n}"
   enmaas-slo.json: "{\n  \"annotations\": {\n    \"list\": [\n      {\n        \"\
     builtIn\": 1,\n        \"datasource\": {\n          \"type\": \"grafana\",\n \
     \         \"uid\": \"-- Grafana --\"\n        },\n        \"enable\": true,\n\

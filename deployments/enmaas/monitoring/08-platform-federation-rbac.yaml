@@ -1,0 +1,15 @@
+# Grants our prometheus SA read access to the platform Prometheus /federate
+# endpoint (RBAC only - the endpoint is reachable cross-namespace).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: enmaas-monitoring-federation
+  namespace: openshift-monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-monitoring-view
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: enmaas-monitoring
