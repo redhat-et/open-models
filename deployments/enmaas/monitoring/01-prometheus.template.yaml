@@ -53,6 +53,38 @@ objects:
           - job_name: grafana
             static_configs:
               - targets: ["grafana:3000"]
+          # EnMaaS workload metrics: any Service in these namespaces tagged
+          # prometheus.io/scrape="true" is discovered automatically. Adding a
+          # new component to monitoring = annotate its Service, no config change.
+          - job_name: enmaas
+            kubernetes_sd_configs:
+              - role: service
+                namespaces:
+                  names: [enmaas, cnpg-system]
+            relabel_configs:
+              - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+                action: keep
+                regex: "true"
+              - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+                action: replace
+                target_label: __scheme__
+                regex: "(https?)"
+              - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+                action: replace
+                target_label: __metrics_path__
+                regex: "(.+)"
+              - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+                action: replace
+                regex: "([^:]+)(?::\\d+)?;(\\d+)"
+                replacement: "$1:$2"
+                target_label: __address__
+              - action: labelmap
+                regex: __meta_kubernetes_service_label_(.+)
+              - source_labels: [__meta_kubernetes_namespace]
+                target_label: namespace
+              - source_labels: [__meta_kubernetes_service_name]
+                target_label: job
+                replacement: "$1"
       rules-alerts.yml: |
         groups:
           - name: monitoring-self
@@ -63,8 +95,8 @@ objects:
                 labels:
                   severity: critical
                 annotations:
-                  summary: "{{ $labels.job} scrape target is down"
-                  description: "Prometheus cannot scrape {{ $labels.instance} (job {{ $labels.job}) for 5m."
+                  summary: "{{ $labels.job }} scrape target is down"
+                  description: "Prometheus cannot scrape {{ $labels.instance }} (job {{ $labels.job }}) for 5m."
               - alert: PrometheusConfigReloadFailed
                 expr: prometheus_config_last_reload_successful == 0
                 for: 5m

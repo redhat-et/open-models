@@ -1,0 +1,19 @@
+# Exposes the CNPG operator's metrics (container port 8080 "metrics") to the
+# enmaas-monitoring prometheus via annotation-driven discovery.
+apiVersion: v1
+kind: Service
+metadata:
+  name: cnpg-controller-metrics
+  namespace: cnpg-system
+  labels:
+    app.kubernetes.io/part-of: enmaas
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+spec:
+  ports:
+    - name: metrics
+      port: 8080
+      targetPort: metrics
+  selector:
+    app.kubernetes.io/name: cloudnative-pg

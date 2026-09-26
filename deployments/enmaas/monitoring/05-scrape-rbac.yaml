@@ -1,0 +1,49 @@
+# Least-privilege RBAC for annotation-driven service discovery of EnMaaS
+# workload metrics in namespaces we don't own.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: monitoring-service-discovery
+  namespace: enmaas
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: monitoring-service-discovery
+  namespace: enmaas
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: monitoring-service-discovery
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: enmaas-monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: monitoring-service-discovery
+  namespace: cnpg-system
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: monitoring-service-discovery
+  namespace: cnpg-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: monitoring-service-discovery
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: enmaas-monitoring

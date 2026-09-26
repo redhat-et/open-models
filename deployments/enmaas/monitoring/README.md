@@ -72,6 +72,26 @@ basic-auth" commit, re-run the oauth bootstrap (proxy-cookie + proxy-client
 secrets, patch the three OAuthClients with the client secret), re-apply.
 Validate with `curl -skI <route>` → expect 302 to `/oauth/authorize`.
 
+## Scraping the EnMaaS stack
+
+Prometheus auto-discovers workload metrics via **Service annotations** — adding a
+component to monitoring is just tagging its Service, no config change:
+
+```bash
+oc -n enmaas annotate svc <name> prometheus.io/scrape="true" prometheus.io/port="<metrics-port>"
+```
+
+Discovery (`role: service` in namespaces `enmaas`, `cnpg-system`) needs
+get/list/watch on Services there — granted by the least-privilege Roles in
+`05-scrape-rbac.yaml`. CNPG's operator metrics are exposed via the
+`cnpg-controller-metrics` Service (`04-cnpg-metrics.yaml`, port 8080).
+
+Currently scraped: `praxis:9901` (proxy request counters), `maas-api:9090`
+(Go runtime), `cnpg-controller-metrics:8080`. `metering-service` has no
+metrics endpoint yet (TODO in that service). Note the `enmaas` stack manifests
+live in the cluster but NOT in this repo yet — bring them in (best-practices
+rule #1) and add the annotations there.
+
 ## Hard-won notes (enmaas-prod, 2026-09)
 - **NetworkPolicy must match the sidecar port.** The policy admits external
   traffic on 8443 only; nginx first listened on 8080 and every route returned
