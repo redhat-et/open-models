@@ -170,9 +170,12 @@ boringly, on purpose, any time.
 - Grafana dashboards are now provisioned from git (`07-grafana-dashboards.yaml`)
   — EnMaaS Overview with 9 panels (request/error rates, error ratio, p99
   latency, 30d budget + availability stats, postgres/CNPG/MaaS backends),
-  referenced via the deterministic `$DS_PROMETHEUS` datasource variable so they
-  survive a namespace rebuild. A generator bug taught us to count `len(panels)`
-  before believing a provisioned dashboard is non-empty.
+  plus a dedicated **EnMaaS SLO** dashboard: availability + budget stats,
+  live burn-rate, and error-ratio/latency time series with the SLO and
+  burn thresholds drawn as lines. All referenced via the deterministic
+  `$DS_PROMETHEUS` datasource variable so they survive a namespace rebuild.
+  A generator bug taught us to count `len(panels)` before believing a
+  provisioned dashboard is non-empty.
 - Alertmanager is Slack-only. PagerDuty for the `page` severity is next.
 - The `30d` availability recording rule needs 30 days of data before it means
   anything. The burn-rate alerts are the ones that matter today.
