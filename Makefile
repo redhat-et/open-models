@@ -177,3 +177,9 @@ quality:
 
 image:
 	podman build -t open-models-web .
+
+# EnMaaS monitoring stack on the enmaas-prod cluster: one-command, idempotent,
+# rebuilds a deleted namespace from git + ~/.config/octo-models/enmaas-monitoring.cred
+.PHONY: enmaas-monitor
+enmaas-monitor:
+	./deployments/enmaas/monitoring/deploy.sh
