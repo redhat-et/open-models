@@ -1,0 +1,149 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: enmaas-monitoring
+  labels:
+    app.kubernetes.io/name: grafana
+data:
+  dashboards.yaml: "apiVersion: 1\nproviders:\n  - name: enmaas\n    orgId: 1\n  \
+    \  folder: EnMaaS\n    type: file\n    disableDeletion: false\n    updateIntervalSeconds:\
+    \ 30\n    allowUiUpdates: true\n    options:\n      path: /etc/grafana/provisioning/dashboards\n"
+  enmaas-overview.json: "{\n  \"annotations\": {\n    \"list\": [\n      {\n     \
+    \   \"builtIn\": 1,\n        \"datasource\": {\n          \"type\": \"grafana\"\
+    ,\n          \"uid\": \"-- Grafana --\"\n        },\n        \"enable\": true,\n\
+    \        \"hide\": true,\n        \"name\": \"Annotations & Alerts\",\n      \
+    \  \"type\": \"dashboard\"\n      }\n    ]\n  },\n  \"editable\": true,\n  \"\
+    fiscalYearStartMonth\": 0,\n  \"graphTooltip\": 1,\n  \"panels\": [\n    {\n \
+    \     \"type\": \"row\",\n      \"title\": \"Praxis gateway\",\n      \"gridPos\"\
+    : {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\":\
+    \ 0\n      },\n      \"collapsed\": false,\n      \"panels\": []\n    },\n   \
+    \ {\n      \"type\": \"timeseries\",\n      \"title\": \"Request rate\",\n   \
+    \   \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"\
+    ${DS_PROMETHEUS}\"\n      },\n      \"gridPos\": {\n        \"h\": 8,\n      \
+    \  \"w\": 8,\n        \"x\": 0,\n        \"y\": 1\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"unit\": \"reqps\",\n          \"custom\"\
+    : {\n            \"fillOpacity\": 20\n          }\n        },\n        \"overrides\"\
+    : []\n      },\n      \"targets\": [\n        {\n          \"refId\": \"A\",\n\
+    \          \"expr\": \"sum(rate(praxis_upstream_requests_total[5m]))\",\n    \
+    \      \"legendFormat\": \"req/s\",\n          \"datasource\": {\n           \
+    \ \"type\": \"prometheus\",\n            \"uid\": \"${DS_PROMETHEUS}\"\n     \
+    \     },\n          \"range\": true,\n          \"instant\": false\n        }\n\
+    \      ]\n    },\n    {\n      \"type\": \"timeseries\",\n      \"title\": \"\
+    Error rate\",\n      \"datasource\": {\n        \"type\": \"prometheus\",\n  \
+    \      \"uid\": \"${DS_PROMETHEUS}\"\n      },\n      \"gridPos\": {\n       \
+    \ \"h\": 8,\n        \"w\": 8,\n        \"x\": 8,\n        \"y\": 1\n      },\n\
+    \      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"errps\"\
+    ,\n          \"custom\": {\n            \"fillOpacity\": 20\n          }\n   \
+    \     },\n        \"overrides\": []\n      },\n      \"targets\": [\n        {\n\
+    \          \"refId\": \"A\",\n          \"expr\": \"sum(rate(praxis_errors_total[5m]))\"\
+    ,\n          \"legendFormat\": \"err/s\",\n          \"datasource\": {\n     \
+    \       \"type\": \"prometheus\",\n            \"uid\": \"${DS_PROMETHEUS}\"\n\
+    \          },\n          \"range\": true,\n          \"instant\": false\n    \
+    \    }\n      ]\n    },\n    {\n      \"type\": \"stat\",\n      \"title\": \"\
+    Error ratio (5m)\",\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"${DS_PROMETHEUS}\"\n      },\n      \"fieldConfig\": {\n\
+    \        \"defaults\": {\n          \"unit\": \"percentunit\",\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"red\",\n                \"value\": 0.0144\n\
+    \              },\n              {\n                \"color\": \"yellow\",\n \
+    \               \"value\": 0.003\n              }\n            ]\n          }\n\
+    \        },\n        \"overrides\": []\n      },\n      \"targets\": [\n     \
+    \   {\n          \"refId\": \"A\",\n          \"expr\": \"slo:praxis:error_ratio:5m\"\
+    ,\n          \"datasource\": {\n            \"type\": \"prometheus\",\n      \
+    \      \"uid\": \"${DS_PROMETHEUS}\"\n          },\n          \"instant\": true\n\
+    \        }\n      ],\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\":\
+    \ 8,\n        \"x\": 16,\n        \"y\": 1\n      }\n    },\n    {\n      \"type\"\
+    : \"timeseries\",\n      \"title\": \"Latency p50/p90/p99\",\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"${DS_PROMETHEUS}\"\n\
+    \      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 8,\n      \
+    \  \"x\": 0,\n        \"y\": 9\n      },\n      \"fieldConfig\": {\n        \"\
+    defaults\": {\n          \"unit\": \"s\",\n          \"custom\": {\n         \
+    \   \"fillOpacity\": 20\n          }\n        },\n        \"overrides\": []\n\
+    \      },\n      \"targets\": [\n        {\n          \"refId\": \"A\",\n    \
+    \      \"expr\": \"praxis_http_request_duration_seconds{quantile=\\\"0.5\\\"}\"\
+    ,\n          \"legendFormat\": \"p50\",\n          \"datasource\": {\n       \
+    \     \"type\": \"prometheus\",\n            \"uid\": \"${DS_PROMETHEUS}\"\n \
+    \         },\n          \"range\": true,\n          \"instant\": false\n     \
+    \   },\n        {\n          \"refId\": \"A\",\n          \"expr\": \"praxis_http_request_duration_seconds{quantile=\\\
+    \"0.9\\\"}\",\n          \"legendFormat\": \"p90\",\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"${DS_PROMETHEUS}\"\
+    \n          },\n          \"range\": true,\n          \"instant\": false\n   \
+    \     },\n        {\n          \"refId\": \"A\",\n          \"expr\": \"praxis_http_request_duration_seconds{quantile=\\\
+    \"0.99\\\"}\",\n          \"legendFormat\": \"p99\",\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"${DS_PROMETHEUS}\"\
+    \n          },\n          \"range\": true,\n          \"instant\": false\n   \
+    \     }\n      ]\n    },\n    {\n      \"type\": \"stat\",\n      \"title\": \"\
+    Error budget remaining (30d)\",\n      \"datasource\": {\n        \"type\": \"\
+    prometheus\",\n        \"uid\": \"${DS_PROMETHEUS}\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"unit\": \"percentunit\",\n         \
+    \ \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\"\
+    : [\n              {\n                \"color\": \"red\",\n                \"\
+    value\": 0\n              },\n              {\n                \"color\": \"green\"\
+    ,\n                \"value\": 1\n              }\n            ]\n          }\n\
+    \        },\n        \"overrides\": []\n      },\n      \"targets\": [\n     \
+    \   {\n          \"refId\": \"A\",\n          \"expr\": \"slo:praxis:error_budget_remaining:30d\"\
+    ,\n          \"datasource\": {\n            \"type\": \"prometheus\",\n      \
+    \      \"uid\": \"${DS_PROMETHEUS}\"\n          },\n          \"instant\": true\n\
+    \        }\n      ],\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\":\
+    \ 8,\n        \"x\": 8,\n        \"y\": 9\n      }\n    },\n    {\n      \"type\"\
+    : \"stat\",\n      \"title\": \"Availability (30d)\",\n      \"datasource\": {\n\
+    \        \"type\": \"prometheus\",\n        \"uid\": \"${DS_PROMETHEUS}\"\n  \
+    \    },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\"\
+    : \"percentunit\",\n          \"thresholds\": {\n            \"mode\": \"absolute\"\
+    ,\n            \"steps\": [\n              {\n                \"color\": \"red\"\
+    ,\n                \"value\": 0.999\n              },\n              {\n     \
+    \           \"color\": \"green\",\n                \"value\": 0.9991\n       \
+    \       }\n            ]\n          }\n        },\n        \"overrides\": []\n\
+    \      },\n      \"targets\": [\n        {\n          \"refId\": \"A\",\n    \
+    \      \"expr\": \"slo:praxis:availability:30d\",\n          \"datasource\": {\n\
+    \            \"type\": \"prometheus\",\n            \"uid\": \"${DS_PROMETHEUS}\"\
+    \n          },\n          \"instant\": true\n        }\n      ],\n      \"gridPos\"\
+    : {\n        \"h\": 8,\n        \"w\": 8,\n        \"x\": 16,\n        \"y\":\
+    \ 9\n      }\n    },\n    {\n      \"type\": \"row\",\n      \"title\": \"Backends\"\
+    ,\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\"\
+    : 0,\n        \"y\": 7\n      },\n      \"collapsed\": false,\n      \"panels\"\
+    : []\n    },\n    {\n      \"type\": \"timeseries\",\n      \"title\": \"Postgres\
+    \ connections\",\n      \"datasource\": {\n        \"type\": \"prometheus\",\n\
+    \        \"uid\": \"${DS_PROMETHEUS}\"\n      },\n      \"gridPos\": {\n     \
+    \   \"h\": 8,\n        \"w\": 8,\n        \"x\": 8,\n        \"y\": 17\n     \
+    \ },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"\
+    conns\",\n          \"custom\": {\n            \"fillOpacity\": 20\n         \
+    \ }\n        },\n        \"overrides\": []\n      },\n      \"targets\": [\n \
+    \       {\n          \"refId\": \"A\",\n          \"expr\": \"sum(pg_stat_database_numbackends)\"\
+    ,\n          \"legendFormat\": \"backends\",\n          \"datasource\": {\n  \
+    \          \"type\": \"prometheus\",\n            \"uid\": \"${DS_PROMETHEUS}\"\
+    \n          },\n          \"range\": true,\n          \"instant\": false\n   \
+    \     }\n      ]\n    },\n    {\n      \"type\": \"timeseries\",\n      \"title\"\
+    : \"CNPG workqueue\",\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"${DS_PROMETHEUS}\"\n      },\n      \"gridPos\": {\n   \
+    \     \"h\": 8,\n        \"w\": 8,\n        \"x\": 16,\n        \"y\": 17\n  \
+    \    },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\"\
+    : \"ops\",\n          \"custom\": {\n            \"fillOpacity\": 20\n       \
+    \   }\n        },\n        \"overrides\": []\n      },\n      \"targets\": [\n\
+    \        {\n          \"refId\": \"A\",\n          \"expr\": \"sum(rate(workqueue_adds_total[5m]))\"\
+    ,\n          \"legendFormat\": \"adds/s\",\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"${DS_PROMETHEUS}\"\n\
+    \          },\n          \"range\": true,\n          \"instant\": false\n    \
+    \    }\n      ]\n    },\n    {\n      \"type\": \"timeseries\",\n      \"title\"\
+    : \"MaaS goroutines\",\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"${DS_PROMETHEUS}\"\n      },\n      \"gridPos\": {\n   \
+    \     \"h\": 8,\n        \"w\": 8,\n        \"x\": 0,\n        \"y\": 25\n   \
+    \   },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\"\
+    : \"short\",\n          \"custom\": {\n            \"fillOpacity\": 20\n     \
+    \     }\n        },\n        \"overrides\": []\n      },\n      \"targets\": [\n\
+    \        {\n          \"refId\": \"A\",\n          \"expr\": \"go_goroutines{job=\\\
+    \"maas-api\\\"}\",\n          \"legendFormat\": \"goroutines\",\n          \"\
+    datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
+    ${DS_PROMETHEUS}\"\n          },\n          \"range\": true,\n          \"instant\"\
+    : false\n        }\n      ]\n    }\n  ],\n  \"refresh\": \"30s\",\n  \"schemaVersion\"\
+    : 39,\n  \"tags\": [\n    \"enmaas\"\n  ],\n  \"templating\": {\n    \"list\"\
+    : [\n      {\n        \"name\": \"DS_PROMETHEUS\",\n        \"type\": \"datasource\"\
+    ,\n        \"query\": \"prometheus\",\n        \"current\": {\n          \"name\"\
+    : \"Prometheus\",\n          \"type\": \"prometheus\",\n          \"uid\": \"\
+    prometheus\"\n        },\n        \"hide\": 2,\n        \"label\": \"Prometheus\"\
+    ,\n        \"options\": [],\n        \"skipUrlSync\": false\n      }\n    ]\n\
+    \  },\n  \"time\": {\n    \"from\": \"now-6h\",\n    \"to\": \"now\"\n  },\n \
+    \ \"timezone\": \"browser\",\n  \"title\": \"EnMaaS Overview\",\n  \"uid\": \"\
+    enmaas-overview\",\n  \"version\": 1\n}"
+

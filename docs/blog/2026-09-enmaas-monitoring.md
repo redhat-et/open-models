@@ -167,8 +167,12 @@ boringly, on purpose, any time.
 - The `enmaas` workload manifests (praxis, MaaS, metering) are in the
   cluster but not yet in the repo — violating our own rule 1 until they land.
 - `metering-service` exposes no metrics endpoint at all. It's on the list.
-- Grafana dashboards live only in a PVC. They need to be provisioned
-  ConfigMaps in git before the next namespace delete.
+- Grafana dashboards are now provisioned from git (`07-grafana-dashboards.yaml`)
+  — EnMaaS Overview with 9 panels (request/error rates, error ratio, p99
+  latency, 30d budget + availability stats, postgres/CNPG/MaaS backends),
+  referenced via the deterministic `$DS_PROMETHEUS` datasource variable so they
+  survive a namespace rebuild. A generator bug taught us to count `len(panels)`
+  before believing a provisioned dashboard is non-empty.
 - Alertmanager is Slack-only. PagerDuty for the `page` severity is next.
 - The `30d` availability recording rule needs 30 days of data before it means
   anything. The burn-rate alerts are the ones that matter today.

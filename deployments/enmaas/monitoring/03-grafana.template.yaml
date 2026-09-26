@@ -112,6 +112,8 @@ objects:
                   mountPath: /var/lib/grafana
                 - name: datasources
                   mountPath: /etc/grafana/provisioning/datasources
+                - name: dashboards
+                  mountPath: /etc/grafana/provisioning/dashboards
               securityContext:
                 allowPrivilegeEscalation: false
                 capabilities:
@@ -149,6 +151,9 @@ objects:
             - name: datasources
               configMap:
                 name: grafana-datasources
+            - name: dashboards
+              configMap:
+                name: grafana-dashboards
             - name: nginx-config
               configMap:
                 name: grafana-nginx-auth
