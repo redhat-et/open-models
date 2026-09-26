@@ -42,6 +42,7 @@ objects:
             - static_configs:
                 - targets: ["alertmanager:9093"]
         rule_files:
+          - /etc/prometheus/rules-*.yml
           - /etc/prometheus/rules/*.yml
         scrape_configs:
           - job_name: prometheus
@@ -87,10 +88,57 @@ objects:
                 replacement: "$1"
       rules-alerts.yml: |
         groups:
+          - name: enmaas-slos
+            # SLI / SLO for the praxis gateway (the user-facing model proxy).
+            # SLO: 99.9% availability over 30d (errors = praxis_errors_total),
+            #      p99 request duration < 4s.
+            rules:
+              - record: slo:praxis:request_rate:5m
+                expr: sum(rate(praxis_upstream_requests_total[5m]))
+              - record: slo:praxis:error_rate:5m
+                expr: sum(rate(praxis_errors_total[5m]))
+              - record: slo:praxis:error_ratio:5m
+                expr: |
+                  sum(rate(praxis_errors_total[5m]))
+                    / clamp_min(sum(rate(praxis_upstream_requests_total[5m])), 1e-3)
+              - record: slo:praxis:availability:30d
+                expr: |
+                  1 - sum(rate(praxis_errors_total[30d]))
+                    / clamp_min(sum(rate(praxis_upstream_requests_total[30d])), 1e-3)
+              - record: slo:praxis:error_budget_remaining:30d
+                expr: (slo:praxis:availability:30d - 0.999) / (1 - 0.999)
+          - name: enmaas-slo-alerts
+            rules:
+              # Multi-window multi-burn: 14.4x burn for 1h consumes ~2% of the
+              # 30d error budget; 3x for 6h consumes ~2.5%. (SRE workbook)
+              - alert: PraxisErrorBudgetBurnCritical
+                expr: slo:praxis:error_ratio:5m > 0.001 * 14.4
+                for: 1h
+                labels:
+                  severity: page
+                annotations:
+                  summary: "Praxis error budget burning fast ({{ $value | humanizePercentage }} error rate)"
+                  description: "Error ratio sustained above 14.4x burn rate for 1h; ~2% of the 30d budget consumed."
+              - alert: PraxisErrorBudgetBurnWarning
+                expr: slo:praxis:error_ratio:5m > 0.001 * 3
+                for: 6h
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Praxis error budget burning ({{ $value | humanizePercentage }} error rate)"
+                  description: "Error ratio above 3x burn rate for 6h."
+              - alert: PraxisP99Latency
+                expr: praxis_http_request_duration_seconds{quantile="0.99"} > 4
+                for: 10m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Praxis p99 latency over SLO ({{ $value }}s > 4s)"
+                  description: "p99 request duration above the 4s SLO target for 10m."
           - name: monitoring-self
             rules:
               - alert: MonitoringComponentDown
-                expr: up{job=~"prometheus|alertmanager|grafana"} == 0
+                expr: up{job=~"prometheus|alertmanager|grafana|praxis|maas-api|cnpg-controller-metrics|aigateway-pg-metrics"} == 0
                 for: 5m
                 labels:
                   severity: critical

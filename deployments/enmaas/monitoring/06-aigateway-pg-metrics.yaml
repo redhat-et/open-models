@@ -1,0 +1,19 @@
+# CNPG Postgres instances expose a pg_exporter on 9187 (CNPG enables metrics
+# per-cluster). Discovered by the annotation-driven enmaas scrape job.
+apiVersion: v1
+kind: Service
+metadata:
+  name: aigateway-pg-metrics
+  namespace: enmaas
+  labels:
+    app.kubernetes.io/part-of: enmaas
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9187"
+spec:
+  ports:
+    - name: metrics
+      port: 9187
+      targetPort: metrics
+  selector:
+    cnpg.io/cluster: aigateway-pg
