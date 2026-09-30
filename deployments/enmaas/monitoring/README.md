@@ -43,6 +43,7 @@ oc apply -f 00-namespace.yaml
 oc process --local -f 01-prometheus.template.yaml   --param-file=params/enmaas-prod-prometheus.params   | oc apply -n enmaas-monitoring -f -
 oc process --local -f 02-alertmanager.template.yaml --param-file=params/enmaas-prod-alertmanager.params | oc apply -n enmaas-monitoring -f -
 oc process --local -f 03-grafana.template.yaml      --param-file=params/enmaas-prod-grafana.params      | oc apply -n enmaas-monitoring -f -
+oc apply -f 09-rds-exporter.yaml   # RDS Postgres exporter (enmaas ns, reuses metering-readonly-db-url)
 ```
 
 Never pipe `oc apply` through `head`/`tail` (SIGPIPE truncates the apply
@@ -86,11 +87,21 @@ get/list/watch on Services there — granted by the least-privilege Roles in
 `05-scrape-rbac.yaml`. CNPG's operator metrics are exposed via the
 `cnpg-controller-metrics` Service (`04-cnpg-metrics.yaml`, port 8080).
 
+**RDS Postgres (prod DB since 2026-09-30):** `09-rds-exporter.yaml` runs
+`prometheuscommunity/postgres-exporter` in the `enmaas` namespace, connecting
+through the existing read-only `metering-readonly-db-url` secret
+(`sslmode=require`, enforced server-side). It's auto-discovered by the
+annotation-driven `enmaas` job (`job="rds-postgres-exporter"`) — the
+post-RDS replacement for the CNPG exporters (`04`, `06` now only apply to the
+retired CNPG cluster). Grafana: `pg_stat_database`, `pg_stat_replication`,
+`pg_stat_activity`, per-relation I/O are all under the `postgres_*` metric
+family.
+
 Currently scraped: `praxis:9901` (proxy request counters), `maas-api:9090`
-(Go runtime), `cnpg-controller-metrics:8080`. `metering-service` has no
-metrics endpoint yet (TODO in that service). Note the `enmaas` stack manifests
-live in the cluster but NOT in this repo yet — bring them in (best-practices
-rule #1) and add the annotations there.
+(Go runtime), `cnpg-controller-metrics:8080`, `rds-postgres-exporter:9187`.
+`metering-service` has no metrics endpoint yet (TODO in that service). Note the
+`enmaas` stack manifests live in the cluster but NOT in this repo yet — bring
+them in (best-practices rule #1) and add the annotations there.
 
 ## Hard-won notes (enmaas-prod, 2026-09)
 - **NetworkPolicy must match the sidecar port.** The policy admits external

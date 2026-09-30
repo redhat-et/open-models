@@ -155,7 +155,7 @@ objects:
           - name: monitoring-self
             rules:
               - alert: MonitoringComponentDown
-                expr: up{job=~"prometheus|alertmanager|grafana|praxis|maas-api|cnpg-controller-metrics|aigateway-pg-metrics"} == 0
+                expr: up{job=~"prometheus|alertmanager|grafana|praxis|maas-api|cnpg-controller-metrics|aigateway-pg-metrics|rds-postgres-exporter"} == 0
                 for: 5m
                 labels:
                   severity: critical
