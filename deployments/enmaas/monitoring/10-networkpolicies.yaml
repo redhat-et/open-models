@@ -1,0 +1,52 @@
+# Ingress/egress policies for the enmaas namespace, added with the RDS
+# cutover (default-deny posture) and the RDS exporter.
+#
+# enmaas-allow-monitoring-scrape: the enmaas-monitoring prometheus scrapes
+# annotated Services in this namespace; the default-deny policy (applied
+# 2026-09-30 with the RDS cutover) silently broke every cross-namespace
+# scrape target (praxis, maas-api, rds-postgres-exporter) until this rule
+# allowed enmaas-monitoring in on the scrape ports. Ports:
+#   9187 rds-postgres-exporter / legacy CNPG pg_exporter
+#   9901 praxis envoy admin (see known-issue note in README)
+#   9090 maas-api Go metrics
+#   8080 metering-service (future)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: enmaas-allow-monitoring-scrape
+  namespace: enmaas
+spec:
+  podSelector: {}
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: enmaas-monitoring
+      ports:
+        - protocol: TCP
+          port: 9187
+        - protocol: TCP
+          port: 9901
+        - protocol: TCP
+          port: 9090
+        - protocol: TCP
+          port: 8080
+---
+# rds-postgres-exporter egress to the RDS subnet (matches the
+# maas-api/metering-service RDS egress policies; port 5432 only).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: enmaas-allow-rds-exporter-egress
+  namespace: enmaas
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: rds-postgres-exporter
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 10.0.4.0/24
+      ports:
+        - protocol: TCP
+          port: 5432
