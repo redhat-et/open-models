@@ -30,8 +30,24 @@ objects:
     data:
       datasources.yaml: |
         apiVersion: 1
+        # Grafana stores datasources in its PVC-backed database. If a
+        # "Prometheus" datasource already exists with a different (generated)
+        # uid, provisioning a pinned uid makes Grafana try to update a record
+        # it cannot find -- it logs "Datasource provisioning error: data
+        # source not found" and then refuses to start at all. Deleting by name
+        # first makes the pinned uid converge on any existing install.
+        deleteDatasources:
+          - name: Prometheus
+            orgId: 1
         datasources:
           - name: Prometheus
+            # The uid MUST stay "prometheus": the provisioned dashboards bind
+            # their panels to datasource uid ${DS_PROMETHEUS}, whose dashboard
+            # variable pins uid "prometheus". Omit this and Grafana generates a
+            # random uid, every panel resolves to a datasource that does not
+            # exist, and the dashboards render "No data" while the queries
+            # themselves are perfectly healthy.
+            uid: prometheus
             type: prometheus
             access: proxy
             url: http://prometheus:9090
@@ -83,6 +99,15 @@ objects:
                   value: "false"
                 - name: GF_ANALYTICS_CHECK_FOR_UPDATES
                   value: "false"
+                # The nginx sidecar is the authentication boundary and strips
+                # the Authorization header, so requests reach Grafana without
+                # credentials. Anonymous Viewer lets dashboards render for
+                # anyone nginx has already let in; the login form stays
+                # enabled so an admin can still sign in for maintenance.
+                - name: GF_AUTH_ANONYMOUS_ENABLED
+                  value: "true"
+                - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+                  value: "Viewer"
                 - name: GF_SECURITY_ADMIN_USER
                   valueFrom:
                     secretKeyRef:
@@ -220,5 +245,12 @@ objects:
             proxy_pass http://127.0.0.1:3000;
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-User $remote_user;
+            # Clear the browser's basic-auth header before it reaches Grafana.
+            # nginx is the authentication boundary; if the header survives,
+            # Grafana tries to authenticate those credentials as a Grafana
+            # user, fails on every single request, and eventually answers
+            # "too many consecutive incorrect login attempts ... temporarily
+            # blocked" while filling its log at several lines per second.
+            proxy_set_header Authorization "";
           }
         }
