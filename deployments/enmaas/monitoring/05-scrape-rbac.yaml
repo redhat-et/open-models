@@ -6,8 +6,12 @@ metadata:
   name: monitoring-service-discovery
   namespace: enmaas
 rules:
+  # endpoints and pods are required by role: endpoints discovery, which
+  # replaced role: service. Service discovery produced one target per Service
+  # VIP, so multi-replica workloads were scraped round-robin and their
+  # counters oscillated between pods -- see the prometheus job comment.
   - apiGroups: [""]
-    resources: ["services"]
+    resources: ["services", "endpoints", "pods"]
     verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -30,8 +34,12 @@ metadata:
   name: monitoring-service-discovery
   namespace: cnpg-system
 rules:
+  # endpoints and pods are required by role: endpoints discovery, which
+  # replaced role: service. Service discovery produced one target per Service
+  # VIP, so multi-replica workloads were scraped round-robin and their
+  # counters oscillated between pods -- see the prometheus job comment.
   - apiGroups: [""]
-    resources: ["services"]
+    resources: ["services", "endpoints", "pods"]
     verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

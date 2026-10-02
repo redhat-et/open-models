@@ -75,14 +75,37 @@ objects:
           # prometheus.io/scrape="true" is discovered automatically. Adding a
           # new component to monitoring = annotate its Service, no config change.
           - job_name: enmaas
+            # role: endpoints, NOT role: service. Service discovery produces one
+            # target per Service pointing at the Service VIP, so every scrape of
+            # a multi-replica workload lands on a random pod. The counters then
+            # oscillate between each pod's value (praxis was alternating
+            # 297/231), Prometheus reads every decrease as a counter reset, and
+            # rate()/increase() inflate wildly -- increase() over 1h reported
+            # 10764 requests against a true total near 528. Every SLO here is
+            # built on those counters, so the error ratio, availability, budget
+            # and burn-rate alerts were all derived from noise.
+            # Endpoints discovery yields one target per pod, which keeps each
+            # counter monotonic. Service annotations are still readable, since
+            # endpoints inherit them as __meta_kubernetes_service_annotation_*.
             kubernetes_sd_configs:
-              - role: service
+              - role: endpoints
                 namespaces:
                   names: [enmaas, cnpg-system]
             relabel_configs:
               - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
                 action: keep
                 regex: "true"
+              # Endpoints discovery yields one target per (pod, port). Every
+              # scraped Service names its metrics port "metrics", so keep only
+              # that one: without this praxis (metrics/openai/unified) would
+              # produce three targets per pod, all rewritten to the same
+              # address, and Prometheus would ingest duplicate samples.
+              # A Service annotated for scraping whose metrics port is NOT
+              # named "metrics" will not be scraped -- that is the convention,
+              # and the component-down alerts make a violation visible.
+              - source_labels: [__meta_kubernetes_endpoint_port_name]
+                action: keep
+                regex: metrics
               - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
                 action: replace
                 target_label: __scheme__
@@ -103,6 +126,10 @@ objects:
               - source_labels: [__meta_kubernetes_service_name]
                 target_label: job
                 replacement: "$1"
+              # Per-pod identity, so a flapping or restarting replica is
+              # attributable instead of hiding inside a Service-level average.
+              - source_labels: [__meta_kubernetes_pod_name]
+                target_label: pod
       rules-alerts.yml: |
         groups:
           - name: enmaas-slos
