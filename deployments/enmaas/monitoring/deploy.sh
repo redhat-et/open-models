@@ -20,7 +20,6 @@ if [[ ! -f "$CRED" ]]; then
   mkdir -p "$(dirname "$CRED")"
   BASIC_PASS=$(gen); GRAFANA_PASS=$(gen)
   BASIC_USER=prom; GRAFANA_USER=admin
-  HTPASSWD=$(htpasswd -Bnb "$BASIC_USER" "$BASIC_PASS")
   PROXY_COOKIE=$(head -c 24 /dev/urandom | base64 -w0)          # exactly 32 chars
   PROXY_CLIENT=$(head -c 24 /dev/urandom | base64 -w0 | cut -c1-32)
   SLACK_WEBHOOK="${SLACK_WEBHOOK:-https://hooks.slack.com/services/REPLACE_ME}"
@@ -29,7 +28,6 @@ BASIC_USER=$BASIC_USER
 BASIC_PASS=$BASIC_PASS
 GRAFANA_USER=$GRAFANA_USER
 GRAFANA_PASS=$GRAFANA_PASS
-HTPASSWD=$HTPASSWD
 PROXY_COOKIE=$PROXY_COOKIE
 PROXY_CLIENT=$PROXY_CLIENT
 SLACK_WEBHOOK=$SLACK_WEBHOOK
@@ -40,8 +38,34 @@ fi
 # shellcheck disable=SC1090
 source "$CRED"
 
+# Always derive the bcrypt entry from the canonical username/password. A
+# bcrypt hash contains '$' characters; the old bootstrap wrote it unquoted to
+# the shell-sourced credential file, so sourcing the file expanded pieces of
+# the hash as shell variables and produced an empty/invalid htpasswd value.
+# Re-deriving it also repairs old credential files without putting hashes back
+# into them. The random bcrypt salt changes on each deploy, but the password
+# does not.
+command -v htpasswd >/dev/null || {
+  echo "htpasswd is required to render monitoring basic auth" >&2
+  exit 1
+}
+: "${BASIC_USER:?BASIC_USER is missing from $CRED}"
+: "${BASIC_PASS:?BASIC_PASS is missing from $CRED}"
+: "${GRAFANA_USER:?GRAFANA_USER is missing from $CRED}"
+: "${GRAFANA_PASS:?GRAFANA_PASS is missing from $CRED}"
+HTPASSWD=$(htpasswd -Bnb "$BASIC_USER" "$BASIC_PASS")
+
 create_secret() { # name key value
   oc -n "$NS" create secret generic "$1" --from-literal="$2=$3" \
+    --dry-run=client -o yaml | oc apply -f - >/dev/null
+}
+
+create_grafana_admin_secret() {
+  # Both keys must be applied atomically. Applying this Secret once per key
+  # makes the second client-side apply delete the first key from data.
+  oc -n "$NS" create secret generic grafana-admin \
+    --from-literal=admin-user="$GRAFANA_USER" \
+    --from-literal=admin-password="$GRAFANA_PASS" \
     --dry-run=client -o yaml | oc apply -f - >/dev/null
 }
 
@@ -55,8 +79,7 @@ create_secret monitoring-basic   htpasswd      "$HTPASSWD"
 create_secret proxy-cookie       cookie-secret "$PROXY_COOKIE"
 create_secret proxy-client       client-secret "$PROXY_CLIENT"
 create_secret alertmanager-slack slack-url     "$SLACK_WEBHOOK"
-create_secret grafana-admin      admin-user    "${GRAFANA_USER:-admin}"
-create_secret grafana-admin      admin-password "$GRAFANA_PASS"
+create_grafana_admin_secret
 
 echo "==> services (render + apply)"
 oc apply -f 04-cnpg-metrics.yaml >/dev/null

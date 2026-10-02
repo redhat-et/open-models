@@ -32,6 +32,13 @@ oc -n $NS create secret generic grafana-admin \
 # record BOTH passwords in ~/.config/octo-models/enmaas-monitoring.cred
 ```
 
+Store `BASIC_USER`/`BASIC_PASS`, not the generated `HTPASSWD`, in the
+shell-sourced credential file. Bcrypt strings contain `$` characters and an
+unquoted hash is interpreted as shell expansion when sourced. `deploy.sh`
+derives a fresh bcrypt entry from the canonical username/password on every
+run. Grafana's `admin-user` and `admin-password` keys are applied atomically;
+applying the same Secret once per key makes the second apply delete the first.
+
 ## Deploy / update
 
 HCP data planes do NOT serve the `Template` API kind, and `oc process --local`
