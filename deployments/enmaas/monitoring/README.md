@@ -121,7 +121,15 @@ them in (best-practices rule #1) and add the annotations there.
 - grafana + nginx images come from docker.io; mirror to our quay org before
   rate limits bite, then flip the *_IMAGE params.
 - Alertmanager `default` receiver is a blackhole; wire Slack/PagerDuty next.
-- Prometheus currently scrapes only itself, Alertmanager and Grafana — real
-  EnMaaS scrape configs and platform federation are still TODO.
-- Recovery drill (rule 1): delete namespace, rerun bootstrap + deploy;
-  dashboards live in the grafana-data PVC (export to git once stable).
+- Prometheus uses endpoint discovery for annotated Services in `enmaas` and
+  `cnpg-system`, plus platform federation. Do not switch back to Service
+  discovery: a Service VIP load-balances scrapes across replicas, making
+  counters oscillate between pods and corrupting every rate/SLO calculation.
+- Grafana dashboards are provisioned from `07-grafana-dashboards.yaml` and
+  `09-grafana-rds-dashboard.yaml`; the PVC holds Grafana state, not the source
+  of truth. The RDS dashboard intentionally targets
+  `prometheuscommunity/postgres-exporter`. Grafana.com dashboard 24298 targets
+  the unrelated `nbari/pg_exporter` schema and is mostly blank with our
+  exporter even after its datasource uid is corrected.
+- Recovery drill (rule 1): delete namespace, rerun bootstrap + deploy; the
+  provisioned datasources and dashboards must reappear without UI imports.
