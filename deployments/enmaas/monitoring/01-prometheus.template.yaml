@@ -130,6 +130,16 @@ objects:
               # attributable instead of hiding inside a Service-level average.
               - source_labels: [__meta_kubernetes_pod_name]
                 target_label: pod
+              # The rds-postgres-exporter is a singleton proxying an external
+              # RDS, so its per-pod instance (pod IP:port) churns on every
+              # restart and leaves dashboards/alerts pinned to a dead target.
+              # Overwrite instance with the stable Service name. Scoped by
+              # service name so multi-replica services keep their per-pod
+              # instance (and monotonic counters) unchanged.
+              - source_labels: [__meta_kubernetes_service_name]
+                regex: rds-postgres-exporter
+                target_label: instance
+                replacement: rds-postgres-exporter
       rules-alerts.yml: |
         groups:
           - name: enmaas-slos
