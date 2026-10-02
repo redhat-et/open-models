@@ -177,8 +177,12 @@ objects:
               configMap:
                 name: grafana-datasources
             - name: dashboards
-              configMap:
-                name: grafana-dashboards
+              projected:
+                sources:
+                  - configMap:
+                      name: grafana-dashboards
+                  - configMap:
+                      name: grafana-rds-dashboard
             - name: nginx-config
               configMap:
                 name: grafana-nginx-auth

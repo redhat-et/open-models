@@ -61,10 +61,11 @@ create_secret grafana-admin      admin-password "$GRAFANA_PASS"
 echo "==> services (render + apply)"
 oc apply -f 04-cnpg-metrics.yaml >/dev/null
 oc apply -f 06-aigateway-pg-metrics.yaml >/dev/null
+oc apply -f 07-grafana-dashboards.yaml >/dev/null
+oc apply -f 09-grafana-rds-dashboard.yaml >/dev/null
 oc process --local -f 01-prometheus.template.yaml   --param-file=params/enmaas-prod-prometheus.params   | oc apply -n "$NS" -f - >/dev/null
 oc process --local -f 02-alertmanager.template.yaml --param-file=params/enmaas-prod-alertmanager.params | oc apply -n "$NS" -f - >/dev/null
 oc process --local -f 03-grafana.template.yaml      --param-file=params/enmaas-prod-grafana.params      | oc apply -n "$NS" -f - >/dev/null
-oc apply -f 07-grafana-dashboards.yaml >/dev/null
 
 echo "==> waiting for rollouts"
 oc -n "$NS" rollout status deploy/prometheus   --timeout=180s >/dev/null
@@ -83,4 +84,20 @@ n=$(curl -sk -u "${BASIC_USER:-prom}:${BASIC_PASS}" \
   "https://prometheus-${NS}.apps.rosa.enmaas-prod.187f.p3.openshiftapps.com/api/v1/targets" \
   | python3 -c "import json,sys; d=json.load(sys.stdin)['data']['activeTargets']; up=sum(1 for t in d if t['health']=='up'); print(f'{up}/{len(d)} targets up')")
 echo "==> $n"
-echo "done. dashboards: https://grafana-${NS}.apps.rosa.enmaas-prod.187f.p3.openshiftapps.com"
+grafana_url="https://grafana-${NS}.apps.rosa.enmaas-prod.187f.p3.openshiftapps.com"
+dashboard_title=$(curl -sk -u "${BASIC_USER:-prom}:${BASIC_PASS}" \
+  "$grafana_url/api/dashboards/uid/enmaas-rds-postgres" \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["dashboard"]["title"])')
+[[ "$dashboard_title" == "EnMaaS RDS PostgreSQL" ]] || {
+  echo "SMOKE FAILED: RDS dashboard is not provisioned" >&2
+  exit 1
+}
+rds_up=$(curl -sk -u "${BASIC_USER:-prom}:${BASIC_PASS}" \
+  "$grafana_url/api/datasources/proxy/uid/prometheus/api/v1/query?query=pg_up%7Bjob%3D%22rds-postgres-exporter%22%7D" \
+  | python3 -c 'import json,sys; r=json.load(sys.stdin)["data"]["result"]; print(r[0]["value"][1] if r else "missing")')
+[[ "$rds_up" == "1" ]] || {
+  echo "SMOKE FAILED: Grafana datasource cannot query the RDS exporter (pg_up=$rds_up)" >&2
+  exit 1
+}
+echo "==> Grafana RDS dashboard + datasource query passed"
+echo "done. dashboards: $grafana_url"
