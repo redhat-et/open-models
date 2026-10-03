@@ -134,9 +134,9 @@ them in (best-practices rule #1) and add the annotations there.
   counters oscillate between pods and corrupting every rate/SLO calculation.
 - Grafana dashboards are provisioned from `07-grafana-dashboards.yaml` and
   `09-grafana-rds-dashboard.yaml`; the PVC holds Grafana state, not the source
-  of truth. The RDS dashboard intentionally targets
-  `prometheuscommunity/postgres-exporter`. Grafana.com dashboard 24298 targets
-  the unrelated `nbari/pg_exporter` schema and is mostly blank with our
-  exporter even after its datasource uid is corrected.
+  of truth. The RDS dashboard targets the pinned `nbari/pg_exporter` schema in
+  the PriceTag EnMaaS overlay. Keep exporter and dashboard changes in the same
+  rollout: nbari and prometheuscommunity exporters use different activity,
+  database, table-size and collector-health metric contracts.
 - Recovery drill (rule 1): delete namespace, rerun bootstrap + deploy; the
   provisioned datasources and dashboards must reappear without UI imports.
