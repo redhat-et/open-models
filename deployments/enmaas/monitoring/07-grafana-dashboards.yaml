@@ -103,14 +103,14 @@ data:
     \ 9\n      }\n    },\n    {\n      \"type\": \"row\",\n      \"title\": \"Backends\"\
     ,\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\"\
     : 0,\n        \"y\": 7\n      },\n      \"collapsed\": false,\n      \"panels\"\
-    : []\n    },\n    {\n      \"type\": \"timeseries\",\n      \"title\": \"Postgres\
+    : []\n    },\n    {\n      \"type\": \"timeseries\",\n      \"title\": \"RDS\
     \ connections\",\n      \"datasource\": {\n        \"type\": \"prometheus\",\n\
     \        \"uid\": \"${DS_PROMETHEUS}\"\n      },\n      \"gridPos\": {\n     \
     \   \"h\": 8,\n        \"w\": 8,\n        \"x\": 8,\n        \"y\": 17\n     \
     \ },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"\
     conns\",\n          \"custom\": {\n            \"fillOpacity\": 20\n         \
     \ }\n        },\n        \"overrides\": []\n      },\n      \"targets\": [\n \
-    \       {\n          \"refId\": \"A\",\n          \"expr\": \"sum(pg_stat_database_numbackends)\"\
+    \       {\n          \"refId\": \"A\",\n          \"expr\": \"max(pg_stat_activity_used_connections{job=\\\"rds-postgres-exporter\\\"})\"\
     ,\n          \"legendFormat\": \"backends\",\n          \"datasource\": {\n  \
     \          \"type\": \"prometheus\",\n            \"uid\": \"${DS_PROMETHEUS}\"\
     \n          },\n          \"range\": true,\n          \"instant\": false\n   \
