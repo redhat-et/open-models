@@ -69,6 +69,16 @@ objects:
             params:
               match[]:
                 - '{__name__=~"node_.+"}'
+                # Workload metrics are scoped to EnMaaS so federation does not
+                # copy every container/pod in the cluster. These back the
+                # Performance and Cluster Resources dashboards.
+                - '{__name__=~"container_.+",namespace="enmaas"}'
+                - '{__name__=~"kube_.+",namespace="enmaas"}'
+                - '{__name__=~"kubelet_.+",namespace="enmaas"}'
+                # Node inventory/capacity metrics have no namespace label.
+                - '{__name__=~"kube_node_.+"}'
+                - '{__name__=~"machine_.+"}'
+                - '{__name__="up",job=~"node-exporter|kubelet|kube-state-metrics"}'
             static_configs:
               - targets: ["prometheus-k8s.openshift-monitoring.svc:9091"]
           # EnMaaS workload metrics: any Service in these namespaces tagged
