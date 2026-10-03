@@ -185,6 +185,8 @@ objects:
                       name: grafana-rds-dashboard
                   - configMap:
                       name: grafana-performance-dashboard
+                  - configMap:
+                      name: grafana-sre-dashboard
             - name: nginx-config
               configMap:
                 name: grafana-nginx-auth

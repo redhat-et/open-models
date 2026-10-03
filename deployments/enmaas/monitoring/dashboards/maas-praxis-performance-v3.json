@@ -1039,1027 +1039,6 @@
         "type": "prometheus",
         "uid": "${app_ds}"
       },
-      "description": "Instantaneous active-request gauges, summed separately across each service at the selected time-range end; refreshes every 30 seconds in a live view. These are active HTTP requests, not requests/sec, cumulative requests, unique users, or idle sessions. MaaS covers all methods; Praxis covers all listeners. Tenant, route, upstream-cluster and pod selections do not narrow these service-wide gauges. Do not add MaaS and Praxis counts into a unique end-to-end total. Totals require one scrape target per replica. Missing, down, or older-than-90-second scrapes, or a missing/freshness-failed gauge on any discovered target, produce no data rather than an understated total. Undiscovered replicas cannot be detected here; compare with workload readiness and collection diagnostics.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "decimals": 0,
-          "mappings": [],
-          "min": 0,
-          "noValue": "Missing / partial data",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue"
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "MaaS management API"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "blue",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 0,
-        "y": 23
-      },
-      "id": 140,
-      "interval": "30s",
-      "maxDataPoints": 600,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "value"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "(sum(((maas_api_http_requests_in_flight{namespace=\"$namespace\",job=\"maas-api\"}) and (timestamp(maas_api_http_requests_in_flight{namespace=\"$namespace\",job=\"maas-api\"}) > (time() - 90))) and on(namespace,job,instance) up{namespace=\"$namespace\",job=\"maas-api\"})) and on() ((min(up{namespace=\"$namespace\",job=\"maas-api\"}) == 1) and (min(timestamp(up{namespace=\"$namespace\",job=\"maas-api\"})) > (time() - 90))) unless on() (up{namespace=\"$namespace\",job=\"maas-api\"} unless on(namespace,job,instance) ((maas_api_http_requests_in_flight{namespace=\"$namespace\",job=\"maas-api\"}) and (timestamp(maas_api_http_requests_in_flight{namespace=\"$namespace\",job=\"maas-api\"}) > (time() - 90))))",
-          "format": "time_series",
-          "instant": true,
-          "interval": "30s",
-          "legendFormat": "MaaS management API",
-          "range": false,
-          "refId": "A"
-        }
-      ],
-      "title": "MaaS requests in flight | total",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${app_ds}"
-      },
-      "description": "Instantaneous active-request gauges, summed separately across each service at the selected time-range end; refreshes every 30 seconds in a live view. These are active HTTP requests, not requests/sec, cumulative requests, unique users, or idle sessions. MaaS covers all methods; Praxis covers all listeners. Tenant, route, upstream-cluster and pod selections do not narrow these service-wide gauges. Do not add MaaS and Praxis counts into a unique end-to-end total. Totals require one scrape target per replica. Missing, down, or older-than-90-second scrapes, or a missing/freshness-failed gauge on any discovered target, produce no data rather than an understated total. Undiscovered replicas cannot be detected here; compare with workload readiness and collection diagnostics.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "decimals": 0,
-          "mappings": [],
-          "min": 0,
-          "noValue": "Missing / partial data",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue"
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Praxis HTTP"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "orange",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 6,
-        "y": 23
-      },
-      "id": 141,
-      "interval": "30s",
-      "maxDataPoints": 600,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "value"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "(sum(((praxis_http_active_requests{namespace=\"$namespace\",job=\"praxis\"}) and (timestamp(praxis_http_active_requests{namespace=\"$namespace\",job=\"praxis\"}) > (time() - 90))) and on(namespace,job,instance) up{namespace=\"$namespace\",job=\"praxis\"})) and on() ((min(up{namespace=\"$namespace\",job=\"praxis\"}) == 1) and (min(timestamp(up{namespace=\"$namespace\",job=\"praxis\"})) > (time() - 90))) unless on() (up{namespace=\"$namespace\",job=\"praxis\"} unless on(namespace,job,instance) ((praxis_http_active_requests{namespace=\"$namespace\",job=\"praxis\"}) and (timestamp(praxis_http_active_requests{namespace=\"$namespace\",job=\"praxis\"}) > (time() - 90))))",
-          "format": "time_series",
-          "instant": true,
-          "interval": "30s",
-          "legendFormat": "Praxis HTTP",
-          "range": false,
-          "refId": "A"
-        }
-      ],
-      "title": "Praxis active requests | total",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${app_ds}"
-      },
-      "description": "Instantaneous active-request gauges, summed separately across each service at the selected time-range end; refreshes every 30 seconds in a live view. These are active HTTP requests, not requests/sec, cumulative requests, unique users, or idle sessions. MaaS covers all methods; Praxis covers all listeners. Tenant, route, upstream-cluster and pod selections do not narrow these service-wide gauges. Do not add MaaS and Praxis counts into a unique end-to-end total. Totals require one scrape target per replica. Missing, down, or older-than-90-second scrapes, or a missing/freshness-failed gauge on any discovered target, produce no data rather than an understated total. Undiscovered replicas cannot be detected here; compare with workload readiness and collection diagnostics.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisLabel": "Active requests",
-            "axisPlacement": "auto",
-            "drawStyle": "line",
-            "fillOpacity": 5,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            }
-          },
-          "mappings": [],
-          "min": 0,
-          "noValue": "No data",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue"
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "MaaS management API"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "blue",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Praxis HTTP"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "orange",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 12,
-        "x": 12,
-        "y": 23
-      },
-      "id": 142,
-      "interval": "30s",
-      "maxDataPoints": 600,
-      "options": {
-        "legend": {
-          "calcs": [
-            "last",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "(sum(((maas_api_http_requests_in_flight{namespace=\"$namespace\",job=\"maas-api\"}) and (timestamp(maas_api_http_requests_in_flight{namespace=\"$namespace\",job=\"maas-api\"}) > (time() - 90))) and on(namespace,job,instance) up{namespace=\"$namespace\",job=\"maas-api\"})) and on() ((min(up{namespace=\"$namespace\",job=\"maas-api\"}) == 1) and (min(timestamp(up{namespace=\"$namespace\",job=\"maas-api\"})) > (time() - 90))) unless on() (up{namespace=\"$namespace\",job=\"maas-api\"} unless on(namespace,job,instance) ((maas_api_http_requests_in_flight{namespace=\"$namespace\",job=\"maas-api\"}) and (timestamp(maas_api_http_requests_in_flight{namespace=\"$namespace\",job=\"maas-api\"}) > (time() - 90))))",
-          "format": "time_series",
-          "instant": false,
-          "interval": "30s",
-          "legendFormat": "MaaS management API",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "(sum(((praxis_http_active_requests{namespace=\"$namespace\",job=\"praxis\"}) and (timestamp(praxis_http_active_requests{namespace=\"$namespace\",job=\"praxis\"}) > (time() - 90))) and on(namespace,job,instance) up{namespace=\"$namespace\",job=\"praxis\"})) and on() ((min(up{namespace=\"$namespace\",job=\"praxis\"}) == 1) and (min(timestamp(up{namespace=\"$namespace\",job=\"praxis\"})) > (time() - 90))) unless on() (up{namespace=\"$namespace\",job=\"praxis\"} unless on(namespace,job,instance) ((praxis_http_active_requests{namespace=\"$namespace\",job=\"praxis\"}) and (timestamp(praxis_http_active_requests{namespace=\"$namespace\",job=\"praxis\"}) > (time() - 90))))",
-          "format": "time_series",
-          "instant": false,
-          "interval": "30s",
-          "legendFormat": "Praxis HTTP",
-          "range": true,
-          "refId": "B"
-        }
-      ],
-      "title": "Active requests by component | service-wide",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${app_ds}"
-      },
-      "description": "Observation-weighted mean latency in milliseconds over $__rate_interval: sum(rate(duration_sum)) / sum(rate(duration_count)), converted from seconds. MaaS HTTP follows the tenant filter; Praxis HTTP follows the upstream-cluster and route filters; upstream connection follows upstream-cluster only; subrequest headers are service-wide. These are different, potentially overlapping observation boundaries, not additive stages or a measured overhead breakdown. HTTP duration is exporter-observed request duration, not a verified client-completed stream duration. Summary percentiles are not combined across replicas. No observations, missing metrics, or unhealthy/stale scrapes remain gaps, not zero. Correct deployment means require per-replica scraping.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "mappings": [],
-          "min": 0,
-          "noValue": "No observations / unavailable",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue"
-              }
-            ]
-          },
-          "unit": "ms"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "MaaS HTTP request"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "blue",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Praxis HTTP request"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "orange",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Praxis upstream connection"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Praxis subrequest headers"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "purple",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 29
-      },
-      "id": 143,
-      "interval": "30s",
-      "maxDataPoints": 600,
-      "options": {
-        "displayMode": "basic",
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showUnfilled": true,
-        "valueMode": "text"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "(1000 * sum(rate(maas_api_http_request_duration_seconds_sum{namespace=\"$namespace\",job=\"maas-api\",tenant_name=~\"${tenant:regex}\"}[$__rate_interval])) / (sum(rate(maas_api_http_request_duration_seconds_count{namespace=\"$namespace\",job=\"maas-api\",tenant_name=~\"${tenant:regex}\"}[$__rate_interval])) > 0)) and on() ((min(up{namespace=\"$namespace\",job=\"maas-api\"}) == 1) and (min(timestamp(up{namespace=\"$namespace\",job=\"maas-api\"})) > (time() - 90)))",
-          "format": "time_series",
-          "instant": true,
-          "interval": "30s",
-          "legendFormat": "MaaS HTTP request",
-          "range": false,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "(1000 * sum(rate(praxis_http_request_duration_seconds_sum{namespace=\"$namespace\",job=\"praxis\",cluster=~\"${praxis_cluster:regex}\",route=~\"${praxis_route:regex}\"}[$__rate_interval])) / (sum(rate(praxis_http_request_duration_seconds_count{namespace=\"$namespace\",job=\"praxis\",cluster=~\"${praxis_cluster:regex}\",route=~\"${praxis_route:regex}\"}[$__rate_interval])) > 0)) and on() ((min(up{namespace=\"$namespace\",job=\"praxis\"}) == 1) and (min(timestamp(up{namespace=\"$namespace\",job=\"praxis\"})) > (time() - 90)))",
-          "format": "time_series",
-          "instant": true,
-          "interval": "30s",
-          "legendFormat": "Praxis HTTP request",
-          "range": false,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "(1000 * sum(rate(praxis_upstream_connect_duration_seconds_sum{namespace=\"$namespace\",job=\"praxis\",cluster=~\"${praxis_cluster:regex}\"}[$__rate_interval])) / (sum(rate(praxis_upstream_connect_duration_seconds_count{namespace=\"$namespace\",job=\"praxis\",cluster=~\"${praxis_cluster:regex}\"}[$__rate_interval])) > 0)) and on() ((min(up{namespace=\"$namespace\",job=\"praxis\"}) == 1) and (min(timestamp(up{namespace=\"$namespace\",job=\"praxis\"})) > (time() - 90)))",
-          "format": "time_series",
-          "instant": true,
-          "interval": "30s",
-          "legendFormat": "Praxis upstream connection",
-          "range": false,
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "(1000 * sum(rate(praxis_subrequest_header_duration_seconds_sum{namespace=\"$namespace\",job=\"praxis\"}[$__rate_interval])) / (sum(rate(praxis_subrequest_header_duration_seconds_count{namespace=\"$namespace\",job=\"praxis\"}[$__rate_interval])) > 0)) and on() ((min(up{namespace=\"$namespace\",job=\"praxis\"}) == 1) and (min(timestamp(up{namespace=\"$namespace\",job=\"praxis\"})) > (time() - 90)))",
-          "format": "time_series",
-          "instant": true,
-          "interval": "30s",
-          "legendFormat": "Praxis subrequest headers",
-          "range": false,
-          "refId": "D"
-        }
-      ],
-      "title": "Component latency | current mean",
-      "type": "bargauge"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${app_ds}"
-      },
-      "description": "Observation-weighted mean latency in milliseconds over $__rate_interval: sum(rate(duration_sum)) / sum(rate(duration_count)), converted from seconds. MaaS HTTP follows the tenant filter; Praxis HTTP follows the upstream-cluster and route filters; upstream connection follows upstream-cluster only; subrequest headers are service-wide. These are different, potentially overlapping observation boundaries, not additive stages or a measured overhead breakdown. HTTP duration is exporter-observed request duration, not a verified client-completed stream duration. Summary percentiles are not combined across replicas. No observations, missing metrics, or unhealthy/stale scrapes remain gaps, not zero. Correct deployment means require per-replica scraping.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisLabel": "Mean latency (ms)",
-            "axisPlacement": "auto",
-            "drawStyle": "line",
-            "fillOpacity": 5,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            }
-          },
-          "mappings": [],
-          "min": 0,
-          "noValue": "No data",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue"
-              }
-            ]
-          },
-          "unit": "ms"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "MaaS HTTP request"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "blue",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Praxis HTTP request"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "orange",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Praxis upstream connection"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Praxis subrequest headers"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "purple",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 29
-      },
-      "id": 144,
-      "interval": "30s",
-      "maxDataPoints": 600,
-      "options": {
-        "legend": {
-          "calcs": [
-            "last",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "(1000 * sum(rate(maas_api_http_request_duration_seconds_sum{namespace=\"$namespace\",job=\"maas-api\",tenant_name=~\"${tenant:regex}\"}[$__rate_interval])) / (sum(rate(maas_api_http_request_duration_seconds_count{namespace=\"$namespace\",job=\"maas-api\",tenant_name=~\"${tenant:regex}\"}[$__rate_interval])) > 0)) and on() ((min(up{namespace=\"$namespace\",job=\"maas-api\"}) == 1) and (min(timestamp(up{namespace=\"$namespace\",job=\"maas-api\"})) > (time() - 90)))",
-          "format": "time_series",
-          "instant": false,
-          "interval": "30s",
-          "legendFormat": "MaaS HTTP request",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "(1000 * sum(rate(praxis_http_request_duration_seconds_sum{namespace=\"$namespace\",job=\"praxis\",cluster=~\"${praxis_cluster:regex}\",route=~\"${praxis_route:regex}\"}[$__rate_interval])) / (sum(rate(praxis_http_request_duration_seconds_count{namespace=\"$namespace\",job=\"praxis\",cluster=~\"${praxis_cluster:regex}\",route=~\"${praxis_route:regex}\"}[$__rate_interval])) > 0)) and on() ((min(up{namespace=\"$namespace\",job=\"praxis\"}) == 1) and (min(timestamp(up{namespace=\"$namespace\",job=\"praxis\"})) > (time() - 90)))",
-          "format": "time_series",
-          "instant": false,
-          "interval": "30s",
-          "legendFormat": "Praxis HTTP request",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "(1000 * sum(rate(praxis_upstream_connect_duration_seconds_sum{namespace=\"$namespace\",job=\"praxis\",cluster=~\"${praxis_cluster:regex}\"}[$__rate_interval])) / (sum(rate(praxis_upstream_connect_duration_seconds_count{namespace=\"$namespace\",job=\"praxis\",cluster=~\"${praxis_cluster:regex}\"}[$__rate_interval])) > 0)) and on() ((min(up{namespace=\"$namespace\",job=\"praxis\"}) == 1) and (min(timestamp(up{namespace=\"$namespace\",job=\"praxis\"})) > (time() - 90)))",
-          "format": "time_series",
-          "instant": false,
-          "interval": "30s",
-          "legendFormat": "Praxis upstream connection",
-          "range": true,
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "(1000 * sum(rate(praxis_subrequest_header_duration_seconds_sum{namespace=\"$namespace\",job=\"praxis\"}[$__rate_interval])) / (sum(rate(praxis_subrequest_header_duration_seconds_count{namespace=\"$namespace\",job=\"praxis\"}[$__rate_interval])) > 0)) and on() ((min(up{namespace=\"$namespace\",job=\"praxis\"}) == 1) and (min(timestamp(up{namespace=\"$namespace\",job=\"praxis\"})) > (time() - 90)))",
-          "format": "time_series",
-          "instant": false,
-          "interval": "30s",
-          "legendFormat": "Praxis subrequest headers",
-          "range": true,
-          "refId": "D"
-        }
-      ],
-      "title": "Component latency | mean over time",
-      "type": "timeseries"
-    },
-    {
-      "gridPos": {
-        "h": 4,
-        "w": 24,
-        "x": 0,
-        "y": 37
-      },
-      "id": 145,
-      "options": {
-        "content": "**Counts over the selected dashboard time range.** MaaS shows HTTP status codes; Praxis shows its published status classes. Method tables show GET/POST/etc. as emitted. Counts are estimates, rounded for display.\n\n**Component observations only:** do not add MaaS and Praxis totals or treat them as full-path availability. These panels use Application Prometheus and do not depend on the unverified gateway source. Missing metrics remain **No data**; unknown label values remain visible.",
-        "mode": "markdown"
-      },
-      "title": "HTTP counts | interpretation",
-      "type": "text"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${app_ds}"
-      },
-      "description": "Estimated HTTP request count over the dashboard time range, evaluated at its end. Uses increase() per counter before summing across replicas, so counter resets are handled. Displayed values are rounded to whole requests; Prometheus extrapolation can produce fractions. These are counts, not requests/second or lifetime totals. Labels are kept as emitted; missing/empty labels appear as (unlabeled), and unrecognized values are not discarded. No gateway metric, success/failure classification or fixed scrape-cadence gate is required. This is a diagnostic of collected observations, not a full-path total or evidence of complete history. Missing series or insufficient samples remain no data; an absent category is not manufactured as zero. MaaS and Praxis observe different operations; do not add their counts together. MaaS namespace and tenant selections apply; all routes/methods are included.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "decimals": 0,
-          "mappings": [],
-          "noValue": "No data",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue"
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 0,
-        "y": 41
-      },
-      "id": 146,
-      "interval": "30s",
-      "maxDataPoints": 600,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Estimated requests"
-          }
-        ]
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "sum by (status) (label_replace(increase(maas_api_http_requests_total{namespace=\"$namespace\",job=\"maas-api\",tenant_name=~\"${tenant:regex}\"}[$__range]), \"status\", \"(unlabeled)\", \"status\", \"^$\"))",
-          "format": "table",
-          "instant": true,
-          "interval": "30s",
-          "legendFormat": "",
-          "range": false,
-          "refId": "A"
-        }
-      ],
-      "title": "MaaS | HTTP status-code counts · selected range",
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "__name__": true
-            },
-            "indexByName": {
-              "Value": 1,
-              "status": 0
-            },
-            "renameByName": {
-              "Value": "Estimated requests",
-              "status": "HTTP status code"
-            }
-          }
-        }
-      ],
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${app_ds}"
-      },
-      "description": "Estimated HTTP request count over the dashboard time range, evaluated at its end. Uses increase() per counter before summing across replicas, so counter resets are handled. Displayed values are rounded to whole requests; Prometheus extrapolation can produce fractions. These are counts, not requests/second or lifetime totals. Labels are kept as emitted; missing/empty labels appear as (unlabeled), and unrecognized values are not discarded. No gateway metric, success/failure classification or fixed scrape-cadence gate is required. This is a diagnostic of collected observations, not a full-path total or evidence of complete history. Missing series or insufficient samples remain no data; an absent category is not manufactured as zero. MaaS and Praxis observe different operations; do not add their counts together. Praxis namespace, upstream-group and route selections apply. The confirmed counter exposes status classes, not individual HTTP codes; no exact codes are inferred.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "decimals": 0,
-          "mappings": [],
-          "noValue": "No data",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue"
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 12,
-        "y": 41
-      },
-      "id": 147,
-      "interval": "30s",
-      "maxDataPoints": 600,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Estimated requests"
-          }
-        ]
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "sum by (status_class) (label_replace(increase(praxis_http_requests_total{namespace=\"$namespace\",job=\"praxis\",cluster=~\"${praxis_cluster:regex}\",route=~\"${praxis_route:regex}\"}[$__range]), \"status_class\", \"(unlabeled)\", \"status_class\", \"^$\"))",
-          "format": "table",
-          "instant": true,
-          "interval": "30s",
-          "legendFormat": "",
-          "range": false,
-          "refId": "A"
-        }
-      ],
-      "title": "Praxis | HTTP status-class counts · selected range",
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "__name__": true
-            },
-            "indexByName": {
-              "Value": 1,
-              "status_class": 0
-            },
-            "renameByName": {
-              "Value": "Estimated requests",
-              "status_class": "HTTP status class"
-            }
-          }
-        }
-      ],
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${app_ds}"
-      },
-      "description": "Estimated HTTP request count over the dashboard time range, evaluated at its end. Uses increase() per counter before summing across replicas, so counter resets are handled. Displayed values are rounded to whole requests; Prometheus extrapolation can produce fractions. These are counts, not requests/second or lifetime totals. Labels are kept as emitted; missing/empty labels appear as (unlabeled), and unrecognized values are not discarded. No gateway metric, success/failure classification or fixed scrape-cadence gate is required. This is a diagnostic of collected observations, not a full-path total or evidence of complete history. Missing series or insufficient samples remain no data; an absent category is not manufactured as zero. MaaS and Praxis observe different operations; do not add their counts together. MaaS namespace and tenant selections apply; all statuses/routes are included.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "decimals": 0,
-          "mappings": [],
-          "noValue": "No data",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue"
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 0,
-        "y": 48
-      },
-      "id": 148,
-      "interval": "30s",
-      "maxDataPoints": 600,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Estimated requests"
-          }
-        ]
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "sum by (method) (label_replace(increase(maas_api_http_requests_total{namespace=\"$namespace\",job=\"maas-api\",tenant_name=~\"${tenant:regex}\"}[$__range]), \"method\", \"(unlabeled)\", \"method\", \"^$\"))",
-          "format": "table",
-          "instant": true,
-          "interval": "30s",
-          "legendFormat": "",
-          "range": false,
-          "refId": "A"
-        }
-      ],
-      "title": "MaaS | HTTP method counts · selected range",
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "__name__": true
-            },
-            "indexByName": {
-              "Value": 1,
-              "method": 0
-            },
-            "renameByName": {
-              "Value": "Estimated requests",
-              "method": "HTTP method"
-            }
-          }
-        }
-      ],
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${app_ds}"
-      },
-      "description": "Estimated HTTP request count over the dashboard time range, evaluated at its end. Uses increase() per counter before summing across replicas, so counter resets are handled. Displayed values are rounded to whole requests; Prometheus extrapolation can produce fractions. These are counts, not requests/second or lifetime totals. Labels are kept as emitted; missing/empty labels appear as (unlabeled), and unrecognized values are not discarded. No gateway metric, success/failure classification or fixed scrape-cadence gate is required. This is a diagnostic of collected observations, not a full-path total or evidence of complete history. Missing series or insufficient samples remain no data; an absent category is not manufactured as zero. MaaS and Praxis observe different operations; do not add their counts together. Praxis namespace, upstream-group and route selections apply; all status classes are included.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "decimals": 0,
-          "mappings": [],
-          "noValue": "No data",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue"
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 12,
-        "y": 48
-      },
-      "id": 149,
-      "interval": "30s",
-      "maxDataPoints": 600,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Estimated requests"
-          }
-        ]
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${app_ds}"
-          },
-          "editorMode": "code",
-          "expr": "sum by (method) (label_replace(increase(praxis_http_requests_total{namespace=\"$namespace\",job=\"praxis\",cluster=~\"${praxis_cluster:regex}\",route=~\"${praxis_route:regex}\"}[$__range]), \"method\", \"(unlabeled)\", \"method\", \"^$\"))",
-          "format": "table",
-          "instant": true,
-          "interval": "30s",
-          "legendFormat": "",
-          "range": false,
-          "refId": "A"
-        }
-      ],
-      "title": "Praxis | HTTP method counts · selected range",
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "__name__": true
-            },
-            "indexByName": {
-              "Value": 1,
-              "method": 0
-            },
-            "renameByName": {
-              "Value": "Estimated requests",
-              "method": "HTTP method"
-            }
-          }
-        }
-      ],
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${app_ds}"
-      },
       "description": "Separate MaaS management and Praxis HTTP request populations. Do not sum them as an end-to-end traffic total.",
       "fieldConfig": {
         "defaults": {
@@ -2102,7 +1081,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 55
+        "y": 23
       },
       "id": 7,
       "interval": "30s",
@@ -2202,7 +1181,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 55
+        "y": 23
       },
       "id": 8,
       "interval": "30s",
@@ -2301,7 +1280,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 63
+        "y": 31
       },
       "id": 9,
       "interval": "30s",
@@ -2386,7 +1365,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 63
+        "y": 31
       },
       "id": 10,
       "interval": "30s",
@@ -2473,7 +1452,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 71
+        "y": 39
       },
       "id": 11,
       "interval": "30s",
@@ -2560,7 +1539,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 71
+        "y": 39
       },
       "id": 12,
       "interval": "30s",
@@ -2605,7 +1584,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 79
+        "y": 47
       },
       "id": 18,
       "panels": [
@@ -2638,7 +1617,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 80
+            "y": 48
           },
           "id": 19,
           "interval": "30s",
@@ -2729,7 +1708,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 88
+            "y": 56
           },
           "id": 20,
           "interval": "30s",
@@ -2814,7 +1793,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 88
+            "y": 56
           },
           "id": 21,
           "interval": "30s",
@@ -2900,7 +1879,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 96
+            "y": 64
           },
           "id": 22,
           "interval": "30s",
@@ -2967,7 +1946,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 96
+            "y": 64
           },
           "id": 23,
           "interval": "30s",
@@ -3041,7 +2020,7 @@
             "h": 4,
             "w": 24,
             "x": 0,
-            "y": 104
+            "y": 72
           },
           "id": 24,
           "interval": "30s",
@@ -3150,7 +2129,7 @@
             "h": 4,
             "w": 24,
             "x": 0,
-            "y": 108
+            "y": 76
           },
           "id": 103,
           "interval": "30s",
@@ -3217,7 +2196,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 112
+            "y": 80
           },
           "id": 104,
           "interval": "30s",
@@ -3271,7 +2250,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 80
+        "y": 48
       },
       "id": 25,
       "panels": [
@@ -3280,7 +2259,7 @@
             "h": 3,
             "w": 24,
             "x": 0,
-            "y": 81
+            "y": 49
           },
           "id": 26,
           "options": {
@@ -3336,7 +2315,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 84
+            "y": 52
           },
           "id": 27,
           "interval": "30s",
@@ -3421,7 +2400,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 84
+            "y": 52
           },
           "id": 28,
           "interval": "30s",
@@ -3506,7 +2485,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 92
+            "y": 60
           },
           "id": 29,
           "interval": "30s",
@@ -3606,7 +2585,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 92
+            "y": 60
           },
           "id": 30,
           "interval": "30s",
@@ -3691,7 +2670,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 100
+            "y": 68
           },
           "id": 31,
           "interval": "30s",
@@ -3804,7 +2783,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 100
+            "y": 68
           },
           "id": 32,
           "interval": "30s",
@@ -3889,7 +2868,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 108
+            "y": 76
           },
           "id": 33,
           "interval": "30s",
@@ -3975,7 +2954,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 108
+            "y": 76
           },
           "id": 34,
           "interval": "30s",
@@ -4043,7 +3022,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 116
+            "y": 84
           },
           "id": 35,
           "interval": "30s",
@@ -4135,7 +3114,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 116
+            "y": 84
           },
           "id": 36,
           "interval": "30s",
@@ -4166,7 +3145,7 @@
               "format": "time_series",
               "instant": false,
               "interval": "30s",
-              "legendFormat": "≤ {{le}} seconds",
+              "legendFormat": "\u2264 {{le}} seconds",
               "range": true,
               "refId": "A"
             }
@@ -4221,7 +3200,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 124
+            "y": 92
           },
           "id": 105,
           "interval": "30s",
@@ -4307,7 +3286,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 124
+            "y": 92
           },
           "id": 106,
           "interval": "30s",
@@ -4356,7 +3335,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 81
+        "y": 49
       },
       "id": 114,
       "panels": [
@@ -4366,7 +3345,7 @@
             "h": 4,
             "w": 24,
             "x": 0,
-            "y": 82
+            "y": 50
           },
           "id": 107,
           "options": {
@@ -4423,7 +3402,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 86
+            "y": 54
           },
           "id": 108,
           "interval": "30s",
@@ -4509,7 +3488,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 86
+            "y": 54
           },
           "id": 109,
           "interval": "30s",
@@ -4595,7 +3574,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 94
+            "y": 62
           },
           "id": 110,
           "interval": "30s",
@@ -4681,7 +3660,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 94
+            "y": 62
           },
           "id": 111,
           "interval": "30s",
@@ -4767,7 +3746,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 102
+            "y": 70
           },
           "id": 112,
           "interval": "30s",
@@ -4863,7 +3842,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 102
+            "y": 70
           },
           "id": 113,
           "interval": "30s",
@@ -4917,7 +3896,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 82
+        "y": 50
       },
       "id": 37,
       "panels": [
@@ -4926,7 +3905,7 @@
             "h": 4,
             "w": 24,
             "x": 0,
-            "y": 83
+            "y": 51
           },
           "id": 38,
           "options": {
@@ -4983,7 +3962,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 87
+            "y": 55
           },
           "id": 39,
           "interval": "30s",
@@ -5069,7 +4048,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 87
+            "y": 55
           },
           "id": 40,
           "interval": "30s",
@@ -5155,7 +4134,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 95
+            "y": 63
           },
           "id": 41,
           "interval": "30s",
@@ -5241,7 +4220,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 95
+            "y": 63
           },
           "id": 42,
           "interval": "30s",
@@ -5308,7 +4287,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 103
+            "y": 71
           },
           "id": 43,
           "interval": "30s",
@@ -5374,7 +4353,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 103
+            "y": 71
           },
           "id": 44,
           "interval": "30s",
@@ -5459,7 +4438,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 108
+            "y": 76
           },
           "id": 115,
           "interval": "30s",
@@ -5545,7 +4524,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 108
+            "y": 76
           },
           "id": 116,
           "interval": "30s",
@@ -5631,7 +4610,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 116
+            "y": 84
           },
           "id": 117,
           "interval": "30s",
@@ -5717,7 +4696,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 116
+            "y": 84
           },
           "id": 118,
           "interval": "30s",
@@ -5785,7 +4764,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 124
+            "y": 92
           },
           "id": 119,
           "interval": "30s",
@@ -5839,7 +4818,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 83
+        "y": 51
       },
       "id": 127,
       "panels": [
@@ -5849,7 +4828,7 @@
             "h": 3,
             "w": 24,
             "x": 0,
-            "y": 84
+            "y": 52
           },
           "id": 120,
           "options": {
@@ -5906,7 +4885,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 87
+            "y": 55
           },
           "id": 121,
           "interval": "30s",
@@ -6020,7 +4999,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 87
+            "y": 55
           },
           "id": 122,
           "interval": "30s",
@@ -6134,7 +5113,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 95
+            "y": 63
           },
           "id": 123,
           "interval": "30s",
@@ -6234,7 +5213,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 95
+            "y": 63
           },
           "id": 124,
           "interval": "30s",
@@ -6320,7 +5299,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 103
+            "y": 71
           },
           "id": 125,
           "interval": "30s",
@@ -6406,7 +5385,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 103
+            "y": 71
           },
           "id": 126,
           "interval": "30s",
@@ -6455,7 +5434,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 84
+        "y": 52
       },
       "id": 45,
       "panels": [
@@ -6506,7 +5485,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 85
+            "y": 53
           },
           "id": 46,
           "interval": "30s",
@@ -6591,7 +5570,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 85
+            "y": 53
           },
           "id": 47,
           "interval": "30s",
@@ -6690,7 +5669,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 93
+            "y": 61
           },
           "id": 48,
           "interval": "30s",
@@ -6775,7 +5754,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 93
+            "y": 61
           },
           "id": 49,
           "interval": "30s",
@@ -6860,7 +5839,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 101
+            "y": 69
           },
           "id": 50,
           "interval": "30s",
@@ -6945,7 +5924,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 101
+            "y": 69
           },
           "id": 51,
           "interval": "30s",
@@ -7031,7 +6010,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 109
+            "y": 77
           },
           "id": 52,
           "interval": "30s",
@@ -7131,7 +6110,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 109
+            "y": 77
           },
           "id": 53,
           "interval": "30s",
@@ -7180,7 +6159,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 86
+        "y": 54
       },
       "id": 54,
       "panels": [
@@ -7231,7 +6210,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 87
+            "y": 55
           },
           "id": 55,
           "interval": "30s",
@@ -7313,7 +6292,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 87
+            "y": 55
           },
           "id": 56,
           "interval": "30s",
@@ -7404,7 +6383,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 95
+            "y": 63
           },
           "id": 57,
           "interval": "30s",
@@ -7517,7 +6496,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 95
+            "y": 63
           },
           "id": 58,
           "interval": "30s",
@@ -7631,7 +6610,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 103
+            "y": 71
           },
           "id": 59,
           "interval": "30s",
@@ -7717,7 +6696,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 103
+            "y": 71
           },
           "id": 60,
           "interval": "30s",
@@ -7803,7 +6782,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 111
+            "y": 79
           },
           "id": 61,
           "interval": "30s",
@@ -7870,7 +6849,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 111
+            "y": 79
           },
           "id": 62,
           "interval": "30s",
@@ -7962,7 +6941,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 119
+            "y": 87
           },
           "id": 63,
           "interval": "30s",
@@ -8062,7 +7041,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 119
+            "y": 87
           },
           "id": 64,
           "interval": "30s",
@@ -8144,7 +7123,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 127
+            "y": 95
           },
           "id": 65,
           "interval": "30s",
@@ -8218,7 +7197,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 127
+            "y": 95
           },
           "id": 66,
           "interval": "30s",
@@ -8310,7 +7289,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 135
+            "y": 103
           },
           "id": 67,
           "interval": "30s",
@@ -8378,7 +7357,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 135
+            "y": 103
           },
           "id": 68,
           "interval": "30s",
@@ -8433,7 +7412,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 87
+        "y": 55
       },
       "id": 69,
       "panels": [
@@ -8442,7 +7421,7 @@
             "h": 3,
             "w": 24,
             "x": 0,
-            "y": 88
+            "y": 56
           },
           "id": 70,
           "options": {
@@ -8480,7 +7459,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 91
+            "y": 59
           },
           "id": 71,
           "interval": "30s",
@@ -8571,7 +7550,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 99
+            "y": 67
           },
           "id": 72,
           "interval": "30s",
@@ -8657,7 +7636,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 99
+            "y": 67
           },
           "id": 73,
           "interval": "30s",
@@ -8756,7 +7735,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 107
+            "y": 75
           },
           "id": 74,
           "interval": "30s",
@@ -8856,7 +7835,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 107
+            "y": 75
           },
           "id": 75,
           "interval": "30s",
@@ -8956,7 +7935,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 115
+            "y": 83
           },
           "id": 76,
           "interval": "30s",
@@ -9055,7 +8034,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 115
+            "y": 83
           },
           "id": 77,
           "interval": "30s",
@@ -9183,7 +8162,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 123
+            "y": 91
           },
           "id": 78,
           "interval": "30s",
@@ -9282,7 +8261,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 123
+            "y": 91
           },
           "id": 79,
           "interval": "30s",
@@ -9382,7 +8361,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 131
+            "y": 99
           },
           "id": 80,
           "interval": "30s",
@@ -9482,7 +8461,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 131
+            "y": 99
           },
           "id": 81,
           "interval": "30s",
@@ -9567,7 +8546,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 139
+            "y": 107
           },
           "id": 82,
           "interval": "30s",
@@ -9652,7 +8631,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 139
+            "y": 107
           },
           "id": 83,
           "interval": "30s",
@@ -9720,7 +8699,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 147
+            "y": 115
           },
           "id": 84,
           "interval": "30s",
@@ -9812,7 +8791,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 147
+            "y": 115
           },
           "id": 85,
           "interval": "30s",
@@ -9912,7 +8891,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 155
+            "y": 123
           },
           "id": 86,
           "interval": "30s",
@@ -10012,7 +8991,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 155
+            "y": 123
           },
           "id": 87,
           "interval": "30s",
@@ -10061,7 +9040,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 88
+        "y": 56
       },
       "id": 88,
       "panels": [
@@ -10070,7 +9049,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 89
+            "y": 57
           },
           "id": 89,
           "options": {
@@ -10109,7 +9088,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 94
+            "y": 62
           },
           "id": 90,
           "interval": "30s",
@@ -10201,7 +9180,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 102
+            "y": 70
           },
           "id": 91,
           "interval": "30s",
@@ -10269,7 +9248,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 110
+            "y": 78
           },
           "id": 92,
           "interval": "30s",
@@ -10324,7 +9303,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 89
+        "y": 57
       },
       "id": 93,
       "panels": [
@@ -10333,7 +9312,7 @@
             "h": 4,
             "w": 24,
             "x": 0,
-            "y": 90
+            "y": 58
           },
           "id": 94,
           "options": {
@@ -10389,7 +9368,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 94
+            "y": 62
           },
           "id": 95,
           "interval": "30s",
@@ -10456,7 +9435,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 102
+            "y": 70
           },
           "id": 96,
           "interval": "30s",
@@ -10511,7 +9490,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 90
+        "y": 58
       },
       "id": 97,
       "panels": [
@@ -10520,11 +9499,11 @@
             "h": 25,
             "w": 24,
             "x": 0,
-            "y": 91
+            "y": 59
           },
           "id": 98,
           "options": {
-            "content": "### Confirmed metric evidence — September 30, 2026\nThe previous read-only inspection queried standalone EnMaaS Prometheus and OpenShift Thanos. MaaS/Praxis metric names and label keys were obtained from the last-24-hour series catalog and confirmed against **14:55 UTC (10:55 a.m. Eastern)** samples. Token minting appeared in the catalog but not that instant snapshot. Additional metric semantics are called out where unverified. This dashboard update itself made **no cluster connection or change**.\n\n### Collection problems observed around 14:57–14:59 UTC\n- MaaS (`9090`), Praxis (`9901`) and PostgreSQL (`9187`) scrape targets reported timeouts; all last showed success shortly before new NetworkPolicies appeared at **14:56:26–27 UTC**.\n- The policies excluded ingress from `enmaas-monitoring`. The Praxis monitoring exception selected `openshift-monitoring`, a different namespace.\n- The Praxis scrape annotation specified `9901`, while its Service exposed only `8081` and `8084`; the pod still declared `9901`.\n- These are **dated observations**, not assertions of current state. Use the live collection cards to see whether collection has recovered. No policy, Service, scrape configuration, or ServiceMonitor was changed by this dashboard work.\n- There were no MaaS/Praxis ServiceMonitors or PodMonitors. EnMaaS Prometheus used annotated Service discovery. Metering had no scrape annotation.\n\n### Datasources and filters\n- **Application metrics:** existing EnMaaS Prometheus. **Platform metrics:** existing OpenShift Thanos/platform Prometheus. The former federated only node metrics; the latter was verified to contain container CPU/memory/throttling, requests/limits, pod readiness, PVC usage and node metrics.\n- Import prompts map these two sources; pickers remain visible. This JSON creates no datasource and embeds no token. Each source should be scoped to one cluster or filtered to this cluster.\n- Tenant filters only tenant-labeled MaaS HTTP/key/token metrics. Praxis cluster filters cluster-labeled metrics; Praxis route filters HTTP request counts and durations. All other panels explicitly state their service-wide scope. Explorer job applies only to the application catalog.\n- Set the application datasource scrape interval to **30s**. Panel minimum query step is 30s and rates use `$__rate_interval`. Default refresh is 30s. Pause refresh for historical analysis; label variables rediscover their options when the time range changes.\n\n### Interpretation\n- Service-based scraping can combine different backend replicas under one instance label. Per-replica totals, runtime gauges and summaries may therefore jump between pods. Fleet percentiles and PostgreSQL replica health are not established by those series.\n- MaaS latency uses histogram buckets. Praxis latency/connection/header summaries remain separate by complete label set; do not average summary quantiles. Duration sum/count can provide a mean. Exporter-summary windows are independent of the Grafana time range.\n- Praxis HTTP requests are separated from upstream attempts; retries can make their counts differ. `praxis_errors_total` has a type label and is service-wide. Its ratio to upstream attempts is diagnostic, not an availability SLO.\n- No pass/fail acceptance threshold, 30-day SLO verdict, or successful-zero fallback is invented. Metric-presence probes deliberately display Missing; scrape cards deliberately display NO TARGET for absent up series.\n- CPU is in cores, memory/body sizes in bytes, latency in seconds, resource utilization in percent. Request rates use the rate window; totals and restarts use the entire selected window. Unset limits, missing label series, idle traffic and unavailable optional exporters can yield empty panels.\n- PostgreSQL panels retain actual labels rather than assuming database/role label names. Cumulative database statistics are shown raw where exporter type was not independently verified. Service scraping does not expose all three database replicas separately.\n\n### Artifact format\nGrafana Classic JSON, schemaVersion 39, matching the existing quickstart format. All changes are local to `dashboard.json`; no Grafana import was performed. JSON model reference: https://grafana.com/docs/grafana/latest/visualizations/dashboards/build-dashboards/view-dashboard-json-model/ . Variable reference: https://grafana.com/docs/grafana/latest/datasources/prometheus/template-variables/ .",
+            "content": "### Confirmed metric evidence \u2014 September 30, 2026\nThe previous read-only inspection queried standalone EnMaaS Prometheus and OpenShift Thanos. MaaS/Praxis metric names and label keys were obtained from the last-24-hour series catalog and confirmed against **14:55 UTC (10:55 a.m. Eastern)** samples. Token minting appeared in the catalog but not that instant snapshot. Additional metric semantics are called out where unverified. This dashboard update itself made **no cluster connection or change**.\n\n### Collection problems observed around 14:57\u201314:59 UTC\n- MaaS (`9090`), Praxis (`9901`) and PostgreSQL (`9187`) scrape targets reported timeouts; all last showed success shortly before new NetworkPolicies appeared at **14:56:26\u201327 UTC**.\n- The policies excluded ingress from `enmaas-monitoring`. The Praxis monitoring exception selected `openshift-monitoring`, a different namespace.\n- The Praxis scrape annotation specified `9901`, while its Service exposed only `8081` and `8084`; the pod still declared `9901`.\n- These are **dated observations**, not assertions of current state. Use the live collection cards to see whether collection has recovered. No policy, Service, scrape configuration, or ServiceMonitor was changed by this dashboard work.\n- There were no MaaS/Praxis ServiceMonitors or PodMonitors. EnMaaS Prometheus used annotated Service discovery. Metering had no scrape annotation.\n\n### Datasources and filters\n- **Application metrics:** existing EnMaaS Prometheus. **Platform metrics:** existing OpenShift Thanos/platform Prometheus. The former federated only node metrics; the latter was verified to contain container CPU/memory/throttling, requests/limits, pod readiness, PVC usage and node metrics.\n- Import prompts map these two sources; pickers remain visible. This JSON creates no datasource and embeds no token. Each source should be scoped to one cluster or filtered to this cluster.\n- Tenant filters only tenant-labeled MaaS HTTP/key/token metrics. Praxis cluster filters cluster-labeled metrics; Praxis route filters HTTP request counts and durations. All other panels explicitly state their service-wide scope. Explorer job applies only to the application catalog.\n- Set the application datasource scrape interval to **30s**. Panel minimum query step is 30s and rates use `$__rate_interval`. Default refresh is 30s. Pause refresh for historical analysis; label variables rediscover their options when the time range changes.\n\n### Interpretation\n- Service-based scraping can combine different backend replicas under one instance label. Per-replica totals, runtime gauges and summaries may therefore jump between pods. Fleet percentiles and PostgreSQL replica health are not established by those series.\n- MaaS latency uses histogram buckets. Praxis latency/connection/header summaries remain separate by complete label set; do not average summary quantiles. Duration sum/count can provide a mean. Exporter-summary windows are independent of the Grafana time range.\n- Praxis HTTP requests are separated from upstream attempts; retries can make their counts differ. `praxis_errors_total` has a type label and is service-wide. Its ratio to upstream attempts is diagnostic, not an availability SLO.\n- No pass/fail acceptance threshold, 30-day SLO verdict, or successful-zero fallback is invented. Metric-presence probes deliberately display Missing; scrape cards deliberately display NO TARGET for absent up series.\n- CPU is in cores, memory/body sizes in bytes, latency in seconds, resource utilization in percent. Request rates use the rate window; totals and restarts use the entire selected window. Unset limits, missing label series, idle traffic and unavailable optional exporters can yield empty panels.\n- PostgreSQL panels retain actual labels rather than assuming database/role label names. Cumulative database statistics are shown raw where exporter type was not independently verified. Service scraping does not expose all three database replicas separately.\n\n### Artifact format\nGrafana Classic JSON, schemaVersion 39, matching the existing quickstart format. All changes are local to `dashboard.json`; no Grafana import was performed. JSON model reference: https://grafana.com/docs/grafana/latest/visualizations/dashboards/build-dashboards/view-dashboard-json-model/ . Variable reference: https://grafana.com/docs/grafana/latest/datasources/prometheus/template-variables/ .",
             "mode": "markdown"
           },
           "title": "Interpretation, provenance and import checklist",
@@ -10867,8 +9846,8 @@
     ]
   },
   "timezone": "browser",
-  "title": "MaaS + Praxis | Performance and Cluster Resources V4",
-  "uid": "maas-praxis-performance-v4",
+  "title": "MaaS + Praxis | Performance and Cluster Resources V3",
+  "uid": "maas-praxis-performance-v3",
   "version": 1,
   "weekStart": ""
 }

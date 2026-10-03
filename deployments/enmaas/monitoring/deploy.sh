@@ -86,13 +86,22 @@ oc apply -f 04-cnpg-metrics.yaml >/dev/null
 oc apply -f 06-aigateway-pg-metrics.yaml >/dev/null
 oc apply -f 07-grafana-dashboards.yaml >/dev/null
 oc apply -f 09-grafana-rds-dashboard.yaml >/dev/null
-# This dashboard is ~332 KiB. Client-side apply copies the complete JSON into
-# kubectl.kubernetes.io/last-applied-configuration and exceeds Kubernetes'
-# 256 KiB annotation limit. Server-side apply records compact managed fields
-# instead; force-conflicts lets this field manager adopt a ConfigMap originally
-# created without SSA during recovery.
+# These dashboards are hundreds of KiB each. Keep them in separate ConfigMaps
+# to stay below Kubernetes' 1 MiB object limit. Client-side apply also copies
+# JSON into kubectl.kubernetes.io/last-applied-configuration and exceeds the
+# 256 KiB annotation limit, so use server-side apply for both.
 oc -n "$NS" create configmap grafana-performance-dashboard \
-  --from-file=maas-praxis-performance-v4.json=dashboards/maas-praxis-performance-v4.json \
+  --from-file=maas-praxis-performance-v3.json=dashboards/maas-praxis-performance-v3.json \
+  --dry-run=client -o yaml | oc apply --server-side --force-conflicts \
+    --field-manager=enmaas-monitoring-deploy -f - >/dev/null
+# The previous canonical choice used this ConfigMap for performance-v4. SSA
+# correctly preserves map keys owned by the old manager, so remove that retired
+# key explicitly; otherwise Grafana recreates the dashboard after users delete
+# it in the UI. A JSON merge-patch with null is safe and idempotent.
+oc -n "$NS" patch configmap grafana-performance-dashboard --type=merge \
+  -p '{"data":{"maas-praxis-performance-v4.json":null}}' >/dev/null
+oc -n "$NS" create configmap grafana-sre-dashboard \
+  --from-file=maas-praxis-sre-v4.json=dashboards/maas-praxis-sre-v4.json \
   --dry-run=client -o yaml | oc apply --server-side --force-conflicts \
     --field-manager=enmaas-monitoring-deploy -f - >/dev/null
 oc process --local -f 01-prometheus.template.yaml   --param-file=params/enmaas-prod-prometheus.params   | oc apply -n "$NS" -f - >/dev/null
@@ -124,13 +133,19 @@ dashboard_title=$(curl -sk -u "${BASIC_USER:-prom}:${BASIC_PASS}" \
   echo "SMOKE FAILED: RDS dashboard is not provisioned" >&2
   exit 1
 }
-performance_title=$(curl -sk -u "${BASIC_USER:-prom}:${BASIC_PASS}" \
-  "$grafana_url/api/dashboards/uid/maas-praxis-performance-v4" \
-  | python3 -c 'import json,sys; print(json.load(sys.stdin)["dashboard"]["title"])')
-[[ "$performance_title" == "MaaS + Praxis | Performance and Cluster Resources V4" ]] || {
-  echo "SMOKE FAILED: canonical performance dashboard is not provisioned" >&2
-  exit 1
-}
+for dashboard_contract in \
+  "maas-praxis-performance-v3|MaaS + Praxis | Performance and Cluster Resources V3" \
+  "maas-praxis-sre-v4|MaaS + Praxis | SRE, Performance and Cluster Resources V4"; do
+  dashboard_uid="${dashboard_contract%%|*}"
+  expected_title="${dashboard_contract#*|}"
+  actual_title=$(curl -sk -u "${BASIC_USER:-prom}:${BASIC_PASS}" \
+    "$grafana_url/api/dashboards/uid/$dashboard_uid" \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin)["dashboard"]["title"])')
+  [[ "$actual_title" == "$expected_title" ]] || {
+    echo "SMOKE FAILED: canonical dashboard $dashboard_uid is not provisioned" >&2
+    exit 1
+  }
+done
 rds_up=$(curl -sk -u "${BASIC_USER:-prom}:${BASIC_PASS}" \
   "$grafana_url/api/datasources/proxy/uid/prometheus/api/v1/query?query=pg_up%7Bjob%3D%22rds-postgres-exporter%22%7D" \
   | python3 -c 'import json,sys; r=json.load(sys.stdin)["data"]["result"]; print(r[0]["value"][1] if r else "missing")')
