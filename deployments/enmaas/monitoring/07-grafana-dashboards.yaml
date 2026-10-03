@@ -65,11 +65,11 @@ data:
     ,\n          \"legendFormat\": \"p50\",\n          \"datasource\": {\n       \
     \     \"type\": \"prometheus\",\n            \"uid\": \"${DS_PROMETHEUS}\"\n \
     \         },\n          \"range\": true,\n          \"instant\": false\n     \
-    \   },\n        {\n          \"refId\": \"A\",\n          \"expr\": \"praxis_http_request_duration_seconds{quantile=\\\
+    \   },\n        {\n          \"refId\": \"B\",\n          \"expr\": \"praxis_http_request_duration_seconds{quantile=\\\
     \"0.9\\\"}\",\n          \"legendFormat\": \"p90\",\n          \"datasource\"\
     : {\n            \"type\": \"prometheus\",\n            \"uid\": \"${DS_PROMETHEUS}\"\
     \n          },\n          \"range\": true,\n          \"instant\": false\n   \
-    \     },\n        {\n          \"refId\": \"A\",\n          \"expr\": \"praxis_http_request_duration_seconds{quantile=\\\
+    \     },\n        {\n          \"refId\": \"C\",\n          \"expr\": \"praxis_http_request_duration_seconds{quantile=\\\
     \"0.99\\\"}\",\n          \"legendFormat\": \"p99\",\n          \"datasource\"\
     : {\n            \"type\": \"prometheus\",\n            \"uid\": \"${DS_PROMETHEUS}\"\
     \n          },\n          \"range\": true,\n          \"instant\": false\n   \
