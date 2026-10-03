@@ -26,11 +26,11 @@ data:
           "id": 2,
           "type": "stat",
           "title": "Exporter scrape error",
-          "description": "1 means at least one collector failed. Check collector health below and exporter logs.",
+          "description": "1 means at least one nbari collector failed. Check collector health below and exporter logs.",
           "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
           "gridPos": {"h": 5, "w": 4, "x": 4, "y": 0},
           "fieldConfig": {"defaults": {"mappings": [{"options": {"0": {"color": "green", "text": "OK"}, "1": {"color": "red", "text": "ERROR"}}, "type": "value"}], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}, "overrides": []},
-          "targets": [{"refId": "A", "expr": "max(pg_exporter_last_scrape_error{job=\"rds-postgres-exporter\"})", "instant": true, "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}]
+          "targets": [{"refId": "A", "expr": "1 - min(pg_exporter_collector_last_scrape_success{job=\"rds-postgres-exporter\"})", "instant": true, "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}]
         },
         {
           "id": 3,
@@ -39,7 +39,7 @@ data:
           "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
           "gridPos": {"h": 5, "w": 4, "x": 8, "y": 0},
           "fieldConfig": {"defaults": {"unit": "conns"}, "overrides": []},
-          "targets": [{"refId": "A", "expr": "sum(pg_stat_database_numbackends{job=\"rds-postgres-exporter\",datname=\"aigateway\"})", "instant": true, "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}]
+          "targets": [{"refId": "A", "expr": "max(pg_stat_activity_used_connections{job=\"rds-postgres-exporter\"})", "instant": true, "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}]
         },
         {
           "id": 4,
@@ -48,16 +48,16 @@ data:
           "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
           "gridPos": {"h": 5, "w": 4, "x": 12, "y": 0},
           "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 70}, {"color": "red", "value": 85}]}}, "overrides": []},
-          "targets": [{"refId": "A", "expr": "100 * sum(pg_stat_database_numbackends{job=\"rds-postgres-exporter\",datname=\"aigateway\"}) / max(pg_settings_max_connections{job=\"rds-postgres-exporter\"})", "instant": true, "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}]
+          "targets": [{"refId": "A", "expr": "100 * max(pg_stat_activity_utilization_ratio{job=\"rds-postgres-exporter\"})", "instant": true, "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}]
         },
         {
           "id": 5,
           "type": "stat",
-          "title": "Longest transaction",
+          "title": "Oldest active query",
           "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
           "gridPos": {"h": 5, "w": 4, "x": 16, "y": 0},
           "fieldConfig": {"defaults": {"unit": "s", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 60}, {"color": "red", "value": 300}]}}, "overrides": []},
-          "targets": [{"refId": "A", "expr": "max(pg_stat_activity_max_tx_duration{job=\"rds-postgres-exporter\",datname=\"aigateway\"})", "instant": true, "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}]
+          "targets": [{"refId": "A", "expr": "max(pg_stat_activity_oldest_query_age_seconds{job=\"rds-postgres-exporter\"})", "instant": true, "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}]
         },
         {
           "id": 6,
@@ -66,18 +66,19 @@ data:
           "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
           "gridPos": {"h": 5, "w": 4, "x": 20, "y": 0},
           "fieldConfig": {"defaults": {"unit": "percent", "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 95}, {"color": "green", "value": 99}]}}, "overrides": []},
-          "targets": [{"refId": "A", "expr": "100 * sum(rate(pg_stat_database_blks_hit{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[5m])) / clamp_min(sum(rate(pg_stat_database_blks_hit{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[5m]) + rate(pg_stat_database_blks_read{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[5m])), 1)", "instant": true, "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}]
+          "targets": [{"refId": "A", "expr": "100 * sum(rate(pg_stat_user_tables_heap_blks_hit_total{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[5m]) + rate(pg_stat_user_tables_idx_blks_hit_total{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[5m])) / clamp_min(sum(rate(pg_stat_user_tables_heap_blks_hit_total{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[5m]) + rate(pg_stat_user_tables_idx_blks_hit_total{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[5m]) + rate(pg_stat_user_tables_heap_blks_read_total{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[5m]) + rate(pg_stat_user_tables_idx_blks_read_total{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[5m])), 1)", "instant": true, "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}]
         },
         {
           "id": 7,
           "type": "timeseries",
-          "title": "Transactions",
+          "title": "Table row changes",
           "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
           "gridPos": {"h": 8, "w": 8, "x": 0, "y": 5},
-          "fieldConfig": {"defaults": {"unit": "tps", "custom": {"fillOpacity": 15}}, "overrides": []},
+          "fieldConfig": {"defaults": {"unit": "ops", "custom": {"fillOpacity": 15}}, "overrides": []},
           "targets": [
-            {"refId": "A", "expr": "sum(rate(pg_stat_database_xact_commit{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[5m]))", "legendFormat": "commits/s", "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}},
-            {"refId": "B", "expr": "sum(rate(pg_stat_database_xact_rollback{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[5m]))", "legendFormat": "rollbacks/s", "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}
+            {"refId": "A", "expr": "sum(rate(pg_stat_user_tables_n_tup_ins{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[5m]))", "legendFormat": "inserts/s", "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}},
+            {"refId": "B", "expr": "sum(rate(pg_stat_user_tables_n_tup_upd{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[5m]))", "legendFormat": "updates/s", "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}},
+            {"refId": "C", "expr": "sum(rate(pg_stat_user_tables_n_tup_del{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[5m]))", "legendFormat": "deletes/s", "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}
           ]
         },
         {
@@ -92,13 +93,14 @@ data:
         {
           "id": 9,
           "type": "timeseries",
-          "title": "Temp spill and deadlocks",
+          "title": "Blocked, waiting and idle transactions",
           "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
           "gridPos": {"h": 8, "w": 8, "x": 16, "y": 5},
-          "fieldConfig": {"defaults": {"custom": {"fillOpacity": 10}}, "overrides": [{"matcher": {"id": "byName", "options": "temp bytes/s"}, "properties": [{"id": "unit", "value": "Bps"}]}]},
+          "fieldConfig": {"defaults": {"unit": "conns", "custom": {"fillOpacity": 10}}, "overrides": []},
           "targets": [
-            {"refId": "A", "expr": "sum(rate(pg_stat_database_temp_bytes{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[5m]))", "legendFormat": "temp bytes/s", "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}},
-            {"refId": "B", "expr": "sum(increase(pg_stat_database_deadlocks{job=\"rds-postgres-exporter\",datname=\"aigateway\"}[1h]))", "legendFormat": "deadlocks / hour", "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}
+            {"refId": "A", "expr": "sum(pg_stat_activity_blocked_connections{job=\"rds-postgres-exporter\",datname=\"aigateway\"})", "legendFormat": "blocked", "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}},
+            {"refId": "B", "expr": "sum(pg_stat_activity_waiting_connections{job=\"rds-postgres-exporter\",datname=\"aigateway\"})", "legendFormat": "waiting", "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}},
+            {"refId": "C", "expr": "sum(pg_stat_activity_idle_in_transaction{job=\"rds-postgres-exporter\",datname=\"aigateway\"})", "legendFormat": "idle in transaction", "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}
           ]
         },
         {
@@ -117,17 +119,17 @@ data:
           "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
           "gridPos": {"h": 9, "w": 8, "x": 8, "y": 13},
           "fieldConfig": {"defaults": {"unit": "bytes", "custom": {"fillOpacity": 10}}, "overrides": []},
-          "targets": [{"refId": "A", "expr": "topk(10, pg_stat_user_tables_size_bytes{job=\"rds-postgres-exporter\",datname=\"aigateway\"})", "legendFormat": "{{relname}}", "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}]
+          "targets": [{"refId": "A", "expr": "topk(10, pg_stat_user_tables_table_size_bytes{job=\"rds-postgres-exporter\",datname=\"aigateway\"})", "legendFormat": "{{relname}}", "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}]
         },
         {
           "id": 12,
           "type": "timeseries",
           "title": "Collector health",
-          "description": "0 identifies a collector unavailable to the least-privilege RDS monitoring role. WAL and database-size collectors are expected to be unavailable.",
+          "description": "1 means the nbari collector completed its latest scrape; 0 identifies a failed collector.",
           "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
           "gridPos": {"h": 9, "w": 8, "x": 16, "y": 13},
           "fieldConfig": {"defaults": {"min": 0, "max": 1, "custom": {"fillOpacity": 10}}, "overrides": []},
-          "targets": [{"refId": "A", "expr": "min by (collector) (pg_scrape_collector_success{job=\"rds-postgres-exporter\"})", "legendFormat": "{{collector}}", "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}]
+          "targets": [{"refId": "A", "expr": "min by (collector) (pg_exporter_collector_last_scrape_success{job=\"rds-postgres-exporter\"})", "legendFormat": "{{collector}}", "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}}]
         }
       ],
       "refresh": "30s",
@@ -138,5 +140,5 @@ data:
       "timezone": "browser",
       "title": "EnMaaS RDS PostgreSQL",
       "uid": "enmaas-rds-postgres",
-      "version": 1
+      "version": 2
     }
