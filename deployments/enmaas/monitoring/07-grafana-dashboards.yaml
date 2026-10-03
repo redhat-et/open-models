@@ -82,7 +82,7 @@ data:
     value\": 0\n              },\n              {\n                \"color\": \"green\"\
     ,\n                \"value\": 1\n              }\n            ]\n          }\n\
     \        },\n        \"overrides\": []\n      },\n      \"targets\": [\n     \
-    \   {\n          \"refId\": \"A\",\n          \"expr\": \"slo:praxis:error_budget_remaining:30d\"\
+    \   {\n          \"refId\": \"A\",\n          \"expr\": \"clamp_min(slo:praxis:error_budget_remaining:30d, 0)\"\
     ,\n          \"datasource\": {\n            \"type\": \"prometheus\",\n      \
     \      \"uid\": \"${DS_PROMETHEUS}\"\n          },\n          \"instant\": true\n\
     \        }\n      ],\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\":\
@@ -222,7 +222,7 @@ data:
     \         \"color\": \"green\",\n                \"value\": 1\n              }\n\
     \            ]\n          }\n        },\n        \"overrides\": []\n      },\n\
     \      \"targets\": [\n        {\n          \"refId\": \"A\",\n          \"expr\"\
-    : \"slo:praxis:error_budget_remaining:30d\",\n          \"legendFormat\": \"\"\
+    : \"clamp_min(slo:praxis:error_budget_remaining:30d, 0)\",\n          \"legendFormat\": \"\"\
     ,\n          \"datasource\": {\n            \"type\": \"prometheus\",\n      \
     \      \"uid\": \"${DS_PROMETHEUS}\"\n          },\n          \"range\": false,\n\
     \          \"instant\": true\n        }\n      ]\n    },\n    {\n      \"type\"\
@@ -314,7 +314,7 @@ data:
     \              {\n                \"color\": \"green\",\n                \"value\"\
     : 1\n              }\n            ]\n          }\n        },\n        \"overrides\"\
     : []\n      },\n      \"targets\": [\n        {\n          \"refId\": \"A\",\n\
-    \          \"expr\": \"slo:praxis:error_budget_remaining:30d\",\n          \"\
+    \          \"expr\": \"clamp_min(slo:praxis:error_budget_remaining:30d, 0)\",\n          \"\
     legendFormat\": \"budget\",\n          \"datasource\": {\n            \"type\"\
     : \"prometheus\",\n            \"uid\": \"${DS_PROMETHEUS}\"\n          },\n \
     \         \"range\": true,\n          \"instant\": false\n        }\n      ]\n\
