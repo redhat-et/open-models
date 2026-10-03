@@ -86,6 +86,15 @@ oc apply -f 04-cnpg-metrics.yaml >/dev/null
 oc apply -f 06-aigateway-pg-metrics.yaml >/dev/null
 oc apply -f 07-grafana-dashboards.yaml >/dev/null
 oc apply -f 09-grafana-rds-dashboard.yaml >/dev/null
+# This dashboard is ~332 KiB. Client-side apply copies the complete JSON into
+# kubectl.kubernetes.io/last-applied-configuration and exceeds Kubernetes'
+# 256 KiB annotation limit. Server-side apply records compact managed fields
+# instead; force-conflicts lets this field manager adopt a ConfigMap originally
+# created without SSA during recovery.
+oc -n "$NS" create configmap grafana-performance-dashboard \
+  --from-file=maas-praxis-performance-v4.json=dashboards/maas-praxis-performance-v4.json \
+  --dry-run=client -o yaml | oc apply --server-side --force-conflicts \
+    --field-manager=enmaas-monitoring-deploy -f - >/dev/null
 oc process --local -f 01-prometheus.template.yaml   --param-file=params/enmaas-prod-prometheus.params   | oc apply -n "$NS" -f - >/dev/null
 oc process --local -f 02-alertmanager.template.yaml --param-file=params/enmaas-prod-alertmanager.params | oc apply -n "$NS" -f - >/dev/null
 oc process --local -f 03-grafana.template.yaml      --param-file=params/enmaas-prod-grafana.params      | oc apply -n "$NS" -f - >/dev/null
@@ -115,6 +124,13 @@ dashboard_title=$(curl -sk -u "${BASIC_USER:-prom}:${BASIC_PASS}" \
   echo "SMOKE FAILED: RDS dashboard is not provisioned" >&2
   exit 1
 }
+performance_title=$(curl -sk -u "${BASIC_USER:-prom}:${BASIC_PASS}" \
+  "$grafana_url/api/dashboards/uid/maas-praxis-performance-v4" \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["dashboard"]["title"])')
+[[ "$performance_title" == "MaaS + Praxis | Performance and Cluster Resources V4" ]] || {
+  echo "SMOKE FAILED: canonical performance dashboard is not provisioned" >&2
+  exit 1
+}
 rds_up=$(curl -sk -u "${BASIC_USER:-prom}:${BASIC_PASS}" \
   "$grafana_url/api/datasources/proxy/uid/prometheus/api/v1/query?query=pg_up%7Bjob%3D%22rds-postgres-exporter%22%7D" \
   | python3 -c 'import json,sys; r=json.load(sys.stdin)["data"]["result"]; print(r[0]["value"][1] if r else "missing")')
@@ -122,5 +138,5 @@ rds_up=$(curl -sk -u "${BASIC_USER:-prom}:${BASIC_PASS}" \
   echo "SMOKE FAILED: Grafana datasource cannot query the RDS exporter (pg_up=$rds_up)" >&2
   exit 1
 }
-echo "==> Grafana RDS dashboard + datasource query passed"
+echo "==> Grafana RDS/performance dashboards + datasource query passed"
 echo "done. dashboards: $grafana_url"
