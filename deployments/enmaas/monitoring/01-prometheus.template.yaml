@@ -154,20 +154,20 @@ objects:
         groups:
           - name: enmaas-slos
             # SLI / SLO for the praxis gateway (the user-facing model proxy).
-            # SLO: 99.9% availability over 30d (errors = praxis_errors_total),
+            # SLO: 99.9% availability over 30d (errors = 5xx responses),
             #      p99 request duration < 4s.
             rules:
               - record: slo:praxis:request_rate:5m
                 expr: sum(rate(praxis_upstream_requests_total[5m]))
               - record: slo:praxis:error_rate:5m
-                expr: sum(rate(praxis_errors_total[5m]))
+                expr: sum(rate(praxis_http_requests_total{status_class="5xx"}[5m]))
               - record: slo:praxis:error_ratio:5m
                 expr: |
-                  sum(rate(praxis_errors_total[5m]))
+                  sum(rate(praxis_http_requests_total{status_class="5xx"}[5m]))
                     / clamp_min(sum(rate(praxis_upstream_requests_total[5m])), 1e-3)
               - record: slo:praxis:availability:30d
                 expr: |
-                  1 - sum(rate(praxis_errors_total[30d]))
+                  1 - sum(rate(praxis_http_requests_total{status_class="5xx"}[30d]))
                     / clamp_min(sum(rate(praxis_upstream_requests_total[30d])), 1e-3)
               - record: slo:praxis:error_budget_remaining:30d
                 expr: (slo:praxis:availability:30d - 0.999) / (1 - 0.999)
