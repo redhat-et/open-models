@@ -36,7 +36,7 @@ data:
     \      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"errps\"\
     ,\n          \"custom\": {\n            \"fillOpacity\": 20\n          }\n   \
     \     },\n        \"overrides\": []\n      },\n      \"targets\": [\n        {\n\
-    \          \"refId\": \"A\",\n          \"expr\": \"sum(rate(praxis_errors_total[5m]))\"\
+    \          \"refId\": \"A\",\n          \"expr\": \"sum(rate(praxis_http_requests_total{status_class=\\\"5xx\\\"}[5m]))\"\
     ,\n          \"legendFormat\": \"err/s\",\n          \"datasource\": {\n     \
     \       \"type\": \"prometheus\",\n            \"uid\": \"${DS_PROMETHEUS}\"\n\
     \          },\n          \"range\": true,\n          \"instant\": false\n    \
