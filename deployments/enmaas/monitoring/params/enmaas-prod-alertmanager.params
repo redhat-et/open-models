@@ -1,1 +1,2 @@
 AM_ROUTE_HOST=alertmanager-enmaas-monitoring.apps.rosa.enmaas-prod.187f.p3.openshiftapps.com
+AM_EXTERNAL_HOST=alertmanager-oauth-enmaas-monitoring.apps.rosa.enmaas-prod.187f.p3.openshiftapps.com

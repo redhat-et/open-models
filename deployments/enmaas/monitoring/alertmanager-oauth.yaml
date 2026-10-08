@@ -1,0 +1,189 @@
+# SSO front door for Alertmanager, using GitHub as the IdP (same pattern as
+# grafana-oauth.yaml). oauth2-proxy talks to github.com directly, so it does NOT
+# depend on the cluster OAuth server. Only members of the GitHub team
+# redhat-et/enmaas-observability-access are let through.
+#
+# REUSES the GitHub OAuth App credentials from secret "grafana-oauth-github".
+# The GitHub app must list this route's callback as an additional Redirect URI:
+#   https://alertmanager-oauth-enmaas-monitoring.apps.rosa.enmaas-prod.187f.p3.openshiftapps.com/oauth/callback
+#
+# oauth-proxy fronts the existing Alertmanager Service (http://alertmanager:9093)
+# over a separate route; the alertmanager pod's own nginx basic-auth sidecar
+# still guards the original route. Delete when done:
+#   oc -n enmaas-monitoring delete sa,deploy,svc,route,networkpolicy,secret -l app=alertmanager-oauth
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: alertmanager-oauth
+  namespace: enmaas-monitoring
+  labels:
+    app: alertmanager-oauth
+# GitHub-provider oauth2-proxy never talks to the kube API, so it gets no
+# RBAC at all and no projected API token. Least privilege.
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager-oauth
+  namespace: enmaas-monitoring
+  labels:
+    app: alertmanager-oauth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager-oauth
+  template:
+    metadata:
+      labels:
+        app: alertmanager-oauth
+    spec:
+      serviceAccountName: alertmanager-oauth
+      automountServiceAccountToken: false
+      # restricted-v2 compatible: non-root, default seccomp. No runAsUser is set
+      # so the SCC assigns a uid from the namespace range.
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: oauth-proxy
+          # Upstream oauth2-proxy -- the openshift/origin-oauth-proxy fork does
+          # NOT compile in the github provider flags (--github-org/--github-team).
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+          args:
+            # Serve plain HTTP internally; the Route does edge TLS, and
+            # --reverse-proxy trusts the router's X-Forwarded-* headers.
+            - --http-address=0.0.0.0:8443
+            - --upstream=http://alertmanager:9093
+            - --reverse-proxy=true
+            # Keep the /oauth prefix so the callback stays /oauth/callback and
+            # matches the GitHub OAuth App redirect URI registered for this route.
+            - --proxy-prefix=/oauth
+            # --- GitHub provider: restrict to team redhat-et/enmaas-observability-access ---
+            - --provider=github
+            - --redirect-url=https://alertmanager-oauth-enmaas-monitoring.${ENMAAS_MONITORING_DOMAIN}/oauth/callback
+            - --github-org=redhat-et
+            - --github-team=enmaas-observability-access
+            # read:org is required so the proxy can check org/team membership.
+            - --scope=user:email read:org
+            - --email-domain=*
+          env:
+            # Reused GitHub OAuth App credentials (same secret as grafana-oauth).
+            - name: OAUTH2_PROXY_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-oauth-github
+                  key: client-id
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-oauth-github
+                  key: client-secret
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: alertmanager-oauth-cookie
+                  key: session_secret
+          ports:
+            - name: public
+              containerPort: 8443
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-oauth
+  namespace: enmaas-monitoring
+  labels:
+    app: alertmanager-oauth
+spec:
+  selector:
+    app: alertmanager-oauth
+  ports:
+    - name: public
+      port: 8443
+      targetPort: public
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: alertmanager-oauth
+  namespace: enmaas-monitoring
+  labels:
+    app: alertmanager-oauth
+spec:
+  to:
+    kind: Service
+    name: alertmanager-oauth
+  port:
+    targetPort: public
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+# Default-deny for the proxy pod (selecting it with both policyTypes denies all
+# traffic not explicitly allowed below).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: alertmanager-oauth
+  namespace: enmaas-monitoring
+  labels:
+    app: alertmanager-oauth
+spec:
+  podSelector:
+    matchLabels:
+      app: alertmanager-oauth
+  policyTypes: [Ingress, Egress]
+  ingress:
+    # Only the OpenShift router may reach the proxy, on 8443.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              policy-group.network.openshift.io/ingress: ""
+      ports:
+        - protocol: TCP
+          port: 8443
+  egress:
+    # 1. Forward authenticated traffic to Alertmanager only.
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: alertmanager
+      ports:
+        - protocol: TCP
+          port: 9093
+    # 2. Cluster DNS. CoreDNS pods in openshift-dns listen on 5353; the service
+    #    maps 53 -> 5353, so allow both to avoid breaking name resolution.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-dns
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+        - { protocol: UDP, port: 5353 }
+        - { protocol: TCP, port: 5353 }
+    # 3. github.com for the OAuth handshake (external HTTPS). Required -- the
+    #    proxy must reach GitHub to authenticate, so this cannot be narrowed to
+    #    Alertmanager. 443-only egress is the practical floor.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443

@@ -141,3 +141,20 @@ them in (best-practices rule #1) and add the annotations there.
   database, table-size and collector-health metric contracts.
 - Recovery drill (rule 1): delete namespace, rerun bootstrap + deploy; the
   provisioned datasources and dashboards must reappear without UI imports.
+
+## OAuth frontends (`*-oauth.yaml`, ported from enmaas-opps)
+
+`alertmanager-oauth.yaml`, `grafana-oauth.yaml` and `prometheus-oauth.yaml`
+run oauth2-proxy in front of each UI behind GitHub SSO (org `redhat-et`, team
+`enmaas-observability-access`), matching what prod runs. They are plain YAML
+with one substitution: `ENMAAS_MONITORING_DOMAIN` (the cluster's apps domain),
+used in each `--redirect-url`. Render with:
+
+```bash
+ENMAAS_MONITORING_DOMAIN=apps.rosa.enmaas-prod.187f.p3.openshiftapps.com  # or the target cluster's domain
+envsubst '${ENMAAS_MONITORING_DOMAIN}' < grafana-oauth.yaml | oc apply -f -
+```
+
+The GitHub OAuth App must list each frontend's `<name>-enmaas-monitoring.<domain>/oauth/callback`
+as a redirect URI, and the `grafana-oauth-github` / `*-oauth-cookie` secrets
+must exist (bootstrap section above).

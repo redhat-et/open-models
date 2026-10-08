@@ -154,8 +154,10 @@ objects:
         groups:
           - name: enmaas-slos
             # SLI / SLO for the praxis gateway (the user-facing model proxy).
-            # SLO: 99.9% availability over 30d (errors = 5xx responses),
-            #      p99 request duration < 4s.
+            # Availability is the current Praxis SLO. End-to-end LLM request
+            # duration remains an operational signal while latency objectives
+            # are redesigned around model behavior and streaming semantics.
+            # SLO: 99.9% availability over 30d (errors = 5xx responses).
             rules:
               - record: slo:praxis:request_rate:5m
                 expr: sum(rate(praxis_upstream_requests_total[5m]))
@@ -192,13 +194,13 @@ objects:
                   summary: "Praxis error budget burning ({{ $value | humanizePercentage }} error rate)"
                   description: "Error ratio above 3x burn rate for 6h."
               - alert: PraxisP99Latency
-                expr: praxis_http_request_duration_seconds{quantile="0.99"} > 4
+                expr: praxis_http_request_duration_seconds{quantile="0.99"} > 15
                 for: 10m
                 labels:
                   severity: warning
                 annotations:
-                  summary: "Praxis p99 latency over SLO ({{ $value }}s > 4s)"
-                  description: "p99 request duration above the 4s SLO target for 10m."
+                  summary: "Praxis p99 request duration is high ({{ $value }}s > 15s)"
+                  description: "p99 request duration exceeded the temporary 15s operational threshold for 10m; this is not an LLM SLO."
           - name: monitoring-self
             rules:
               - alert: MonitoringComponentDown

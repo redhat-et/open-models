@@ -7,6 +7,10 @@ message: "Alertmanager deployed - route https://${AM_ROUTE_HOST} (basic auth)"
 parameters:
   - name: AM_ROUTE_HOST
     required: true
+  # Points at the GitHub-SSO front door (alertmanager-oauth route), not the
+  # basic-auth route, so clicking an alert does not re-prompt for a password.
+  - name: AM_EXTERNAL_HOST
+    required: true
   - name: AM_IMAGE
     value: "quay.io/prometheus/alertmanager:v0.28.1"
   - name: NGINX_IMAGE
@@ -82,6 +86,9 @@ objects:
                 - --config.file=/etc/alertmanager/alertmanager.yml
                 - --storage.path=/alertmanager
                 - --web.listen-address=0.0.0.0:9093
+                # Without this, generated links (Slack {{ .ExternalURL }}, the
+                # web UI) fall back to the pod hostname. Pin the public SSO route.
+                - --web.external-url=https://${AM_EXTERNAL_HOST}
               ports:
                 - name: http
                   containerPort: 9093

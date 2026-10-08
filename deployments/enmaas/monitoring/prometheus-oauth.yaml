@@ -1,0 +1,163 @@
+# GitHub SSO front door for Prometheus. This parallels the existing Grafana
+# and Alertmanager OAuth routes while retaining the original basic-auth Route
+# as a fallback. Only redhat-et/enmaas-observability-access members may enter.
+#
+# Reuses the GitHub OAuth credentials in grafana-oauth-github. Register this
+# callback URL with that application before deployment:
+#   https://prometheus-oauth-enmaas-monitoring.apps.rosa.enmaas-prod.187f.p3.openshiftapps.com/oauth/callback
+#
+# The per-proxy cookie secret is created out of band as
+# prometheus-oauth-cookie/session_secret; no credentials belong in git.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-oauth
+  namespace: enmaas-monitoring
+  labels:
+    app: prometheus-oauth
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-oauth
+  namespace: enmaas-monitoring
+  labels:
+    app: prometheus-oauth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-oauth
+  template:
+    metadata:
+      labels:
+        app: prometheus-oauth
+    spec:
+      serviceAccountName: prometheus-oauth
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: oauth-proxy
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+          args:
+            - --http-address=0.0.0.0:8443
+            - --upstream=http://prometheus:9090
+            - --reverse-proxy=true
+            - --proxy-prefix=/oauth
+            - --provider=github
+            - --redirect-url=https://prometheus-oauth-enmaas-monitoring.${ENMAAS_MONITORING_DOMAIN}/oauth/callback
+            - --github-org=redhat-et
+            - --github-team=enmaas-observability-access
+            - --scope=user:email read:org
+            - --email-domain=*
+          env:
+            - name: OAUTH2_PROXY_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-oauth-github
+                  key: client-id
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-oauth-github
+                  key: client-secret
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: prometheus-oauth-cookie
+                  key: session_secret
+          ports:
+            - name: public
+              containerPort: 8443
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-oauth
+  namespace: enmaas-monitoring
+  labels:
+    app: prometheus-oauth
+spec:
+  selector:
+    app: prometheus-oauth
+  ports:
+    - name: public
+      port: 8443
+      targetPort: public
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: prometheus-oauth
+  namespace: enmaas-monitoring
+  labels:
+    app: prometheus-oauth
+spec:
+  to:
+    kind: Service
+    name: prometheus-oauth
+  port:
+    targetPort: public
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: prometheus-oauth
+  namespace: enmaas-monitoring
+  labels:
+    app: prometheus-oauth
+spec:
+  podSelector:
+    matchLabels:
+      app: prometheus-oauth
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              policy-group.network.openshift.io/ingress: ""
+      ports:
+        - protocol: TCP
+          port: 8443
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 9090
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-dns
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+        - { protocol: UDP, port: 5353 }
+        - { protocol: TCP, port: 5353 }
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
