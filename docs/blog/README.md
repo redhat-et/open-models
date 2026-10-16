@@ -9,6 +9,7 @@ things we got wrong.
 |------|------|--------|
 | 2026-09 | [EnMaaS goes prod: standing up a monitoring stack the boring way](2026-09-enmaas-monitoring.md) | Prometheus, Alertmanager, Grafana, SLOs, and the OpenShift HCP gotchas behind them |
 | 2026-10 | [EnMaaS goes public: DNS, TLS, and the guardrails that bit back](2026-10-enmaas-goes-public.md) | Public hostnames, cert-manager TLS, the move to managed RDS, a functional test suite, and the ways our own safety mechanisms misfired |
+| 2026-11 | [EnMaaS goes GA: the release, the numbers, and the load tests that settled it](2026-11-enmaas-goes-ga.md) | The Oct 15 GA, the enforced dollar cap, the 2.48M-event accounting-validated load run, the rollup-parity CPU misdiagnosis, and the handoff to the perf team |
 
 These are internal engineering notes, not published articles. Posts intended
 for a wider audience go through the OCTO review process and get adapted and
